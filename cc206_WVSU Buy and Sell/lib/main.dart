@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cc206_magic_calculator/features/user_profile_page.dart';
+
+
+
 
 void main() {
   runApp(const MyApp());
@@ -105,14 +109,24 @@ class _MyHomePageState extends State<MyHomePage> {
           // wireframe for each widget.
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+  const Text(
+    'You have pushed the button this many times:',
+  ),
+  Text(
+    '$_counter',
+    style: Theme.of(context).textTheme.headlineMedium,
+  ),
+  ElevatedButton(
+    onPressed: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const UserProfilePage()),
+      );
+    },
+    child: const Text('Go to User Profile'),
+  ),
+],
+
         ),
       ),
       floatingActionButton: FloatingActionButton(
