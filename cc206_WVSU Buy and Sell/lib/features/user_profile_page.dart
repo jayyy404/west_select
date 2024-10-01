@@ -1,52 +1,97 @@
 import 'package:flutter/material.dart';
 
 class UserProfilePage extends StatelessWidget {
-  const UserProfilePage({Key? key}) : super(key: key);
+  const UserProfilePage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('User Profile'),
+        title: const Text('User Profile'),
+        backgroundColor: Colors.blueAccent, 
       ),
       body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start, 
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: CircleAvatar(
-              radius: 50,
-              backgroundImage: AssetImage('assets/pp.png'), // Add a default profile picture here
+
+        
+
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: CircleAvatar(
+                radius: 50,
+                backgroundImage: const AssetImage('assets/pp.png'),
+                backgroundColor: Colors.grey[200], // can change bg color for profile
+              ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
+
+
+                  
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.only(left: 16.0, bottom: 50.0), // Added bottom padding to create space
+              child: Text(
+                'Name: Joven Carl Rex Biaca',
+                style: TextStyle(
+                  fontSize: 22,  
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+
+
+          const Divider(thickness: 1, indent: 40, endIndent: 40), // divider
+
+
+          const Padding(
+            padding: EdgeInsets.only(left: 16.0, bottom: 8.0),  
             child: Text(
-              'Name: Joven Carl Rex Biaca', // Replace with dynamic data if needed
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              'Email: jovskbiaca@example.com',
+              style: TextStyle(fontSize: 18, color: Colors.black),  
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
+
+
+          const Divider(thickness: 1, indent: 40, endIndent: 40), // divider
+
+
+          const Padding(
+            padding: EdgeInsets.only(left: 16.0, bottom: 8.0),  
             child: Text(
-              'Email: jovskbiaca@example.com', // Replace with dynamic data if needed
-              style: TextStyle(fontSize: 16),
+              'Phone: +1234567890', 
+              style: TextStyle(fontSize: 18, color: Colors.black),  
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
+
+
+          const Divider(thickness: 1, indent: 40, endIndent: 40), // divider
+
+          const Padding(
+            padding: EdgeInsets.only(left: 16.0, bottom: 8.0),  
             child: Text(
-              'Phone: +1234567890', // Replace with dynamic data if needed
-              style: TextStyle(fontSize: 16),
+              'Address: Taga Sooc, Iloilo City', 
+              style: TextStyle(fontSize: 18, color: Colors.black), 
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
+
+
+          const Divider(thickness: 1, indent: 40, endIndent: 40), // divider
+
+
+          // Added extra field 
+          const Padding(
+            padding: EdgeInsets.only(left: 16.0, bottom: 8.0), 
             child: Text(
-              'Address: Taga Sooc, Iloilo City', // Replace with dynamic data if needed
-              style: TextStyle(fontSize: 16),
+              'Occupation: Computer Science Student', 
+              style: TextStyle(fontSize: 18, color: Colors.black),
             ),
           ),
+
+          const Divider(thickness: 1, indent: 40, endIndent: 40),
+
         ],
       ),
     );
