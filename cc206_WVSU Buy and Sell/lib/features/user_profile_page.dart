@@ -8,90 +8,100 @@ class UserProfilePage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('User Profile'),
-        backgroundColor: Colors.blueAccent, 
+        backgroundColor: const Color.fromARGB(255, 199, 108, 4),
       ),
       body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start, 
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
-        
-
           Center(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: CircleAvatar(
-                radius: 50,
-                backgroundImage: const AssetImage('assets/pp.png'),
-                backgroundColor: Colors.grey[200], // can change bg color for profile
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: const Color.fromARGB(255, 243, 152, 33),
+                    width: 2.0,
+                  ),
+                ),
+                child: CircleAvatar(
+                  radius: 50,
+                  backgroundImage: const AssetImage('assets/pp.png'),
+                  backgroundColor:
+                      Colors.grey[200], // can change bg color for profile
+                ),
               ),
             ),
           ),
 
-
-                  
           const Center(
             child: Padding(
-              padding: EdgeInsets.only(left: 16.0, bottom: 50.0), // Added bottom padding to create space
+              padding: EdgeInsets.only(
+                  left: 16.0,
+                  bottom: 50.0), // Added bottom padding to create space
               child: Text(
-                'Name: Joven Carl Rex Biaca',
+                'Joven Carl Rex Biaca',
                 style: TextStyle(
-                  fontSize: 22,  
+                  fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
           ),
 
-
           const Divider(thickness: 1, indent: 40, endIndent: 40), // divider
 
-
-          const Padding(
-            padding: EdgeInsets.only(left: 16.0, bottom: 8.0),  
-            child: Text(
-              'Email: jovskbiaca@example.com',
-              style: TextStyle(fontSize: 18, color: Colors.black),  
-            ),
-          ),
-
-
-          const Divider(thickness: 1, indent: 40, endIndent: 40), // divider
-
-
-          const Padding(
-            padding: EdgeInsets.only(left: 16.0, bottom: 8.0),  
-            child: Text(
-              'Phone: +1234567890', 
-              style: TextStyle(fontSize: 18, color: Colors.black),  
-            ),
-          ),
-
-
-          const Divider(thickness: 1, indent: 40, endIndent: 40), // divider
-
-          const Padding(
-            padding: EdgeInsets.only(left: 16.0, bottom: 8.0),  
-            child: Text(
-              'Address: Taga Sooc, Iloilo City', 
-              style: TextStyle(fontSize: 18, color: Colors.black), 
-            ),
-          ),
-
-
-          const Divider(thickness: 1, indent: 40, endIndent: 40), // divider
-
-
-          // Added extra field 
-          const Padding(
-            padding: EdgeInsets.only(left: 16.0, bottom: 8.0), 
-            child: Text(
-              'Occupation: Computer Science Student', 
-              style: TextStyle(fontSize: 18, color: Colors.black),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 16.0, bottom: 8.0),
+              child: DataTable(
+                columnSpacing: 16,
+                columns: [
+                  DataColumn(
+                    label:
+                        Text('', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                  DataColumn(
+                    label:
+                        Text('', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                  DataColumn(
+                    label:
+                        Text('', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ],
+                rows: [
+                  DataRow(cells: [
+                    DataCell(Icon(Icons.email)),
+                    DataCell(Text('Email')),
+                    DataCell(Text('jovskbiaca@example.com')),
+                  ]),
+                  DataRow(cells: [
+                    DataCell(Icon(Icons.call)),
+                    DataCell(Text('Contact Number')),
+                    DataCell(Text('+123456789')),
+                  ]),
+                  DataRow(cells: [
+                    DataCell(Icon(Icons.home)),
+                    DataCell(Text('Address')),
+                    DataCell(Text('Taga Sooc, Iloilo City')),
+                  ]),
+                  DataRow(cells: [
+                    DataCell(Icon(Icons.work)),
+                    DataCell(Text('Occupation')),
+                    DataCell(Text('Computer Science Student')),
+                  ]),
+                  DataRow(cells: [
+                    DataCell(Text('')),
+                    DataCell(Text('')),
+                    DataCell(Text('')),
+                  ]),
+                ],
+              ),
             ),
           ),
 
           const Divider(thickness: 1, indent: 40, endIndent: 40),
-
         ],
       ),
     );
