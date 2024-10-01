@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:WVSU Buy and Sell/features/sign_up_page.dart';
+import 'features/sign_up_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -32,7 +32,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const SignUpPage(),
     );
   }
 }
