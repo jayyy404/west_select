@@ -1,169 +1,144 @@
 import 'package:flutter/material.dart';
 
 class SignUpPage extends StatefulWidget {
-  const SignUpPage({super.key});
+  const SignUpPage({Key? key}) : super(key: key);
 
   @override
   _SignUpPageState createState() => _SignUpPageState();
 }
 
 class _SignUpPageState extends State<SignUpPage> {
-  final _formKey = GlobalKey<FormState>();
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 69, 51, 236),
-      body: Stack(
-        children: [
-          Positioned(
-            top: 2,
-            left: 5,
-            child: Image.asset(
-              'assets/logo.png',
-              width: 170,
-              height: 170,
-              fit: BoxFit.cover,
+      backgroundColor: const Color.fromRGBO(255, 251, 245, 1),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Icon(
+              Icons.shopping_bag_outlined,
+              color: const Color.fromRGBO(66, 21, 181, 1),
+              size: 100,
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Center(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 20),
-                  const Column(
-                    children: [
-                      Text(
-                        'WVSU',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 60,
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      Text(
-                        'Buy & Sell',
-                        style: TextStyle(
-                          fontSize: 30,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-                  Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Username',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'Poppins',
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF2EBE6),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: TextFormField(
-                            decoration: const InputDecoration(
-                              hintText: 'Please enter your username',
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 18,
-                                vertical: 13,
-                              ),
-                              hintStyle: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Password',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'Poppins',
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF2EBE6),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: TextFormField(
-                            decoration: const InputDecoration(
-                              hintText: 'Please enter your password',
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 18,
-                                vertical: 13,
-                              ),
-                              hintStyle: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 14,
-                              ),
-                            ),
-                            obscureText: true,
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              if (_formKey.currentState!.validate()) {
-                                // Handle login action here
-                              }
-                            },
-                            child: const Text(
-                              'Log in',
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Color(0xFFF2EBE6),
-                                fontFamily: 'Poppins',
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 16.0,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text("Don't have an account yet?",
-                                style: TextStyle(fontFamily: 'Poppins')),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pushNamed(context, '/signup');
-                              },
-                              child: const Text('Sign up',
-                                  style: TextStyle(fontFamily: 'Poppins')),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+            const SizedBox(height: 20),
+
+            // App title
+            const Text(
+              'West Select',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: "Raleway",
+                fontSize: 38,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 10),
+
+            // Tagline
+            const Text(
+              'Shop at Taga West – Only the Best!',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: "Raleway",
+                fontSize: 16,
+                color: Color.fromARGB(255, 43, 42, 1),
+              ),
+            ),
+            const SizedBox(height: 100),
+
+            // Username TextField
+            const TextField(
+              decoration: InputDecoration(
+                labelText: 'Username',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 40),
+
+            // Password TextField
+            const TextField(
+              obscureText: true,
+              decoration: InputDecoration(
+                labelText: 'Password',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Forgot password
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () {},
+                child: const Text(
+                  'Forgot Password?',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontFamily: "Raleway",
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 50),
+
+            // Sign In Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromRGBO(66, 21, 181, 1),
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                ),
+                child: const Text(
+                  'Sign In',
+                  style: TextStyle(
+                    fontFamily: "Raleway",
+                    color: Colors.white,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Sign Up Link
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  "Don't have an account yet?",
+                  style: TextStyle(
+                    fontFamily: "Raleway",
+                    fontSize: 16,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {},
+                  child: const Text(
+                    'Sign Up',
+                    style: TextStyle(
+                      fontFamily: "Raleway",
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 }
+
+void main() => runApp(const MaterialApp(home: SignUpPage()));
