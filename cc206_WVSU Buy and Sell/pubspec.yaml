@@ -78,11 +78,11 @@ flutter:
   fonts:
     - family: Raleway
       fonts:
-        - asset: assets/font/Raleway-Regular.ttf
-        - asset: assets/font/Raleway-Italic.ttf
+        - asset: assets/fonts/Raleway-Regular.ttf
+        - asset: assets/fonts/Raleway-Italic.ttf
           style: italic
-        - asset: assets/font/Raleway-Bold.ttf
-        - asset: assets/font/Raleway-Medium.ttf
+        - asset: assets/fonts/Raleway-Bold.ttf
+        - asset: assets/fonts/Raleway-Medium.ttf
 
   #
   # For details regarding fonts from package dependencies,
