@@ -8,6 +8,43 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  String? _errorMessage;
+
+  void _validateAndSignIn() {
+    final email = _emailController.text;
+    final password = _passwordController.text;
+
+    if (email.isEmpty && password.isEmpty) {
+      setState(() {
+        _errorMessage = 'Enter a valid an email and password!';
+      });
+      return;
+    }
+
+    if (!email.endsWith('@gmail.com')) {
+      setState(() {
+        _errorMessage = 'Please enter a valid Gmail address.';
+      });
+      return;
+    }
+
+    if (password.isEmpty) {
+      setState(() {
+        _errorMessage = 'Password is required.';
+      });
+      return;
+    }
+
+    setState(() {
+      _errorMessage = null;
+    });
+
+    // pang test lang ni kaksa after
+    print('Signing in with email: $email');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -20,12 +57,10 @@ class _SignUpPageState extends State<SignUpPage> {
           children: [
             const Icon(
               Icons.shopping_bag_outlined,
-              color: const Color.fromRGBO(66, 21, 181, 1),
+              color: Color.fromRGBO(66, 21, 181, 1),
               size: 100,
             ),
             const SizedBox(height: 20),
-
-            // App title
             const Text(
               'West Select',
               textAlign: TextAlign.center,
@@ -37,8 +72,6 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
             ),
             const SizedBox(height: 10),
-
-            // Tagline
             const Text(
               'Shop at Taga West – Only the Best!',
               textAlign: TextAlign.center,
@@ -50,24 +83,39 @@ class _SignUpPageState extends State<SignUpPage> {
             ),
             const SizedBox(height: 100),
 
-            // Username TextField
-            const TextField(
-              decoration: InputDecoration(
-                labelText: 'Username',
+            // Email TextField
+            TextField(
+              controller: _emailController,
+              decoration: const InputDecoration(
+                labelText: 'Email ',
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 20),
 
             // Password TextField
-            const TextField(
+            TextField(
+              controller: _passwordController,
               obscureText: true,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Password',
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 10),
+
+            // Error message
+            if (_errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10.0),
+                child: Text(
+                  _errorMessage!,
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontFamily: "Raleway",
+                  ),
+                ),
+              ),
 
             // Forgot password
             Align(
@@ -89,7 +137,7 @@ class _SignUpPageState extends State<SignUpPage> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: _validateAndSignIn,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color.fromRGBO(66, 21, 181, 1),
                   padding: const EdgeInsets.symmetric(vertical: 20),
