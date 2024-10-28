@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cc206_magic_calculator/features/user_profile_page.dart';
+import 'features/profile_page.dart';
 
 
 
@@ -120,7 +120,7 @@ class _MyHomePageState extends State<MyHomePage> {
     onPressed: () {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const UserProfilePage()),
+        MaterialPageRoute(builder: (context) => const ProfilePage()),
       );
     },
     child: const Text('Go to User Profile'),
