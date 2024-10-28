@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class SignUpPage extends StatefulWidget {
-  const SignUpPage({Key? key}) : super(key: key);
+  const SignUpPage({super.key});
 
   @override
   _SignUpPageState createState() => _SignUpPageState();
@@ -11,6 +11,7 @@ class _SignUpPageState extends State<SignUpPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   String? _errorMessage;
+  bool _isPasswordVisible = false; // Add this line
 
   void _validateAndSignIn() {
     final email = _emailController.text;
@@ -18,7 +19,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
     if (email.isEmpty && password.isEmpty) {
       setState(() {
-        _errorMessage = 'Enter a valid an email and password!';
+        _errorMessage = 'Enter a valid email and password!';
       });
       return;
     }
@@ -41,7 +42,7 @@ class _SignUpPageState extends State<SignUpPage> {
       _errorMessage = null;
     });
 
-    // pang test lang ni kaksa after
+    // Temporary print statement for testing purposes
     print('Signing in with email: $email');
   }
 
@@ -55,10 +56,10 @@ class _SignUpPageState extends State<SignUpPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Icon(
-              Icons.shopping_bag_outlined,
-              color: Color.fromRGBO(66, 21, 181, 1),
-              size: 100,
+            Image.asset(
+              'assets/App.png',
+              width: 90,
+              height: 90,
             ),
             const SizedBox(height: 20),
             const Text(
@@ -87,19 +88,31 @@ class _SignUpPageState extends State<SignUpPage> {
             TextField(
               controller: _emailController,
               decoration: const InputDecoration(
-                labelText: 'Email ',
+                labelText: 'Email',
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 20),
 
-            // Password TextField
+            // Password TextField with visibility toggle
             TextField(
               controller: _passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
+              obscureText: !_isPasswordVisible,
+              decoration: InputDecoration(
                 labelText: 'Password',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _isPasswordVisible
+                        ? Icons.visibility
+                        : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isPasswordVisible = !_isPasswordVisible;
+                    });
+                  },
+                ),
               ),
             ),
             const SizedBox(height: 10),
