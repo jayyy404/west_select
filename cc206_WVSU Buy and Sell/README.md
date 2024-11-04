@@ -1,4 +1,4 @@
-# cc206_magic_calculator
+# cc206_WVSU_Buy and Sell Appp
 
 A new Flutter project.
 
