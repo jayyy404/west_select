@@ -3,13 +3,19 @@ import 'package:cc206_west_select/features/sign_up.dart';
 import 'package:flutter/material.dart';
 import 'package:cc206_west_select/features/home_page.dart';
 
+<<<<<<< HEAD:cc206_WVSU Buy and Sell/lib/features/log_in.dart
 class LogInPage extends StatefulWidget {
   const LogInPage({Key? key}) : super(key: key);
+=======
+class SignUpPage extends StatefulWidget {
+  const SignUpPage({super.key});
+>>>>>>> f97d2a3e6e10d04398b9ce07dc042f8bacc0a588:cc206_WVSU Buy and Sell/lib/features/sign_up_page.dart
 
   @override
   _LogInPageState createState() => _LogInPageState();
 }
 
+<<<<<<< HEAD:cc206_WVSU Buy and Sell/lib/features/log_in.dart
 class _LogInPageState extends State<LogInPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -20,6 +26,19 @@ class _LogInPageState extends State<LogInPage> {
     final password = _passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
+=======
+class _SignUpPageState extends State<SignUpPage> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  String? _errorMessage;
+  bool _isPasswordVisible = false; // Add this line
+
+  void _validateAndSignIn() {
+    final email = _emailController.text;
+    final password = _passwordController.text;
+
+    if (email.isEmpty && password.isEmpty) {
+>>>>>>> f97d2a3e6e10d04398b9ce07dc042f8bacc0a588:cc206_WVSU Buy and Sell/lib/features/sign_up_page.dart
       setState(() {
         _errorMessage = 'Enter a valid email and password!';
       });
@@ -33,10 +52,21 @@ class _LogInPageState extends State<LogInPage> {
       return;
     }
 
+<<<<<<< HEAD:cc206_WVSU Buy and Sell/lib/features/log_in.dart
+=======
+    if (password.isEmpty) {
+      setState(() {
+        _errorMessage = 'Password is required.';
+      });
+      return;
+    }
+
+>>>>>>> f97d2a3e6e10d04398b9ce07dc042f8bacc0a588:cc206_WVSU Buy and Sell/lib/features/sign_up_page.dart
     setState(() {
       _errorMessage = null;
     });
 
+<<<<<<< HEAD:cc206_WVSU Buy and Sell/lib/features/log_in.dart
     try {
       // Firebase Authentication using AuthService
       final user =
@@ -60,6 +90,10 @@ class _LogInPageState extends State<LogInPage> {
         _errorMessage = e.toString(); // Capture the specific error message
       });
     }
+=======
+    // Temporary print statement for testing purposes
+    print('Signing in with email: $email');
+>>>>>>> f97d2a3e6e10d04398b9ce07dc042f8bacc0a588:cc206_WVSU Buy and Sell/lib/features/sign_up_page.dart
   }
 
   @override
@@ -72,10 +106,17 @@ class _LogInPageState extends State<LogInPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+<<<<<<< HEAD:cc206_WVSU Buy and Sell/lib/features/log_in.dart
             const Icon(
               Icons.shopping_bag_outlined,
               color: Color.fromRGBO(66, 21, 181, 1),
               size: 100,
+=======
+            Image.asset(
+              'assets/App.png',
+              width: 90,
+              height: 90,
+>>>>>>> f97d2a3e6e10d04398b9ce07dc042f8bacc0a588:cc206_WVSU Buy and Sell/lib/features/sign_up_page.dart
             ),
             const SizedBox(height: 20),
             const Text(
@@ -104,19 +145,43 @@ class _LogInPageState extends State<LogInPage> {
             TextField(
               controller: _emailController,
               decoration: const InputDecoration(
+<<<<<<< HEAD:cc206_WVSU Buy and Sell/lib/features/log_in.dart
                 labelText: 'Email ',
+=======
+                labelText: 'Email',
+>>>>>>> f97d2a3e6e10d04398b9ce07dc042f8bacc0a588:cc206_WVSU Buy and Sell/lib/features/sign_up_page.dart
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 20),
 
+<<<<<<< HEAD:cc206_WVSU Buy and Sell/lib/features/log_in.dart
             // Password TextField
             TextField(
               controller: _passwordController,
               obscureText: true,
               decoration: const InputDecoration(
+=======
+            // Password TextField with visibility toggle
+            TextField(
+              controller: _passwordController,
+              obscureText: !_isPasswordVisible,
+              decoration: InputDecoration(
+>>>>>>> f97d2a3e6e10d04398b9ce07dc042f8bacc0a588:cc206_WVSU Buy and Sell/lib/features/sign_up_page.dart
                 labelText: 'Password',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _isPasswordVisible
+                        ? Icons.visibility
+                        : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isPasswordVisible = !_isPasswordVisible;
+                    });
+                  },
+                ),
               ),
             ),
             const SizedBox(height: 10),
