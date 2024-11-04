@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">West Select</string>
+<!--    <string name="default_web_client_id">Y75086307194-kqeg7k0v4otgvsvg6i181da33t0lhvlj.apps.googleusercontent.com</string>-->
+    <string name="facebook_app_id">1259143822186748</string>
+    <string name="facebook_client_token">7b7987230e5cc2be34a182598a595378</string>
+
+</resources>
