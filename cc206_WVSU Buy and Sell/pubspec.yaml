@@ -1,4 +1,4 @@
-name: cc206_magic_calculator
+name: cc206_west_select
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -28,9 +28,13 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
+  win32: ^5.0.0
   flutter:
     sdk: flutter
-
+  firebase_auth: ^5.3.1
+  firebase_core: ^3.6.0 
+  google_sign_in: ^6.2.1
+  flutter_facebook_auth: ^7.1.1
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -45,7 +49,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^3.0.0
+  flutter_lints: ^5.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -78,11 +82,11 @@ flutter:
   fonts:
     - family: Raleway
       fonts:
-        - asset: assets/font/Raleway-Regular.ttf
-        - asset: assets/font/Raleway-Italic.ttf
+        - asset: assets/fonts/Raleway-Regular.ttf
+        - asset: assets/fonts/Raleway-Italic.ttf
           style: italic
-        - asset: assets/font/Raleway-Bold.ttf
-        - asset: assets/font/Raleway-Medium.ttf
+        - asset: assets/fonts/Raleway-Bold.ttf
+        - asset: assets/fonts/Raleway-Medium.ttf
 
   #
   # For details regarding fonts from package dependencies,
