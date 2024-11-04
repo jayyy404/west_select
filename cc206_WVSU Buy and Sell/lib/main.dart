@@ -1,10 +1,20 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+<<<<<<< HEAD
 
 import 'features/profile_page.dart';
 import 'features/sign_up_page.dart';
 
 
 void main() {
+=======
+import 'features/log_in.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp();
+>>>>>>> sign_up_page_Sapasap_Canete
   runApp(const MyApp());
 }
 
@@ -15,7 +25,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'West Select',
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -35,6 +45,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
+<<<<<<< HEAD
       home: const SignUpPage(),
     );
   }
@@ -134,6 +145,9 @@ class _MyHomePageState extends State<MyHomePage> {
         tooltip: 'Increment',
         child: const Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
+=======
+      home: const LogInPage(),
+>>>>>>> sign_up_page_Sapasap_Canete
     );
   }
 }
