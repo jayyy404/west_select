@@ -1,8 +1,59 @@
+import 'package:cc206_west_select/features/Homepage/home_page.dart';
 import 'package:flutter/material.dart';
-import 'edit_profile.dart';
+import '../edit_profile.dart';
+import 'listing_page.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  _ProfilePageState createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  int _currentIndex = 4;
+
+  void _onItemTapped(int index) {
+    if (index == _currentIndex) {
+      return;
+    }
+
+    setState(() {
+      _currentIndex = index;
+    });
+
+    // Update navigation based on index
+    switch (index) {
+      case 0:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => HomePage()),
+        );
+        break;
+      case 1:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => HomePage()),
+        );
+        break;
+      case 2:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => CreateListingPage()),
+        );
+        break;
+      case 3:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => HomePage()),
+        );
+        break;
+      case 4:
+        break;
+      default:
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,6 +114,23 @@ class ProfilePage extends StatelessWidget {
             ),
           ],
         ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: _onItemTapped,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.favorite_border), label: 'Favorites'),
+          BottomNavigationBarItem(icon: Icon(Icons.list), label: 'Listing'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.chat_bubble_outline), label: 'Messages'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline), label: 'Profile'),
+        ],
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
+        showUnselectedLabels: true,
       ),
     );
   }

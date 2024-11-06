@@ -1,7 +1,7 @@
 import 'package:cc206_west_select/firebase/auth_service.dart';
 import 'package:cc206_west_select/features/sign_up.dart';
 import 'package:flutter/material.dart';
-import 'package:cc206_west_select/features/profile_page.dart';
+import 'package:cc206_west_select/features/Homepage/profile_page.dart';
 
 class LogInPage extends StatefulWidget {
   const LogInPage({Key? key}) : super(key: key);

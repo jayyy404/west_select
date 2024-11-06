@@ -88,8 +88,8 @@ class EditProfilePage extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                      vertical: 12, horizontal: 40),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 40),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),

@@ -1,3 +1,4 @@
+import 'package:cc206_west_select/features/Homepage/home_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'features/log_in.dart';
@@ -36,7 +37,13 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const LogInPage(),
+      // Create the routes
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const HomePage(),
+        '/sign_up': (context) => const LogInPage(),
+        '/log_in': (context) => const HomePage(),
+      },
     );
   }
 }
