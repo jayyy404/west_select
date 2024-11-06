@@ -3,8 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'log_in.dart';
-import 'package:cc206_west_select/features/home_page.dart';
-import 'package:cc206_west_select/features/profile_page.dart';
+import 'package:cc206_west_select/features/Homepage/home_page.dart';
+import 'package:cc206_west_select/features/Homepage/profile_page.dart';
 
 class SignUpScreen extends StatelessWidget {
   const SignUpScreen({super.key});
