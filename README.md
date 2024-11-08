@@ -6,7 +6,10 @@ A new Flutter project.
 This is a project repo for the subject - Application and Development.
 
 This project is a starting point for a Flutter application.
-![App Screenshot](screenshot.png)
+<p align="center">
+  <img src="screenshot.png" alt="App Screenshot">
+</p>
+
 
 
 
