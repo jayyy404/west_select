@@ -6,7 +6,7 @@ A new Flutter project.
 This is a project repo for the subject - Application and Development.
 
 This project is a starting point for a Flutter application.
-![App Screenshot](cc206-WVSU%20Buy%20and%20Sell/assets/screenshot.png)
+![App Screenshot](screenshot.png)
 
 
 
