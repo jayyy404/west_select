@@ -1,10 +1,10 @@
 import 'package:cc206_west_select/firebase/auth_service.dart';
-import 'package:cc206_west_select/features/sign_up.dart';
 import 'package:flutter/material.dart';
 import 'package:cc206_west_select/features/Homepage/profile_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LogInPage extends StatefulWidget {
-  const LogInPage({Key? key}) : super(key: key);
+  const LogInPage({super.key});
 
   @override
   _LogInPageState createState() => _LogInPageState();
@@ -19,45 +19,35 @@ class _LogInPageState extends State<LogInPage> {
     final email = _emailController.text;
     final password = _passwordController.text;
 
-    if (email.isEmpty || password.isEmpty) {
+    if (email.isEmpty) {
       setState(() {
-        _errorMessage = 'Enter a valid email and password!';
+        _errorMessage = 'Please enter your email!';
       });
       return;
     }
 
-    if (!email.endsWith('@gmail.com')) {
+    if (password.isEmpty) {
       setState(() {
-        _errorMessage = 'Please enter a valid Gmail address.';
+        _errorMessage = 'Please enter your password!';
       });
       return;
     }
-
-    setState(() {
-      _errorMessage = null;
-    });
 
     try {
-      // Firebase Authentication using AuthService
+      // Attempt to sign in with email and password
       final user =
           await AuthService().loginUserWithEmailAndPassword(email, password);
-      ;
       if (user != null) {
-        // Navigate to the home page if login is successful
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const ProfilePage()),
         );
-      } else {
-        // Show error message if login fails
-        setState(() {
-          _errorMessage = 'Failed to sign in. Please try again.';
-        });
       }
     } catch (e) {
-      // Show specific error message if login fails
+      // If there's an error (e.g., user not found, incorrect password), show error message
       setState(() {
-        _errorMessage = e.toString(); // Capture the specific error message
+        _errorMessage =
+            'Failed to sign in. Please check your email and password.';
       });
     }
   }
@@ -148,9 +138,8 @@ class _LogInPageState extends State<LogInPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 50),
 
-            // Sign In Button
+            // Sign In Button (adjusted position)
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -172,39 +161,50 @@ class _LogInPageState extends State<LogInPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 30),
 
-            // Sign Up Link
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  "Don't have an account yet?",
-                  style: TextStyle(
-                    fontFamily: "Raleway",
-                    fontSize: 16,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const SignUpScreen()),
-                    );
-                  },
-                  child: const Text(
-                    'Sign Up',
-                    style: TextStyle(
-                      fontFamily: "Raleway",
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-              ],
+            // Divider and Social Login Text
+            const Divider(),
+            const SizedBox(height: 10),
+            const Text(
+              'Login With',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: "Raleway",
+                fontSize: 16,
+                color: Colors.black,
+              ),
             ),
+            const SizedBox(height: 10),
+
+            Center(
+              child: SizedBox(
+                width: 40,
+                height: 40,
+                child: IconButton(
+                  icon: Image.asset('assets/google.png'),
+                  iconSize: 24,
+                  onPressed: () async {
+                    try {
+                      final user = await AuthService().signInWithGoogle();
+                      if (user != null) {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const ProfilePage()),
+                        );
+                      }
+                    } catch (e) {
+                      setState(() {
+                        _errorMessage = 'Google sign-in failed. Try again.';
+                      });
+                    }
+                  },
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
           ],
         ),
       ),

@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:flutter/material.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -26,69 +27,65 @@ class AuthService {
       final credential = await _auth.signInWithEmailAndPassword(
           email: email, password: password);
       return credential.user;
+    } on FirebaseAuthException catch (e) {
+      log("FirebaseException: ${e.message}");
+      rethrow; // Rethrow to let LogInPage display the error message
     } catch (e) {
-      rethrow; // Rethrow the error to be caught in your LogInPage
+      log("Unexpected error: $e");
+      rethrow;
     }
   }
 
   Future<User?> signInWithGoogle() async {
     try {
-      await _auth.signOut(); // Sign out any previous sessions
-
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null;
+      if (googleUser == null) {
+        log("Google sign-in was cancelled by the user.");
+        return null;
+      }
 
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
-
-      log("Google Access Token: ${googleAuth.accessToken}");
-      log("Google ID Token: ${googleAuth.idToken}");
-
-      final AuthCredential credential = GoogleAuthProvider.credential(
+      final AuthCredential googleCredential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      final UserCredential userCredential =
-          await _auth.signInWithCredential(credential);
-      return userCredential.user;
-    } catch (e) {
-      log("Error signing in with Google: $e");
-      return null;
-    }
-  }
+      // Check if the email already exists in Firebase
+      final List<String> signInMethods =
+          // ignore: deprecated_member_use
+          await _auth.fetchSignInMethodsForEmail(googleUser.email);
+      if (signInMethods.contains('password')) {
+        // If email/password account exists, sign in with email and password
+        final UserCredential emailUser = await _auth.signInWithEmailAndPassword(
+          email: googleUser.email,
+          password:
+              '<YOUR_STORED_PASSWORD>', // Use the stored or known password
+        );
 
-  // Sign in with Facebook
-  Future<User?> signInWithFacebook() async {
-    try {
-      final LoginResult result = await FacebookAuth.instance.login();
-
-      if (result.status == LoginStatus.success) {
-        final AccessToken? accessToken = result.accessToken;
-
-        if (accessToken != null) {
-          final AuthCredential credential =
-              FacebookAuthProvider.credential(accessToken.tokenString);
-          final UserCredential userCredential =
-              await _auth.signInWithCredential(credential);
-          return userCredential.user;
-        }
+        // Link the Google account with the existing email/password account
+        await emailUser.user!.linkWithCredential(googleCredential);
+        log("Linked Google account to existing email/password account.");
+        return emailUser.user;
       } else {
-        log("Facebook login failed: ${result.message}");
+        // If no email/password account, sign in directly with Google credentials
+        final UserCredential googleUserCredential =
+            await _auth.signInWithCredential(googleCredential);
+        log("Google sign-in successful. User ID: ${googleUserCredential.user?.uid}");
+        return googleUserCredential.user;
       }
     } catch (e) {
-      log("Error signing in with Facebook: $e");
+      log("Unexpected error during Google sign-in: $e");
       return null;
     }
-    return null;
   }
 
-  // Sign out
   Future<void> signOut() async {
     try {
       await _auth.signOut();
-      await _googleSignIn.signOut(); // Sign out from Google
-      log("User signed out from Google.");
+      await _googleSignIn.signOut();
+      await FacebookAuth.instance.logOut(); // Ensure Facebook sign-out
+      log("User signed out.");
     } on FirebaseAuthException catch (e) {
       log("FirebaseException: ${e.message}");
     } catch (e) {

@@ -4,6 +4,8 @@ import 'package:cc206_west_select/features/Homepage/profile_page.dart';
 import 'user_profile_page.dart';
 
 class CreateListingPage extends StatefulWidget {
+  const CreateListingPage({super.key});
+
   @override
   _CreateListingPageState createState() => _CreateListingPageState();
 }
