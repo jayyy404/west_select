@@ -15,7 +15,6 @@ class _LogInPageState extends State<LogInPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   String? _errorMessage;
-
   void _validateAndSignIn() async {
     final email = _emailController.text;
     final password = _passwordController.text;
@@ -35,15 +34,24 @@ class _LogInPageState extends State<LogInPage> {
     }
 
     try {
+      // Attempt to login with email and password
       final user =
           await AuthService().loginUserWithEmailAndPassword(email, password);
+
       if (user != null) {
+        // Successfully logged in with email and password
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const LogInPage()),
+          MaterialPageRoute(builder: (context) => const HomePage()),
         );
+      } else {
+        // If login with email/password fails, check if the email is linked to a Google account
+        setState(() {
+          _errorMessage = 'Failed to sign in. Please check your credentials.';
+        });
       }
     } on FirebaseAuthException catch (e) {
+      // Handle specific Firebase Auth exceptions
       if (e.code == 'user-not-found') {
         setState(() {
           _errorMessage = 'User not found. Please check your email or sign up.';
@@ -52,6 +60,12 @@ class _LogInPageState extends State<LogInPage> {
         setState(() {
           _errorMessage = 'Wrong password. Please try again.';
         });
+      } else if (e.code == 'account-exists-with-different-credential') {
+        // Handle Google sign-in conflict with email/password
+        setState(() {
+          _errorMessage =
+              'An account exists with a different credential (Google). Please use Google Sign-In.';
+        });
       } else {
         setState(() {
           _errorMessage = 'Failed to sign in. Please try again later.';
@@ -59,7 +73,8 @@ class _LogInPageState extends State<LogInPage> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Unexpected error: $e';
+        _errorMessage =
+            'Failed to sign in. Please check your email and password.';
       });
     }
   }
@@ -101,18 +116,14 @@ class _LogInPageState extends State<LogInPage> {
               ),
             ),
             const SizedBox(height: 100),
-
-            // Email TextField
             TextField(
               controller: _emailController,
               decoration: const InputDecoration(
-                labelText: 'Email ',
+                labelText: 'Email',
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 20),
-
-            // Password TextField
             TextField(
               controller: _passwordController,
               obscureText: true,
@@ -122,8 +133,6 @@ class _LogInPageState extends State<LogInPage> {
               ),
             ),
             const SizedBox(height: 10),
-
-            // Error message
             if (_errorMessage != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 10.0),
@@ -135,8 +144,6 @@ class _LogInPageState extends State<LogInPage> {
                   ),
                 ),
               ),
-
-            // Forgot password
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
@@ -150,8 +157,6 @@ class _LogInPageState extends State<LogInPage> {
                 ),
               ),
             ),
-
-            // Sign In Button (adjusted position)
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -174,8 +179,6 @@ class _LogInPageState extends State<LogInPage> {
               ),
             ),
             const SizedBox(height: 30),
-
-            // Divider and Social Login Text
             const Divider(),
             const SizedBox(height: 10),
             const Text(
@@ -188,7 +191,6 @@ class _LogInPageState extends State<LogInPage> {
               ),
             ),
             const SizedBox(height: 10),
-
             Center(
               child: SizedBox(
                 width: 40,
@@ -203,7 +205,7 @@ class _LogInPageState extends State<LogInPage> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => const HomePage()),
+                              builder: (context) => const ProfilePage()),
                         );
                       }
                     } catch (e) {
@@ -215,7 +217,6 @@ class _LogInPageState extends State<LogInPage> {
                 ),
               ),
             ),
-
             const SizedBox(height: 20),
           ],
         ),
