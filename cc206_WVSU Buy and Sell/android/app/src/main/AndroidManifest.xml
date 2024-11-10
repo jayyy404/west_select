@@ -1,5 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
         android:label="cc206_west_select"
@@ -25,7 +26,8 @@
             android:name="com.facebook.FacebookActivity"
             android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|smallestScreenSize|orientation"
             android:exported="true"
-            tools:replace="android:configChanges">
+            tools:replace="android:configChanges"
+            tools:ignore="MissingClass">
         </activity>
 
         <meta-data
@@ -47,8 +49,6 @@
                 android:name="com.facebook.sdk.ClientToken"
                 android:value="@string/facebook_client_token"/>
     </application>
-
-    <uses-permission android:name="android.permission.INTERNET" />
 
     <queries>
         <intent>
