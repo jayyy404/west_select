@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../edit_profile.dart';
+import '../../firebase/auth_service.dart';
 
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
@@ -9,6 +10,7 @@ class UserProfilePage extends StatefulWidget {
 }
 
 class UserProfilePageState extends State<UserProfilePage> {
+  final AuthService _authService = AuthService(); // Initialize AuthService
   bool isAlternateImage = false;
 
   void toggleProfileImage() {
@@ -35,6 +37,12 @@ class UserProfilePageState extends State<UserProfilePage> {
         );
       },
     );
+  }
+
+  void signOutAndNavigateToLogin() async {
+    await _authService.signOut();
+    Navigator.of(context)
+        .pushReplacementNamed('/login'); // Navigate to LoginPage
   }
 
   @override
@@ -112,6 +120,20 @@ class UserProfilePageState extends State<UserProfilePage> {
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               ),
               child: const Text('Edit profile'),
+            ),
+            Spacer(), // Push the sign-out button to the bottom
+            ElevatedButton(
+              onPressed: signOutAndNavigateToLogin,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+              child: const Text('Sign Out'),
             ),
           ],
         ),
