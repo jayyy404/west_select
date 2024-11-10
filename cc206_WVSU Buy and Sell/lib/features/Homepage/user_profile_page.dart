@@ -1,3 +1,4 @@
+import 'package:cc206_west_select/features/log_in.dart';
 import 'package:flutter/material.dart';
 import '../edit_profile.dart';
 import '../../firebase/auth_service.dart';
@@ -41,8 +42,10 @@ class UserProfilePageState extends State<UserProfilePage> {
 
   void signOutAndNavigateToLogin() async {
     await _authService.signOut();
-    Navigator.of(context)
-        .pushReplacementNamed('/login'); // Navigate to LoginPage
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const LogInPage()),
+    );
   }
 
   @override
