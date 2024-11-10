@@ -1,5 +1,4 @@
 import 'dart:developer';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -29,7 +28,7 @@ class AuthService {
       return credential.user;
     } on FirebaseAuthException catch (e) {
       log("FirebaseException: ${e.message}");
-      rethrow; // Rethrow to let LogInPage display the error message
+      rethrow;
     } catch (e) {
       log("Unexpected error: $e");
       rethrow;
@@ -51,28 +50,25 @@ class AuthService {
         idToken: googleAuth.idToken,
       );
 
-      // Check if the email already exists in Firebase
       final List<String> signInMethods =
-          // ignore: deprecated_member_use
           await _auth.fetchSignInMethodsForEmail(googleUser.email);
+
       if (signInMethods.contains('password')) {
-        // If email/password account exists, sign in with email and password
         final UserCredential emailUser = await _auth.signInWithEmailAndPassword(
           email: googleUser.email,
-          password:
-              '<YOUR_STORED_PASSWORD>', // Use the stored or known password
+          password: '<USER_KNOWN_PASSWORD>',
         );
 
-        // Link the Google account with the existing email/password account
         await emailUser.user!.linkWithCredential(googleCredential);
         log("Linked Google account to existing email/password account.");
         return emailUser.user;
       } else {
-        // If no email/password account, sign in directly with Google credentials
         final UserCredential googleUserCredential =
             await _auth.signInWithCredential(googleCredential);
-        log("Google sign-in successful. User ID: ${googleUserCredential.user?.uid}");
-        return googleUserCredential.user;
+        final user = googleUserCredential.user;
+        await _promptUserToSetPassword(user);
+        log("Google sign-in successful and password setup prompted.");
+        return user;
       }
     } catch (e) {
       log("Unexpected error during Google sign-in: $e");
@@ -80,11 +76,17 @@ class AuthService {
     }
   }
 
+  Future<void> _promptUserToSetPassword(User? user) async {
+    if (user != null) {
+      await user.updatePassword('<NEW_PASSWORD>');
+    }
+  }
+
   Future<void> signOut() async {
     try {
       await _auth.signOut();
       await _googleSignIn.signOut();
-      await FacebookAuth.instance.logOut(); // Ensure Facebook sign-out
+      await FacebookAuth.instance.logOut();
       log("User signed out.");
     } on FirebaseAuthException catch (e) {
       log("FirebaseException: ${e.message}");

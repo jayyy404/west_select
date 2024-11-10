@@ -1,6 +1,8 @@
+import 'package:cc206_west_select/features/Homepage/home_page.dart';
 import 'package:cc206_west_select/features/Homepage/profile_page.dart';
 import 'package:cc206_west_select/firebase/auth_service.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LogInPage extends StatefulWidget {
   const LogInPage({super.key});
@@ -33,20 +35,31 @@ class _LogInPageState extends State<LogInPage> {
     }
 
     try {
-      // Attempt to sign in with email and password
       final user =
           await AuthService().loginUserWithEmailAndPassword(email, password);
       if (user != null) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const ProfilePage()),
+          MaterialPageRoute(builder: (context) => const LogInPage()),
         );
       }
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        setState(() {
+          _errorMessage = 'User not found. Please check your email or sign up.';
+        });
+      } else if (e.code == 'wrong-password') {
+        setState(() {
+          _errorMessage = 'Wrong password. Please try again.';
+        });
+      } else {
+        setState(() {
+          _errorMessage = 'Failed to sign in. Please try again later.';
+        });
+      }
     } catch (e) {
-      // If there's an error (e.g., user not found, incorrect password), show error message
       setState(() {
-        _errorMessage =
-            'Failed to sign in. Please check your email and password.';
+        _errorMessage = 'Unexpected error: $e';
       });
     }
   }
@@ -190,7 +203,7 @@ class _LogInPageState extends State<LogInPage> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => const ProfilePage()),
+                              builder: (context) => const HomePage()),
                         );
                       }
                     } catch (e) {
