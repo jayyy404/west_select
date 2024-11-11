@@ -3,6 +3,7 @@ import 'package:cc206_west_select/features/Homepage/profile_page.dart';
 import 'package:cc206_west_select/firebase/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'sign_up.dart';
 
 class LogInPage extends StatefulWidget {
   const LogInPage({super.key});
@@ -15,6 +16,36 @@ class _LogInPageState extends State<LogInPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   String? _errorMessage;
+  bool _isPasswordVisible = false;
+
+  // Email format validation
+  bool isValidEmail(String email) {
+    final emailRegex =
+        RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+    return emailRegex.hasMatch(email);
+  }
+
+  // Clear error message when user starts typing
+  void _onEmailChanged(String value) {
+    setState(() {
+      _errorMessage = null;
+    });
+  }
+
+  void _onPasswordChanged(String value) {
+    setState(() {
+      _errorMessage = null;
+    });
+  }
+
+  // Toggle password visibility
+  void _togglePasswordVisibility() {
+    setState(() {
+      _isPasswordVisible = !_isPasswordVisible;
+    });
+  }
+
+  // Validate email and password, then sign in
   void _validateAndSignIn() async {
     final email = _emailController.text;
     final password = _passwordController.text;
@@ -22,6 +53,13 @@ class _LogInPageState extends State<LogInPage> {
     if (email.isEmpty) {
       setState(() {
         _errorMessage = 'Please enter your email!';
+      });
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setState(() {
+        _errorMessage = 'Please enter a valid email address!';
       });
       return;
     }
@@ -45,7 +83,6 @@ class _LogInPageState extends State<LogInPage> {
           MaterialPageRoute(builder: (context) => const HomePage()),
         );
       } else {
-        // If login with email/password fails, check if the email is linked to a Google account
         setState(() {
           _errorMessage = 'Failed to sign in. Please check your credentials.';
         });
@@ -53,28 +90,59 @@ class _LogInPageState extends State<LogInPage> {
     } on FirebaseAuthException catch (e) {
       // Handle specific Firebase Auth exceptions
       if (e.code == 'user-not-found') {
-        setState(() {
-          _errorMessage = 'User not found. Please check your email or sign up.';
-        });
+        // Check if the email is associated with a Google account
+        try {
+          final result = await AuthService().checkIfEmailIsGoogleAccount(email);
+          if (result) {
+            setState(() {
+              _errorMessage =
+                  'This email is associated with a Google account. Please sign in with Google.';
+            });
+          } else {
+            setState(() {
+              _errorMessage =
+                  'User not found. Please check your email or sign up.';
+            });
+          }
+        } catch (e) {
+          setState(() {
+            _errorMessage = 'Error checking account type. Please try again.';
+          });
+        }
       } else if (e.code == 'wrong-password') {
         setState(() {
           _errorMessage = 'Wrong password. Please try again.';
-        });
-      } else if (e.code == 'account-exists-with-different-credential') {
-        // Handle Google sign-in conflict with email/password
-        setState(() {
-          _errorMessage =
-              'An account exists with a different credential (Google). Please use Google Sign-In.';
-        });
-      } else {
-        setState(() {
-          _errorMessage = 'Failed to sign in. Please try again later.';
         });
       }
     } catch (e) {
       setState(() {
         _errorMessage =
             'Failed to sign in. Please check your email and password.';
+      });
+    }
+  }
+
+  // Sign in using Google and link with email/password if needed
+  void _signInWithGoogle() async {
+    final email = _emailController.text;
+    final password = _passwordController.text;
+
+    try {
+      final user = await AuthService().signInWithGoogle(email, password);
+
+      if (user != null) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ProfilePage()),
+        );
+      } else {
+        setState(() {
+          _errorMessage = 'Google sign-in failed. Try again.';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Google sign-in failed. Try again.';
       });
     }
   }
@@ -118,6 +186,7 @@ class _LogInPageState extends State<LogInPage> {
             const SizedBox(height: 100),
             TextField(
               controller: _emailController,
+              onChanged: _onEmailChanged,
               decoration: const InputDecoration(
                 labelText: 'Email',
                 border: OutlineInputBorder(),
@@ -126,10 +195,19 @@ class _LogInPageState extends State<LogInPage> {
             const SizedBox(height: 20),
             TextField(
               controller: _passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
+              obscureText: !_isPasswordVisible,
+              onChanged: _onPasswordChanged,
+              decoration: InputDecoration(
                 labelText: 'Password',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _isPasswordVisible
+                        ? Icons.visibility
+                        : Icons.visibility_off,
+                  ),
+                  onPressed: _togglePasswordVisibility,
+                ),
               ),
             ),
             const SizedBox(height: 10),
@@ -147,7 +225,7 @@ class _LogInPageState extends State<LogInPage> {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
-                onPressed: () {},
+                onPressed: () {}, // Forgot password functionality
                 child: const Text(
                   'Forgot Password?',
                   style: TextStyle(
@@ -178,6 +256,31 @@ class _LogInPageState extends State<LogInPage> {
                 ),
               ),
             ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  "Don't have an account yet?",
+                  style: TextStyle(fontFamily: "Raleway"),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => SignUpPage()),
+                    );
+                  },
+                  child: const Text(
+                    'Sign up',
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontFamily: "Raleway",
+                    ),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 30),
             const Divider(),
             const SizedBox(height: 10),
@@ -198,22 +301,7 @@ class _LogInPageState extends State<LogInPage> {
                 child: IconButton(
                   icon: Image.asset('assets/google.png'),
                   iconSize: 24,
-                  onPressed: () async {
-                    try {
-                      final user = await AuthService().signInWithGoogle();
-                      if (user != null) {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const ProfilePage()),
-                        );
-                      }
-                    } catch (e) {
-                      setState(() {
-                        _errorMessage = 'Google sign-in failed. Try again.';
-                      });
-                    }
-                  },
+                  onPressed: _signInWithGoogle,
                 ),
               ),
             ),
