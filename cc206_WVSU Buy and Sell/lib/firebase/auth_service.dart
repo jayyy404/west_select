@@ -1,46 +1,72 @@
-import 'dart:developer';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
-  Future<User?> userWithEmailandPassword(String email, String password) async {
-    try {
-      final credential = await _auth.createUserWithEmailAndPassword(
-          email: email, password: password);
-      return credential.user;
-    } on FirebaseAuthException catch (e) {
-      log("FirebaseException: ${e.message}");
-    } catch (e) {
-      log("Unexpected error: $e");
-    }
-    return null;
+  // Check if the email is associated with a Google account
+  Future<bool> checkIfEmailIsGoogleAccount(String email) async {
+    final userMethods = await _auth.fetchSignInMethodsForEmail(email);
+    return userMethods.contains('google.com');
   }
 
+  // Sign in with Email and Password and register if new
   Future<User?> loginUserWithEmailAndPassword(
       String email, String password) async {
     try {
-      final credential = await _auth.signInWithEmailAndPassword(
-          email: email, password: password);
-      return credential.user;
+      if (!_isValidEmail(email)) {
+        throw FirebaseAuthException(
+          code: 'invalid-email-format',
+          message: 'Please enter a valid email address.',
+        );
+      }
+
+      final userMethods = await _auth.fetchSignInMethodsForEmail(email);
+
+      if (userMethods.contains('google.com')) {
+        throw FirebaseAuthException(
+            code: 'google-account-detected',
+            message:
+                'This email is associated with a Google account. Please sign in with Google.');
+      }
+
+      final UserCredential userCredential =
+          await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      return userCredential.user;
     } on FirebaseAuthException catch (e) {
-      log("FirebaseException: ${e.message}");
-      rethrow; // Rethrow to let LogInPage display the error message
-    } catch (e) {
-      log("Unexpected error: $e");
-      rethrow;
+      if (e.code == 'user-not-found') {
+        // Register a new user if not found
+        return await createUserWithEmailAndPassword(email, password);
+      } else if (e.code == 'wrong-password') {
+        throw FirebaseAuthException(
+            code: 'wrong-password', message: 'Wrong password.');
+      }
+      throw e;
     }
   }
 
-  Future<User?> signInWithGoogle() async {
+  // Create new user with email and password
+  Future<User?> createUserWithEmailAndPassword(
+      String email, String password) async {
     try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      final UserCredential userCredential = await _auth
+          .createUserWithEmailAndPassword(email: email, password: password);
+      return userCredential.user;
+    } on FirebaseAuthException catch (e) {
+      throw e;
+    }
+  }
+
+  // Sign in with Google and link with email/password if needed
+  Future<User?> signInWithGoogle(String? email, String password) async {
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) {
-        log("Google sign-in was cancelled by the user.");
-        return null;
+        throw FirebaseAuthException(code: 'google-signin-cancelled');
       }
 
       final GoogleSignInAuthentication googleAuth =
@@ -50,44 +76,48 @@ class AuthService {
         idToken: googleAuth.idToken,
       );
 
-      // Check if email already has an email/password account
-      final List<String> signInMethods =
-          await _auth.fetchSignInMethodsForEmail(googleUser.email);
+      UserCredential userCredential =
+          await _auth.signInWithCredential(googleCredential);
+      User? user = userCredential.user;
 
-      if (signInMethods.contains('password')) {
-        // If email/password account exists, sign in with email and password
-        // Here, add logic to retrieve and input the stored password if available
-        final UserCredential emailUser = await _auth.signInWithEmailAndPassword(
-          email: googleUser.email,
-          password: '<USER_KNOWN_PASSWORD>',
-        );
-
-        // Link Google account to email/password account
-        await emailUser.user!.linkWithCredential(googleCredential);
-        log("Google account linked to existing email/password account.");
-        return emailUser.user;
-      } else {
-        // No email/password account exists; sign in directly with Google credentials
-        final UserCredential googleUserCredential =
-            await _auth.signInWithCredential(googleCredential);
-        log("Google sign-in successful.");
-        return googleUserCredential.user;
+      // If email/password login is also required, link the account
+      if (email != null && password.isNotEmpty) {
+        await linkEmailWithPassword(user!, email, password);
       }
-    } catch (e) {
-      log("Unexpected error during Google sign-in: $e");
-      return null;
+
+      return user;
+    } on FirebaseAuthException catch (e) {
+      throw e;
     }
   }
 
-  Future<void> signOut() async {
+  // Link Google account with email/password credential
+  Future<void> linkEmailWithPassword(
+      User user, String email, String password) async {
     try {
-      await _auth.signOut();
-      await _googleSignIn.signOut();
-      log("User signed out.");
-    } on FirebaseAuthException catch (e) {
-      log("FirebaseException: ${e.message}");
+      AuthCredential credential =
+          EmailAuthProvider.credential(email: email, password: password);
+      await user.linkWithCredential(credential);
+      print("Successfully linked Google account with email/password login!");
     } catch (e) {
-      log("Unexpected error: $e");
+      print("Error linking Google account with email/password: $e");
     }
+  }
+
+  // Sign out
+  Future<void> signOut() async {
+    await _auth.signOut();
+    await GoogleSignIn().signOut();
+  }
+
+  // Get current user
+  User? getCurrentUser() {
+    return _auth.currentUser;
+  }
+
+  // Helper function to validate email format
+  bool _isValidEmail(String email) {
+    final regex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+    return regex.hasMatch(email);
   }
 }
