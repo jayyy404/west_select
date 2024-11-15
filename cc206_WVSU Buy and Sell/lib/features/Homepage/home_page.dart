@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'user_profile_page.dart';
+import 'profile_page.dart';
 import 'listing_page.dart';
 
 class HomePage extends StatelessWidget {
@@ -9,7 +9,7 @@ class HomePage extends StatelessWidget {
     Navigator.of(context).push(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            const UserProfilePage(),
+            const ProfilePage(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           const begin = Offset(-1.0, 0.0);
           const end = Offset.zero;
