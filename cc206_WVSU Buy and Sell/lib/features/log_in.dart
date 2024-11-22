@@ -133,7 +133,7 @@ class _LogInPageState extends State<LogInPage> {
       if (user != null) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const ProfilePage()),
+          MaterialPageRoute(builder: (context) => const HomePage()),
         );
       } else {
         setState(() {
