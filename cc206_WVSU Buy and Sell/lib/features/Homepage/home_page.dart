@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'user_profile_page.dart';
 import 'listing_page.dart';
+import 'messaging.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -29,6 +30,52 @@ class HomePage extends StatelessWidget {
   }
 
   void navigateToListing(BuildContext context) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            CreateListingPage(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(1.0, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.ease;
+
+          var tween =
+              Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          var offsetAnimation = animation.drive(tween);
+
+          return SlideTransition(
+            position: offsetAnimation,
+            child: child,
+          );
+        },
+      ),
+    );
+  }
+
+  void navigateToFavorites(BuildContext context) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            CreateListingPage(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(1.0, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.ease;
+
+          var tween =
+              Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          var offsetAnimation = animation.drive(tween);
+
+          return SlideTransition(
+            position: offsetAnimation,
+            child: child,
+          );
+        },
+      ),
+    );
+  }
+
+  void navigateToMessaging(BuildContext context) {
     Navigator.of(context).push(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
@@ -135,8 +182,12 @@ class HomePage extends StatelessWidget {
         unselectedItemColor: Colors.grey,
         showUnselectedLabels: true,
         onTap: (index) {
-          if (index == 2) {
+          if (index == 1) {
+            navigateToFavorites(context);
+          } else if (index == 2) {
             navigateToListing(context);
+          } else if (index == 3) {
+            navigateToMessaging(context);
           } else if (index == 4) {
             navigateToProfile(context);
           }

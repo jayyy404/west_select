@@ -2,6 +2,8 @@ import 'package:cc206_west_select/features/Homepage/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:cc206_west_select/features/Homepage/profile_page.dart';
 import 'user_profile_page.dart';
+import 'favorite.dart';
+import 'messaging.dart';
 
 class CreateListingPage extends StatefulWidget {
   const CreateListingPage({super.key});
@@ -62,6 +64,52 @@ class _CreateListingPageState extends State<CreateListingPage> {
     );
   }
 
+  void navigateToFavorites(BuildContext context) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            CreateListingPage(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(1.0, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.ease;
+
+          var tween =
+              Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          var offsetAnimation = animation.drive(tween);
+
+          return SlideTransition(
+            position: offsetAnimation,
+            child: child,
+          );
+        },
+      ),
+    );
+  }
+
+  void navigateToMessaging(BuildContext context) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            CreateListingPage(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(1.0, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.ease;
+
+          var tween =
+              Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          var offsetAnimation = animation.drive(tween);
+
+          return SlideTransition(
+            position: offsetAnimation,
+            child: child,
+          );
+        },
+      ),
+    );
+  }
+
   void _onItemTapped(int index) {
     setState(() {
       _currentIndex = index;
@@ -78,7 +126,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
       case 1:
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => HomePage()),
+          MaterialPageRoute(builder: (context) => FavoritePage()),
         );
         break;
       case 2:
@@ -86,7 +134,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
       case 3:
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => HomePage()),
+          MaterialPageRoute(builder: (context) => MessagePage()),
         );
         break;
       case 4:
