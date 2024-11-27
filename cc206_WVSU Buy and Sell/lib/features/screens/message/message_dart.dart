@@ -35,45 +35,45 @@ class MessagePage extends StatelessWidget {
       ),
       body: messages.isNotEmpty
           ? ListView.builder(
-        itemCount: messages.length,
-        itemBuilder: (context, index) {
-          final message = messages[index];
-          return ListTile(
-            leading: CircleAvatar(
-              backgroundImage: NetworkImage(message['imageUrl']!),
-            ),
-            title: Text(
-              message['name']!,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(message['lastMessage']!),
-            trailing: Text(
-              message['time']!,
-              style: const TextStyle(color: Colors.grey, fontSize: 12),
-            ),
-            onTap: () {
-              // Navigate to chat detail (implement ChatPage if needed)
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ChatPage(
-                    userName: message['name']!,
+              itemCount: messages.length,
+              itemBuilder: (context, index) {
+                final message = messages[index];
+                return ListTile(
+                  leading: CircleAvatar(
+                    backgroundImage: NetworkImage(message['imageUrl']!),
                   ),
-                ),
-              );
-            },
-          );
-        },
-      )
+                  title: Text(
+                    message['name']!,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(message['lastMessage']!),
+                  trailing: Text(
+                    message['time']!,
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                  onTap: () {
+                    // Navigate to chat detail (implement ChatPage if needed)
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChatPage(
+                          userName: message['name']!,
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            )
           : const Center(
-        child: Text(
-          "No messages yet!",
-          style: TextStyle(
-            fontSize: 18,
-            color: Colors.grey,
-          ),
-        ),
-      ),
+              child: Text(
+                "No messages yet!",
+                style: TextStyle(
+                  fontSize: 18,
+                  color: Colors.grey,
+                ),
+              ),
+            ),
     );
   }
 }

@@ -54,4 +54,10 @@ class CartModel extends ChangeNotifier {
     _items.remove(item);
     notifyListeners();
   }
+
+  // Add clear method to reset the cart
+  void clear() {
+    _items.clear(); // Clears the list of items
+    notifyListeners();
+  }
 }

@@ -48,11 +48,12 @@ flutter:
      - assets/google.png
      - assets/screenshot.png
   #   - images/a_dot_ham.jpeg
-flutter_icons:
+flutter_launcher_icons:
   android: true
   ios: true
-  image_path: assets/app.png
-  asset_path: assets/app.png
+  image_path: "assets/App.png" 
+  adaptive_icon_background: "#ffffff"  
+  adaptive_icon_foreground: "assets/App.png"  
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

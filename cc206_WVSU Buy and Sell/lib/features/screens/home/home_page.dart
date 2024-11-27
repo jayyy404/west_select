@@ -1,13 +1,15 @@
-import 'package:cc206_west_select/features/screens/cart/shopping_cart.dart';
 import 'package:cc206_west_select/features/screens/productdetails/product.dart';
 import 'package:cc206_west_select/firebase/app_user.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cc206_west_select/features/screens/listing.dart';
+import 'package:cc206_west_select/features/screens/cart/shopping_cart.dart';
 
 class HomePage extends StatelessWidget {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +85,9 @@ class HomePage extends StatelessWidget {
                       itemCount: listings.length,
                       itemBuilder: (context, index) {
                         final listing = listings[index];
-
+                        if (kDebugMode) {
+                          print(listing.imageUrl);
+                        }
                         return GestureDetector(
                           onTap: () {
                             // Fetch the seller name asynchronously
@@ -99,6 +103,7 @@ class HomePage extends StatelessWidget {
                                 final sellerName =
                                     appUser.displayName ?? 'Unknown Seller';
 
+                                // Navigate to ProductDetailPage with the necessary data
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -112,6 +117,7 @@ class HomePage extends StatelessWidget {
                                   ),
                                 );
                               } else {
+                                // Handle the case where the seller data doesn't exist
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -144,6 +150,7 @@ class HomePage extends StatelessWidget {
                                       ),
                                       image: DecorationImage(
                                         image: NetworkImage(
+                                          // Check for null or empty imageUrl
                                           listing.imageUrl.isNotEmpty
                                               ? listing.imageUrl
                                               : 'https://via.placeholder.com/150',
