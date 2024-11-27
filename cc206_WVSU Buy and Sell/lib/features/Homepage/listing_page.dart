@@ -140,7 +140,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
       case 4:
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => ProfilePage()),
+          MaterialPageRoute(builder: (context) => HomePage()),
         );
         break;
       default:
