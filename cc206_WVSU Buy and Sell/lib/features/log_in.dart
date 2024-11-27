@@ -201,162 +201,165 @@ class _LogInPageState extends State<LogInPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color.fromRGBO(255, 251, 245, 1),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Icon(
-              Icons.shopping_bag_outlined,
-              color: Color.fromRGBO(66, 21, 181, 1),
-              size: 100,
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'West Select',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: "Raleway",
-                fontSize: 38,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
+      body: SingleChildScrollView(
+        // Wrap this in SingleChildScrollView
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Icon(
+                Icons.shopping_bag_outlined,
+                color: Color.fromRGBO(66, 21, 181, 1),
+                size: 100,
               ),
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              'Shop at Taga West – Only the Best!',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: "Raleway",
-                fontSize: 16,
-                color: Color.fromARGB(255, 43, 42, 1),
-              ),
-            ),
-            const SizedBox(height: 100),
-            TextField(
-              controller: _emailController,
-              onChanged: _onEmailChanged,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _passwordController,
-              obscureText: !_isPasswordVisible,
-              onChanged: _onPasswordChanged,
-              decoration: InputDecoration(
-                labelText: 'Password',
-                border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _isPasswordVisible
-                        ? Icons.visibility
-                        : Icons.visibility_off,
-                  ),
-                  onPressed: _togglePasswordVisibility,
+              const SizedBox(height: 20),
+              const Text(
+                'West Select',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: "Raleway",
+                  fontSize: 38,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
                 ),
               ),
-            ),
-            const SizedBox(height: 10),
-            if (_errorMessage != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10.0),
-                child: Text(
-                  _errorMessage!,
-                  style: const TextStyle(
-                    color: Colors.red,
-                    fontFamily: "Raleway",
+              const SizedBox(height: 10),
+              const Text(
+                'Shop at Taga West – Only the Best!',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: "Raleway",
+                  fontSize: 16,
+                  color: Color.fromARGB(255, 43, 42, 1),
+                ),
+              ),
+              const SizedBox(height: 100),
+              TextField(
+                controller: _emailController,
+                onChanged: _onEmailChanged,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _passwordController,
+                obscureText: !_isPasswordVisible,
+                onChanged: _onPasswordChanged,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed: _togglePasswordVisibility,
                   ),
                 ),
               ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () {}, // Forgot password functionality
-                child: const Text(
-                  'Forgot Password?',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontFamily: "Raleway",
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _validateAndSignIn,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromRGBO(66, 21, 181, 1),
-                  padding: const EdgeInsets.symmetric(vertical: 20),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8.0),
-                  ),
-                ),
-                child: const Text(
-                  'Log In',
-                  style: TextStyle(
-                    fontFamily: "Raleway",
-                    color: Colors.white,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  "Don't have an account yet?",
-                  style: TextStyle(fontFamily: "Raleway"),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => SignUpPage()),
-                    );
-                  },
-                  child: const Text(
-                    'Sign up',
-                    style: TextStyle(
-                      color: Colors.blue,
+              const SizedBox(height: 10),
+              if (_errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10.0),
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(
+                      color: Colors.red,
                       fontFamily: "Raleway",
                     ),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 30),
-            const Divider(),
-            const SizedBox(height: 10),
-            const Text(
-              'Login With',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: "Raleway",
-                fontSize: 16,
-                color: Colors.black,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Center(
-              child: SizedBox(
-                width: 40,
-                height: 40,
-                child: IconButton(
-                  icon: Image.asset('assets/google.png'),
-                  iconSize: 24,
-                  onPressed: _signInWithGoogle,
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () {}, // Forgot password functionality
+                  child: const Text(
+                    'Forgot Password?',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontFamily: "Raleway",
+                    ),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-          ],
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _validateAndSignIn,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromRGBO(66, 21, 181, 1),
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                  ),
+                  child: const Text(
+                    'Log In',
+                    style: TextStyle(
+                      fontFamily: "Raleway",
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    "Don't have an account yet?",
+                    style: TextStyle(fontFamily: "Raleway"),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => SignUpPage()),
+                      );
+                    },
+                    child: const Text(
+                      'Sign up',
+                      style: TextStyle(
+                        color: Colors.blue,
+                        fontFamily: "Raleway",
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 30),
+              const Divider(),
+              const SizedBox(height: 10),
+              const Text(
+                'Login With',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: "Raleway",
+                  fontSize: 16,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Center(
+                child: SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: IconButton(
+                    icon: Image.asset('assets/google.png'),
+                    iconSize: 24,
+                    onPressed: _signInWithGoogle,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );
