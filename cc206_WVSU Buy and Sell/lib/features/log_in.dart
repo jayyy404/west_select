@@ -1,9 +1,12 @@
-import 'package:cc206_west_select/features/Homepage/home_page.dart';
-import 'package:cc206_west_select/features/Homepage/profile_page.dart';
-import 'package:cc206_west_select/firebase/auth_service.dart';
-import 'package:flutter/material.dart';
+import 'package:cc206_west_select/features/screens/main_page.dart';
+import 'package:cc206_west_select/features/screens/profile/profile_page.dart';
+import 'package:cc206_west_select/features/set_profile.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import '../firebase/auth_service.dart';
+import '../firebase/user_repo.dart';
 import 'sign_up.dart';
+import 'package:cc206_west_select/firebase/app_user.dart';
 
 class LogInPage extends StatefulWidget {
   const LogInPage({super.key});
@@ -77,11 +80,31 @@ class _LogInPageState extends State<LogInPage> {
           await AuthService().loginUserWithEmailAndPassword(email, password);
 
       if (user != null) {
-        // Successfully logged in with email and password
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
-        );
+        final isFirstTime = await UserRepo().isFirstTimeUser(user.uid);
+        if (isFirstTime) {
+          final customUser = AppUser(
+            uid: user.uid,
+            email: user.email ?? '',
+            displayName: user.displayName ?? '',
+            profilePictureUrl: user.photoURL ?? '',
+          );
+        } else {
+          // Get this from FirebaseAuth.currentUser.uid
+          final appUser = await UserRepo().getUser(user.uid);
+
+          if (appUser != null) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MainPage(appUser: appUser),
+              ),
+            );
+          } else {
+            setState(() {
+              _errorMessage = 'User data is missing. Please try again.';
+            });
+          }
+        }
       } else {
         setState(() {
           _errorMessage = 'Failed to sign in. Please check your credentials.';
@@ -131,10 +154,37 @@ class _LogInPageState extends State<LogInPage> {
       final user = await AuthService().signInWithGoogle(email, password);
 
       if (user != null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
-        );
+        final isFirstTime = await UserRepo().isFirstTimeUser(user.uid);
+        if (isFirstTime) {
+          final customUser = AppUser(
+            uid: user.uid,
+            email: user.email ?? '',
+            displayName: user.displayName ?? '',
+            profilePictureUrl: user.photoURL ?? '',
+          );
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+                builder: (context) => SetupProfilePage(user: customUser)),
+          );
+        } else {
+          // Get this from FirebaseAuth.currentUser.uid
+          final appUser = await UserRepo().getUser(user.uid);
+
+          if (appUser != null) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MainPage(appUser: appUser),
+              ),
+            );
+          } else {
+            setState(() {
+              _errorMessage = 'User data is missing. Please try again.';
+            });
+          }
+        }
       } else {
         setState(() {
           _errorMessage = 'Google sign-in failed. Try again.';
