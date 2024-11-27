@@ -17,10 +17,7 @@ class UserRepo {
 
   // Update user details
   Future<void> updateUser(AppUser user) async {
-    await _firestore
-        .collection('users')
-        .doc(user.uid)
-        .update(user.toFirestore());
+    await _firestore.collection('users').doc(user.uid).update(user.toFirestore());
   }
 
   // Delete user

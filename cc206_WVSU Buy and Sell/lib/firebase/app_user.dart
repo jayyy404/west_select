@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class AppUser {
   final String uid;
   final String email;
-  final String? displayName;
+  late final String? displayName;
   final String? profilePictureUrl;
   final String? address;
   final String? phoneNumber;
@@ -47,7 +47,8 @@ class AppUser {
       'address': address,
       'phoneNumber': phoneNumber,
       'cart': cart,
-      'orderHistory': orderHistory?.map((order) => order.toFirestore()).toList(),
+      'orderHistory':
+          orderHistory?.map((order) => order.toFirestore()).toList(),
     };
   }
 }
