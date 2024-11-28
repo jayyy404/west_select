@@ -26,7 +26,9 @@ class _MainPageState extends State<MainPage> {
     // Initialize pages with ProfilePage receiving appUser
     _pages = [
       HomePage(),
-      FavoritePage(),
+      FavoritePage(
+        userId: '',
+      ),
       CreateListingPage(),
       MessagePage(),
       ProfilePage(appUser: widget.appUser!),

@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class AppUser {
   final String uid;
   final String email;
-  late final String? displayName;
+  String? displayName;
   final String? profilePictureUrl;
   final String? address;
   final String? phoneNumber;
@@ -53,18 +53,19 @@ class AppUser {
   }
 }
 
-// Example Order class for the `orderHistory` property
 class Order {
   final String orderId;
-  final List<String> productIds;
+  final List<String> productIds; // IDs of products in the order
   final double totalAmount;
   final DateTime orderDate;
+  final String status; // Either "pending" or "completed"
 
   Order({
     required this.orderId,
     required this.productIds,
     required this.totalAmount,
     required this.orderDate,
+    required this.status, // New field for order status
   });
 
   // Factory method to create an Order object from a Firestore document
@@ -72,8 +73,9 @@ class Order {
     return Order(
       orderId: data['orderId'] ?? '',
       productIds: List<String>.from(data['productIds'] ?? []),
-      totalAmount: data['totalAmount']?.toDouble() ?? 0.0,
+      totalAmount: (data['totalAmount'] as num).toDouble(),
       orderDate: (data['orderDate'] as Timestamp).toDate(),
+      status: data['status'] ?? 'pending', // Default to "pending"
     );
   }
 
@@ -84,6 +86,7 @@ class Order {
       'productIds': productIds,
       'totalAmount': totalAmount,
       'orderDate': orderDate,
+      'status': status,
     };
   }
 }

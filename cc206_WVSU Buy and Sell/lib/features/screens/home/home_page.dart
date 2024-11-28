@@ -1,15 +1,53 @@
 import 'package:cc206_west_select/features/screens/productdetails/product.dart';
 import 'package:cc206_west_select/firebase/app_user.dart';
+import 'package:cc206_west_select/firebase/search_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cc206_west_select/features/screens/listing.dart';
 import 'package:cc206_west_select/features/screens/cart/shopping_cart.dart';
 
-class HomePage extends StatelessWidget {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
 
-  HomePage({super.key});
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final TextEditingController _searchController = TextEditingController();
+  final SearchService _searchService =
+      SearchService(FirebaseFirestore.instance);
+  List<QueryDocumentSnapshot<Map<String, dynamic>>> _searchResults = [];
+  bool _isSearching = false;
+
+  void _performSearch() async {
+    final searchText = _searchController.text.trim();
+    if (searchText.isEmpty) {
+      setState(() {
+        _searchResults = [];
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+    });
+
+    final results = await _searchService.searchProducts(searchText);
+
+    setState(() {
+      _searchResults = results;
+      _isSearching = false;
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +78,7 @@ class HomePage extends StatelessWidget {
                         children: [
                           Expanded(
                             child: TextField(
+                              controller: _searchController,
                               decoration: const InputDecoration(
                                 border: InputBorder.none,
                                 hintText: 'Search an item...',
@@ -51,9 +90,14 @@ class HomePage extends StatelessWidget {
                                   color: Color(0xFF201D1B),
                                 ),
                               ),
+                              onSubmitted: (_) => _performSearch(),
                             ),
                           ),
-                          const Icon(Icons.search, color: Color(0xFF201D1B)),
+                          IconButton(
+                            icon: const Icon(Icons.search,
+                                color: Color(0xFF201D1B)),
+                            onPressed: _performSearch,
+                          ),
                         ],
                       ),
                     ),
@@ -153,6 +197,7 @@ class HomePage extends StatelessWidget {
                                       description: listing.postDescription,
                                       price: listing.price,
                                       sellerName: sellerName,
+                                      userId: '',
                                     ),
                                   ),
                                 );
@@ -166,6 +211,7 @@ class HomePage extends StatelessWidget {
                                       description: listing.postDescription,
                                       price: listing.price,
                                       sellerName: 'Unknown Seller',
+                                      userId: '',
                                     ),
                                   ),
                                 );

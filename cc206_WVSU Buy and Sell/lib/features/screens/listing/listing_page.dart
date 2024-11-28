@@ -23,8 +23,8 @@ class _CreateListingPageState extends State<CreateListingPage> {
   bool _isCreatingListing = false;
   bool _isViewingMyProducts = false;
   bool _isViewingAllOrders = false;
-  int _pendingOrderCount = 0; // Track pending orders count
-  int _completedOrderCount = 0; // Track completed orders count
+  int _pendingOrderCount = 0;
+  int _completedOrderCount = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -231,7 +231,6 @@ class _CreateListingPageState extends State<CreateListingPage> {
         return;
       }
 
-      // Update the order status to 'completed'
       await FirebaseFirestore.instance
           .collection('orders')
           .doc(orderId)
@@ -240,24 +239,20 @@ class _CreateListingPageState extends State<CreateListingPage> {
         'completed_at': DateTime.now(),
       });
 
-      // Add the order to 'completed_orders'
       await FirebaseFirestore.instance
           .collection('completed_orders')
           .doc(orderId)
           .set(orderData);
 
-      // Remove the order from 'orders' collection (moving it)
       await FirebaseFirestore.instance
           .collection('orders')
           .doc(orderId)
           .delete();
 
-      // Update the order counts
       setState(() {
         _completedOrderCount++; // Increase completed orders
       });
 
-      // Show a message that the order was completed
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Order marked as completed")),
       );
@@ -269,7 +264,6 @@ class _CreateListingPageState extends State<CreateListingPage> {
     }
   }
 
-// To update the pending orders when a new order is placed, use a similar approach:
   Future<void> createNewOrder(Map<String, dynamic> orderData) async {
     try {
       // Add the order to the 'orders' collection
@@ -280,11 +274,11 @@ class _CreateListingPageState extends State<CreateListingPage> {
           .collection('shop_status')
           .doc('status')
           .update({
-        'pending_orders': FieldValue.increment(1), // Increment by 1
+        'pending_orders': FieldValue.increment(1),
       });
 
       setState(() {
-        _pendingOrderCount++; // Update local count as well
+        _pendingOrderCount++;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -438,10 +432,10 @@ class _CreateListingPageState extends State<CreateListingPage> {
   Widget _buildMyProductsList() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
-          .collection('listings')
-          .where('created_by',
+          .collection('post')
+          .where('post_users',
               isEqualTo: FirebaseAuth.instance.currentUser?.uid)
-          .orderBy('created_at', descending: true)
+          .orderBy('createdAt', descending: true)
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
@@ -462,7 +456,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
             return Card(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: ListTile(
-                title: Text(data['title']),
+                title: Text(data['post_title']),
                 subtitle: Text("PHP ${data['price']}"),
                 leading: Image.network(
                   data['image_url'] ?? '',
@@ -486,7 +480,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
     try {
       // Delete listing from Firestore
       await FirebaseFirestore.instance
-          .collection('listings')
+          .collection('post')
           .doc(listingId)
           .delete();
 

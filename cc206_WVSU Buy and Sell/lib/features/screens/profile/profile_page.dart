@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cc206_west_select/firebase/auth_service.dart';
 import 'package:cc206_west_select/features/log_in.dart';
 import 'package:cc206_west_select/firebase/app_user.dart';
-import 'package:cc206_west_select/firebase/user_repo.dart';
 
 class ProfilePage extends StatefulWidget {
   final AppUser appUser;
@@ -24,11 +23,11 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Future<void> _editDisplayName() async {
+  void _editDisplayName() {
     final TextEditingController editNameController =
         TextEditingController(text: widget.appUser.displayName ?? '');
 
-    await showDialog(
+    showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
@@ -45,33 +44,16 @@ class _ProfilePageState extends State<ProfilePage> {
             ElevatedButton(
               onPressed: () async {
                 final newName = editNameController.text.trim();
-                if (newName.isEmpty) {
+                if (newName.isNotEmpty) {
+                  setState(() {
+                    widget.appUser.displayName = newName;
+                  });
+
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Display name cannot be empty'),
-                    ),
+                    const SnackBar(content: Text('Name updated successfully')),
                   );
-                  return;
+                  Navigator.pop(context);
                 }
-
-                final updatedUser = AppUser(
-                  uid: widget.appUser.uid,
-                  email: widget.appUser.email,
-                  displayName: newName,
-                  profilePictureUrl: widget.appUser.profilePictureUrl,
-                );
-
-                await UserRepo().addUser(updatedUser);
-
-                setState(() {
-                  widget.appUser.displayName = newName;
-                });
-
-                Navigator.pop(context);
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Name updated successfully')),
-                );
               },
               child: const Text('Save'),
             ),
@@ -104,96 +86,58 @@ class _ProfilePageState extends State<ProfilePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 40,
-                  backgroundImage: widget.appUser.profilePictureUrl != null
-                      ? NetworkImage(widget.appUser.profilePictureUrl!)
-                          as ImageProvider
-                      : null,
-                  backgroundColor: Colors.grey,
-                ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.appUser.displayName ?? "User's Name",
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: _editDisplayName,
-                        child: const Text('Edit Name'),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            _buildProfileHeader(),
             const SizedBox(height: 20),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildTabButton("Listing", 0),
-                _buildTabButton("Pending", 1),
-                _buildTabButton("Completed", 2),
-              ],
-            ),
+            _buildTabSelection(),
             const SizedBox(height: 20),
-
-            Expanded(
-              child: GridView.builder(
-                itemCount: getCurrentTabData().length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 10,
-                  crossAxisSpacing: 10,
-                ),
-                itemBuilder: (context, index) {
-                  final item = getCurrentTabData()[index];
-                  return Card(
-                    child: Column(
-                      children: [
-                        Image.network(item['imageUrl']!, fit: BoxFit.cover),
-                        const SizedBox(height: 5),
-                        Text(item['title']!),
-                        Text(item['price']!),
-                        Text('Seller: ${item['seller']}'),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-
-            // Sign Out
-            ElevatedButton(
-              onPressed: _signOut,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text(
-                'Sign Out',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+            Expanded(child: _buildOrderList()),
+            _buildSignOutButton(),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildProfileHeader() {
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 40,
+          backgroundImage: widget.appUser.profilePictureUrl != null
+              ? NetworkImage(widget.appUser.profilePictureUrl!)
+              : null,
+          backgroundColor: Colors.grey,
+        ),
+        const SizedBox(width: 20),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.appUser.displayName ?? "User's Name",
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              TextButton(
+                onPressed: _editDisplayName,
+                child: const Text('Edit Name'),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTabSelection() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        _buildTabButton("Pending", 0),
+        _buildTabButton("Completed", 1),
+      ],
     );
   }
 
@@ -225,16 +169,61 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  List<Map<String, String>> getCurrentTabData() {
-    switch (selectedTabIndex) {
-      case 0:
-        return [];
-      case 1:
-        return [];
-      case 2:
-        return [];
-      default:
-        return [];
+  Widget _buildOrderList() {
+    final orders =
+        selectedTabIndex == 0 ? _getPendingOrders() : _getCompletedOrders();
+
+    if (orders.isEmpty) {
+      return const Center(child: Text("No orders to display"));
     }
+
+    return ListView.builder(
+      itemCount: orders.length,
+      itemBuilder: (context, index) {
+        final order = orders[index];
+        return Card(
+          child: ListTile(
+            title: Text("Order ID: ${order.orderId}"),
+            subtitle: Text(
+              "Total: \$${order.totalAmount.toStringAsFixed(2)}\nDate: ${order.orderDate.toLocal()}",
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSignOutButton() {
+    return ElevatedButton(
+      onPressed: _signOut,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.red,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+      child: const Text(
+        'Sign Out',
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  List<Order> _getPendingOrders() {
+    return widget.appUser.orderHistory
+            ?.where((order) => order.status == 'pending')
+            .toList() ??
+        [];
+  }
+
+  List<Order> _getCompletedOrders() {
+    return widget.appUser.orderHistory
+            ?.where((order) => order.status == 'completed')
+            .toList() ??
+        [];
   }
 }
