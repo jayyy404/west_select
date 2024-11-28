@@ -1,6 +1,6 @@
 import 'package:cc206_west_select/features/Homepage/home_page.dart';
 import 'package:flutter/material.dart';
-import 'package:cc206_west_select/features/Homepage/profile_page.dart';
+import 'package:cc206_west_select/features/screens/profile/profile_page.dart';
 import 'user_profile_page.dart';
 import 'favorite.dart';
 import 'messaging.dart';
