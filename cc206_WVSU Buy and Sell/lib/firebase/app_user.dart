@@ -6,7 +6,7 @@ class AppUser {
   String? displayName;
   final String? profilePictureUrl;
   final List<String>? cart; // List of product IDs in the cart
-  final List<Order>? orderHistory; // List of orders
+  final List<UserOrder>? orderHistory; // List of orders
 
   AppUser({
     required this.uid,
@@ -22,11 +22,13 @@ class AppUser {
     return AppUser(
       uid: data['uid'] ?? '',
       email: data['email'] ?? '',
-      displayName: data['displayName'],
-      profilePictureUrl: data['profilePictureUrl'],
-      cart: List<String>.from(data['cart'] ?? []),
+      displayName: data['displayName'] as String?,
+      profilePictureUrl: data['profilePictureUrl'] as String?,
+      cart: (data['cart'] as List<dynamic>?)
+          ?.map((item) => item as String)
+          .toList(),
       orderHistory: (data['orderHistory'] as List<dynamic>?)
-          ?.map((order) => Order.fromFirestore(order))
+          ?.map((order) => UserOrder.fromFirestore(order as Map<String, dynamic>))
           .toList(),
     );
   }
@@ -39,20 +41,19 @@ class AppUser {
       'displayName': displayName,
       'profilePictureUrl': profilePictureUrl,
       'cart': cart,
-      'orderHistory':
-          orderHistory?.map((order) => order.toFirestore()).toList(),
+      'orderHistory': orderHistory?.map((order) => order.toFirestore()).toList(),
     };
   }
 }
 
-class Order {
+class UserOrder {
   final String orderId;
   final List<String> productIds;
   final double totalAmount;
   final DateTime orderDate;
   final String status;
 
-  Order({
+  UserOrder({
     required this.orderId,
     required this.productIds,
     required this.totalAmount,
@@ -61,11 +62,14 @@ class Order {
   });
 
   // Factory method to create an Order object from a Firestore document
-  factory Order.fromFirestore(Map<String, dynamic> data) {
-    return Order(
+  factory UserOrder.fromFirestore(Map<String, dynamic> data) {
+    return UserOrder(
       orderId: data['orderId'] ?? '',
-      productIds: List<String>.from(data['productIds'] ?? []),
-      totalAmount: (data['totalAmount'] as num).toDouble(),
+      productIds: (data['productIds'] as List<dynamic>?)
+          ?.map((item) => item as String)
+          .toList() ??
+          [],
+      totalAmount: (data['totalAmount'] as num?)?.toDouble() ?? 0.0,
       orderDate: (data['orderDate'] as Timestamp).toDate(),
       status: data['status'] ?? 'pending', // Default to "pending"
     );
