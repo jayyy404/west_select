@@ -29,10 +29,32 @@ class FavoritePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Favorites"),
-        centerTitle: true,
-        backgroundColor: Colors.blue,
+      backgroundColor: const Color(0xFFF7F7F7), // Background color
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(120), // Fixed height for AppBar
+        child: Container(
+          width: double.infinity,
+          height: 125, // AppBar height
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: const BoxDecoration(
+            color: Colors.white, // AppBar background color
+          ),
+          child: SafeArea(
+            child: Center(
+              child: Text(
+                "Wishlist",
+                style: TextStyle(
+                  color: const Color(0xFF201D1B), // Text color
+                  fontFamily: "Raleway",
+                  fontSize: 20,
+                  fontWeight: FontWeight.w400,
+                  height: 1.2, // Line height
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ),
       ),
       body: favoriteItems.isNotEmpty
           ? Padding(
