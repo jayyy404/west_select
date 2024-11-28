@@ -30,85 +30,94 @@ class ShoppingCartPage extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final item = cart.items[index];
                       return Padding(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                         child: Card(
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12.0),
                           ),
                           elevation: 4,
-                          child: Padding(
-                            padding: const EdgeInsets.all(12.0),
-                            child: Row(
-                              children: [
-                                // Image
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(8.0),
-                                  child: Image.network(item.imageUrl,
-                                    height: 60,
-                                    width: 60,
-                                    fit: BoxFit.cover,
+                          child: SizedBox(
+                            height: 100, // Fixed height for all items
+                            child: Padding(
+                              padding: const EdgeInsets.all(12.0),
+                              child: Row(
+                                children: [
+                                  // Image
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8.0),
+                                    child: Image.network(
+                                      item.imageUrl,
+                                      height: 60,
+                                      width: 60,
+                                      fit: BoxFit.cover,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 12),
-                                // Product Details
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                  const SizedBox(width: 12),
+                                  // Product Details
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.center, // Vertically align content
+                                      children: [
+                                        Text(
+                                          item.title,
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          overflow: TextOverflow.ellipsis, // Limit overflow
+                                          maxLines: 1, // Restrict to one line
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          item.subtitle,
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey,
+                                          ),
+                                          overflow: TextOverflow.ellipsis, // Limit overflow
+                                          maxLines: 1, // Restrict to one line
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Php ${item.price.toStringAsFixed(2)}',
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  // Quantity Controls
+                                  Row(
                                     children: [
-                                      Text(
-                                        item.title,
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                      IconButton(
+                                        icon: const Icon(Icons.remove),
+                                        onPressed: () {
+                                          cart.updateQuantity(item, item.quantity - 1);
+                                        },
                                       ),
-                                      const SizedBox(height: 4),
                                       Text(
-                                        item.subtitle,
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.grey,
-                                        ),
+                                        item.quantity.toString(),
+                                        style: const TextStyle(fontSize: 16),
                                       ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        'Php ${item.price.toStringAsFixed(2)}',
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black,
-                                        ),
+                                      IconButton(
+                                        icon: const Icon(Icons.add),
+                                        onPressed: () {
+                                          cart.updateQuantity(item, item.quantity + 1);
+                                        },
                                       ),
                                     ],
                                   ),
-                                ),
-                                // Quantity Controls
-                                Row(
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.remove),
-                                      onPressed: () {
-                                        cart.updateQuantity(item, item.quantity - 1);
-                                      },
-                                    ),
-                                    Text(
-                                      item.quantity.toString(),
-                                      style: const TextStyle(fontSize: 16),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.add),
-                                      onPressed: () {
-                                        cart.updateQuantity(item, item.quantity + 1);
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
                       );
+
                     },
                   ),
                 ),
