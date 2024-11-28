@@ -57,26 +57,30 @@ class ShoppingCartPage extends StatelessWidget {
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisAlignment: MainAxisAlignment.center, // Vertically align content
+                                      mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        Text(
-                                          item.title,
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
+                                        Flexible(
+                                          child: Text(
+                                            item.title,
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1, // Restrict to one line
                                           ),
-                                          overflow: TextOverflow.ellipsis, // Limit overflow
-                                          maxLines: 1, // Restrict to one line
                                         ),
                                         const SizedBox(height: 4),
-                                        Text(
-                                          item.subtitle,
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.grey,
+                                        Flexible(
+                                          child: Text(
+                                            item.subtitle,
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1, // Restrict to one line
                                           ),
-                                          overflow: TextOverflow.ellipsis, // Limit overflow
-                                          maxLines: 1, // Restrict to one line
                                         ),
                                         const SizedBox(height: 8),
                                         Text(
