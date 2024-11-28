@@ -1,3 +1,4 @@
+import 'package:cc206_west_select/features/screens/favorite/favorite_model.dart';
 import 'package:cc206_west_select/features/screens/home/home_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -11,8 +12,11 @@ Future<void> main() async {
   await Firebase.initializeApp();
 
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => CartModel(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => CartModel()),
+        ChangeNotifierProvider(create: (context) => FavoriteModel()),
+      ],
       child: const MyApp(),
     ),
   );

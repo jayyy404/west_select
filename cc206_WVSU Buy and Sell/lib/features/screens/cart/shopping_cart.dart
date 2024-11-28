@@ -79,10 +79,8 @@ class ShoppingCartPage extends StatelessWidget {
                               return;
                             }
 
-                            // Fetch user data from Firestore
                             final userDoc = await FirebaseFirestore.instance
-                                .collection(
-                                    'users') // Make sure this is the correct collection name
+                                .collection('users')
                                 .doc(user.uid)
                                 .get();
 
@@ -116,12 +114,11 @@ class ShoppingCartPage extends StatelessWidget {
                               'created_at': FieldValue.serverTimestamp(),
                             };
 
-                            // Add the order data to Firestore
                             await FirebaseFirestore.instance
                                 .collection('orders')
                                 .add(orderData);
 
-                            cart.clear(); // Clear the cart after checkout
+                            cart.clear();
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text("Order placed successfully!"),

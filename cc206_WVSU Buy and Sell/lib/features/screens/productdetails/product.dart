@@ -1,4 +1,5 @@
 import 'package:cc206_west_select/features/screens/cart/cart_model.dart';
+import 'package:cc206_west_select/features/screens/favorite/favorite_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -8,6 +9,7 @@ class ProductDetailPage extends StatefulWidget {
   final String description;
   final double price;
   final String sellerName;
+  final String userId; // Add userId to the constructor
 
   const ProductDetailPage({
     Key? key,
@@ -16,6 +18,7 @@ class ProductDetailPage extends StatefulWidget {
     required this.description,
     required this.price,
     required this.sellerName,
+    required this.userId, // Add userId here
   }) : super(key: key);
 
   @override
@@ -28,6 +31,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   @override
   Widget build(BuildContext context) {
     final cart = Provider.of<CartModel>(context, listen: false);
+    final favoriteModel = Provider.of<FavoriteModel>(context, listen: false);
 
     return Scaffold(
       appBar: AppBar(
@@ -39,9 +43,39 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.favorite_border, color: Colors.black),
+            icon: Icon(
+              Icons.favorite_border,
+              color: Colors.black,
+            ),
             onPressed: () {
-              // Add functionality for favoriting the product
+              final product = {
+                "title": widget.productTitle,
+                "price": widget.price.toStringAsFixed(2),
+                "imageUrl": widget.imageUrl,
+                "seller": widget.sellerName,
+              };
+
+              final isFavorite = favoriteModel.favoriteItems
+                  .any((item) => item["title"] == widget.productTitle);
+
+              if (isFavorite) {
+                // Remove from favorites
+                favoriteModel.removeFavorite(widget.userId, product);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content:
+                        Text('${widget.productTitle} removed from favorites.'),
+                  ),
+                );
+              } else {
+                // Add to favorites
+                favoriteModel.addFavorite(widget.userId, product);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${widget.productTitle} added to favorites.'),
+                  ),
+                );
+              }
             },
           ),
         ],
