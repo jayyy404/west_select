@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cc206_west_select/firebase/auth_service.dart';
 import 'package:cc206_west_select/features/log_in.dart';
 import 'package:cc206_west_select/firebase/app_user.dart';
@@ -15,6 +16,18 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   int selectedTabIndex = 0;
 
+  Stream<DocumentSnapshot<Map<String, dynamic>>>? _userStream;
+
+  @override
+  void initState() {
+    super.initState();
+    // Set up a Firestore stream to listen for changes to the user's data.
+    _userStream = FirebaseFirestore.instance
+        .collection('users') // Replace with your Firestore collection name
+        .doc(widget.appUser.uid)
+        .snapshots();
+  }
+
   Future<void> _signOut() async {
     await AuthService().signOut();
     Navigator.pushReplacement(
@@ -25,7 +38,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   void _editDisplayName() {
     final TextEditingController editNameController =
-        TextEditingController(text: widget.appUser.displayName ?? '');
+    TextEditingController(text: widget.appUser.displayName ?? '');
 
     showDialog(
       context: context,
@@ -45,9 +58,10 @@ class _ProfilePageState extends State<ProfilePage> {
               onPressed: () async {
                 final newName = editNameController.text.trim();
                 if (newName.isNotEmpty) {
-                  setState(() {
-                    widget.appUser.displayName = newName;
-                  });
+                  await FirebaseFirestore.instance
+                      .collection('users') // Replace with your Firestore collection name
+                      .doc(widget.appUser.uid)
+                      .update({'displayName': newName});
 
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Name updated successfully')),
@@ -65,46 +79,63 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const Text(
-          "Profile",
-          style: TextStyle(color: Colors.black),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings, color: Colors.grey),
-            onPressed: () {},
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: _userStream,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError || !snapshot.hasData || !snapshot.data!.exists) {
+          return const Center(child: Text("Error loading user data"));
+        }
+
+        // Parse updated user data
+        final userData = snapshot.data!.data()!;
+        final updatedAppUser = AppUser.fromFirestore(userData);
+
+        return Scaffold(
+          backgroundColor: Colors.white,
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            elevation: 0,
+            title: const Text(
+              "Profile",
+              style: TextStyle(color: Colors.black),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.settings, color: Colors.grey),
+                onPressed: () {},
+              ),
+            ],
           ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildProfileHeader(),
-            const SizedBox(height: 20),
-            _buildTabSelection(),
-            const SizedBox(height: 20),
-            Expanded(child: _buildOrderList()),
-            _buildSignOutButton(),
-          ],
-        ),
-      ),
+          body: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildProfileHeader(updatedAppUser),
+                const SizedBox(height: 20),
+                _buildTabSelection(),
+                const SizedBox(height: 20),
+                Expanded(child: _buildOrderList(updatedAppUser)),
+                _buildSignOutButton(),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildProfileHeader() {
+  Widget _buildProfileHeader(AppUser appUser) {
     return Row(
       children: [
         CircleAvatar(
           radius: 40,
-          backgroundImage: widget.appUser.profilePictureUrl != null
-              ? NetworkImage(widget.appUser.profilePictureUrl!)
+          backgroundImage: appUser.profilePictureUrl != null
+              ? NetworkImage(appUser.profilePictureUrl!)
               : null,
           backgroundColor: Colors.grey,
         ),
@@ -114,7 +145,7 @@ class _ProfilePageState extends State<ProfilePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.appUser.displayName ?? "User's Name",
+                appUser.displayName ?? "User's Name",
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -169,9 +200,10 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildOrderList() {
-    final orders =
-        selectedTabIndex == 0 ? _getPendingOrders() : _getCompletedOrders();
+  Widget _buildOrderList(AppUser appUser) {
+    final orders = selectedTabIndex == 0
+        ? _getPendingOrders(appUser)
+        : _getCompletedOrders(appUser);
 
     if (orders.isEmpty) {
       return const Center(child: Text("No orders to display"));
@@ -213,17 +245,17 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  List<Order> _getPendingOrders() {
-    return widget.appUser.orderHistory
-            ?.where((order) => order.status == 'pending')
-            .toList() ??
+  List<UserOrder> _getPendingOrders(AppUser appUser) {
+    return appUser.orderHistory
+        ?.where((order) => order.status == 'pending')
+        .toList() ??
         [];
   }
 
-  List<Order> _getCompletedOrders() {
-    return widget.appUser.orderHistory
-            ?.where((order) => order.status == 'completed')
-            .toList() ??
+  List<UserOrder> _getCompletedOrders(AppUser appUser) {
+    return appUser.orderHistory
+        ?.where((order) => order.status == 'completed')
+        .toList() ??
         [];
   }
 }

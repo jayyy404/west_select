@@ -19,120 +19,140 @@ class ShoppingCartPage extends StatelessWidget {
       body: cart.items.isEmpty
           ? const Center(child: Text("Your cart is empty."))
           : Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              itemCount: cart.items.length,
+              itemBuilder: (context, index) {
+                final item = cart.items[index];
+                return Card(
+                  child: ListTile(
+                    leading: Image.network(item.imageUrl),
+                    title: Text(item.title),
+                    subtitle: Text('${item.subtitle}\nPHP ${item.price}'),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.remove),
+                          onPressed: () {
+                            cart.updateQuantity(item, item.quantity - 1);
+                          },
+                        ),
+                        Text(item.quantity.toString()),
+                        IconButton(
+                          icon: const Icon(Icons.add),
+                          onPressed: () {
+                            cart.updateQuantity(item, item.quantity + 1);
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete),
+                          onPressed: () {
+                            cart.removeItem(item);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: cart.items.length,
-                    itemBuilder: (context, index) {
-                      final item = cart.items[index];
-                      return Card(
-                        child: ListTile(
-                          leading: Image.network(item.imageUrl),
-                          title: Text(item.title),
-                          subtitle: Text('${item.subtitle}\nPHP ${item.price}'),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.remove),
-                                onPressed: () {
-                                  cart.updateQuantity(item, item.quantity - 1);
-                                },
-                              ),
-                              Text(item.quantity.toString()),
-                              IconButton(
-                                icon: const Icon(Icons.add),
-                                onPressed: () {
-                                  cart.updateQuantity(item, item.quantity + 1);
-                                },
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete),
-                                onPressed: () {
-                                  cart.removeItem(item);
-                                },
-                              ),
-                            ],
+                Text("Total: PHP ${cart.totalPrice.toStringAsFixed(2)}",
+                    style: const TextStyle(fontSize: 18)),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (cart.items.isNotEmpty) {
+                      final user = FirebaseAuth.instance.currentUser;
+                      if (user == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("You need to log in first!"),
                           ),
+                        );
+                        return;
+                      }
+
+                      // Fetch user data from Firestore
+                      final userDoc = await FirebaseFirestore.instance
+                          .collection('users') // Ensure this is the correct collection
+                          .doc(user.uid)
+                          .get();
+
+                      if (!userDoc.exists) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("User data not found!"),
+                          ),
+                        );
+                        return;
+                      }
+
+                      final appUser =
+                      AppUser.fromFirestore(userDoc.data()!);
+                      final displayName =
+                          appUser.displayName ?? 'Anonymous';
+
+                      final orderData = {
+                        'user_name': displayName,
+                        'user_email': user.email,
+                        'total_price': cart.totalPrice,
+                        'products': cart.items.map((item) {
+                          return {
+                            'title': item.title,
+                            'subtitle': item.subtitle,
+                            'price': item.price,
+                            'quantity': item.quantity,
+                            'imageUrl': item.imageUrl,
+                          };
+                        }).toList(),
+                        'created_at': FieldValue.serverTimestamp(),
+                        'status': 'pending',  // Set the order status as 'pending'
+                      };
+
+                      // Add the order data to Firestore
+                      await FirebaseFirestore.instance
+                          .collection('orders')
+                          .add(orderData);
+
+                      // Update the user's order history in Firestore
+                      final orderHistory = appUser.orderHistory ?? [];
+                      orderHistory.add(UserOrder(
+                        orderId: FirebaseFirestore.instance.collection('orders').doc().id,  // Empty until added
+                        productIds: cart.items.map((item) => item.title).toList(),
+                        totalAmount: cart.totalPrice,
+                        orderDate: DateTime.now(),
+                        status: 'pending',
+                      ));
+
+                      await FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(user.uid)
+                          .update({
+                        'orderHistory': orderHistory.map((order) => order.toFirestore()).toList()
+                      });
+
+                      cart.clear(); // Clear the cart after checkout
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Order placed successfully!"),
                         ),
                       );
-                    },
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Total: PHP ${cart.totalPrice.toStringAsFixed(2)}",
-                          style: const TextStyle(fontSize: 18)),
-                      ElevatedButton(
-                        onPressed: () async {
-                          if (cart.items.isNotEmpty) {
-                            final user = FirebaseAuth.instance.currentUser;
-                            if (user == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("You need to log in first!"),
-                                ),
-                              );
-                              return;
-                            }
-
-                            final userDoc = await FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(user.uid)
-                                .get();
-
-                            if (!userDoc.exists) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("User data not found!"),
-                                ),
-                              );
-                              return;
-                            }
-
-                            final appUser =
-                                AppUser.fromFirestore(userDoc.data()!);
-                            final displayName =
-                                appUser.displayName ?? 'Anonymous';
-
-                            final orderData = {
-                              'user_name': displayName,
-                              'user_email': user.email,
-                              'total_price': cart.totalPrice,
-                              'products': cart.items.map((item) {
-                                return {
-                                  'title': item.title,
-                                  'subtitle': item.subtitle,
-                                  'price': item.price,
-                                  'quantity': item.quantity,
-                                  'imageUrl': item.imageUrl,
-                                };
-                              }).toList(),
-                              'created_at': FieldValue.serverTimestamp(),
-                            };
-
-                            await FirebaseFirestore.instance
-                                .collection('orders')
-                                .add(orderData);
-
-                            cart.clear();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("Order placed successfully!"),
-                              ),
-                            );
-                          }
-                        },
-                        child: Text("Checkout (${cart.items.length})"),
-                      ),
-                    ],
-                  ),
+                    }
+                  },
+                  child: Text("Checkout (${cart.items.length})"),
                 ),
               ],
             ),
+          ),
+        ],
+      ),
     );
   }
 }
