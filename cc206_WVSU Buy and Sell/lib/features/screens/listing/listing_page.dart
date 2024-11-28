@@ -1,14 +1,8 @@
 import 'dart:convert';
-<<<<<<< HEAD
-import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
-import 'package:flutter/foundation.dart';
-=======
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
->>>>>>> master_login_backend
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -54,61 +48,6 @@ class _CreateListingPageState extends State<CreateListingPage> {
               ],
             ),
           ),
-<<<<<<< HEAD
-          if (_isCreatingListing)
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextField(
-                      controller: _titleController,
-                      decoration:
-                      const InputDecoration(labelText: "Product Title"),
-                    ),
-                    TextField(
-                      controller: _descriptionController,
-                      decoration:
-                      const InputDecoration(labelText: "Add Description"),
-                    ),
-                    TextField(
-                      controller: _priceController,
-                      keyboardType: TextInputType.number,
-                      decoration:
-                      const InputDecoration(labelText: "Price (PHP)"),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: uploadImageToCloudinary,
-                      icon: const Icon(Icons.image),
-                      label: const Text("Upload Image"),
-                    ),
-                    if (_uploadedImageUrl != null)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16.0),
-                        child: Image.network(
-                          _uploadedImageUrl!,
-                          height: 200,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: createListing,
-                      child: const Text("Publish Listing"),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text(
-              "Your Listings:",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-=======
           const SizedBox(height: 16),
           // Action Menu Section
           ListTile(
@@ -122,7 +61,6 @@ class _CreateListingPageState extends State<CreateListingPage> {
                 _isViewingMyProducts = false;
               });
             },
->>>>>>> master_login_backend
           ),
           const Divider(),
           ListTile(
@@ -151,52 +89,6 @@ class _CreateListingPageState extends State<CreateListingPage> {
           const Divider(),
           // Listings or Form Section
           Expanded(
-<<<<<<< HEAD
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('post')
-                  .where('postUserId',
-                  isEqualTo: FirebaseAuth.instance.currentUser?.uid)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final listings = snapshot.data!.docs;
-                if (listings.isEmpty) {
-                  return const Center(child: Text("No listings found."));
-                }
-                return ListView.builder(
-                  itemCount: listings.length,
-                  itemBuilder: (context, index) {
-                    final listing = listings[index];
-                    final data = listing.data() as Map<String, dynamic>;
-
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      child: ListTile(
-                        leading: data['image_url'] != null
-                            ? Image.network(
-                          data['image_url'],
-                          width: 60,
-                          height: 60,
-                          fit: BoxFit.cover,
-                        )
-                            : const Icon(Icons.image_not_supported),
-                        title: Text(data['postTitle'] ?? "No Title"),
-                        subtitle: Text("PHP ${data['price'] ?? '0.0'}"),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => deleteListing(listing.id),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-=======
             child: _isCreatingListing
                 ? _buildCreateListingForm()
                 : _isViewingMyProducts
@@ -205,15 +97,12 @@ class _CreateListingPageState extends State<CreateListingPage> {
                         ? _buildOrdersList()
                         : const Center(
                             child: Text("Select an option to proceed.")),
->>>>>>> master_login_backend
           ),
         ],
       ),
     );
   }
 
-<<<<<<< HEAD
-=======
   Widget _buildStatusTile(String count, String label) {
     return Column(
       children: [
@@ -409,7 +298,6 @@ class _CreateListingPageState extends State<CreateListingPage> {
     }
   }
 
->>>>>>> master_login_backend
   Future<void> uploadImageToCloudinary() async {
     try {
       final picker = ImagePicker();
@@ -445,13 +333,8 @@ class _CreateListingPageState extends State<CreateListingPage> {
       const String cloudName = 'drlvci7kt';
       const String uploadPreset = 'cndztdyy';
 
-<<<<<<< HEAD
-      final url = Uri.parse(
-          'https://api.cloudinary.com/v1_1/$cloudName/image/upload');
-=======
       final url =
           Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
->>>>>>> master_login_backend
 
       var request = http.MultipartRequest('POST', url);
 
