@@ -15,58 +15,136 @@ class ShoppingCartPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text("Shopping Cart (${cart.items.length})"),
+        centerTitle: true,
+        elevation: 0,
       ),
       body: cart.items.isEmpty
           ? const Center(child: Text("Your cart is empty."))
           : Column(
               children: [
+                // Product List
                 Expanded(
                   child: ListView.builder(
                     itemCount: cart.items.length,
                     itemBuilder: (context, index) {
                       final item = cart.items[index];
-                      return Card(
-                        child: ListTile(
-                          leading: Image.network(item.imageUrl),
-                          title: Text(item.title),
-                          subtitle: Text('${item.subtitle}\nPHP ${item.price}'),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.remove),
-                                onPressed: () {
-                                  cart.updateQuantity(item, item.quantity - 1);
-                                },
-                              ),
-                              Text(item.quantity.toString()),
-                              IconButton(
-                                icon: const Icon(Icons.add),
-                                onPressed: () {
-                                  cart.updateQuantity(item, item.quantity + 1);
-                                },
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete),
-                                onPressed: () {
-                                  cart.removeItem(item);
-                                },
-                              ),
-                            ],
+                      return Padding(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                        child: Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.0),
+                          ),
+                          elevation: 4,
+                          child: Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: Row(
+                              children: [
+                                // Image
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8.0),
+                                  child: Image.network(item.imageUrl,
+                                    height: 60,
+                                    width: 60,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                // Product Details
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item.title,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        item.subtitle,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Php ${item.price.toStringAsFixed(2)}',
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Quantity Controls
+                                Row(
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.remove),
+                                      onPressed: () {
+                                        cart.updateQuantity(item, item.quantity - 1);
+                                      },
+                                    ),
+                                    Text(
+                                      item.quantity.toString(),
+                                      style: const TextStyle(fontSize: 16),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.add),
+                                      onPressed: () {
+                                        cart.updateQuantity(item, item.quantity + 1);
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       );
                     },
                   ),
                 ),
-                Padding(
+                // Bottom Bar
+                Container(
                   padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey,
+                        blurRadius: 6,
+                        offset: Offset(0, -3),
+                      ),
+                    ],
+                  ),
+                  child: Row(
                     children: [
-                      Text("Total: PHP ${cart.totalPrice.toStringAsFixed(2)}",
-                          style: const TextStyle(fontSize: 18)),
+                      // Total Price
+                      Text(
+                        "Total: Php ${cart.totalPrice.toStringAsFixed(2)}",
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      // Checkout Button
                       ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
+                          backgroundColor: Colors.blue,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8.0),
+                          ),
+                        ),
                         onPressed: () async {
                           if (cart.items.isNotEmpty) {
                             final user = FirebaseAuth.instance.currentUser;
@@ -79,8 +157,10 @@ class ShoppingCartPage extends StatelessWidget {
                               return;
                             }
 
+                            // Fetch user data from Firestore
                             final userDoc = await FirebaseFirestore.instance
-                                .collection('users')
+                                .collection(
+                                  'users')  // Make sure this is the correct collection name
                                 .doc(user.uid)
                                 .get();
 
@@ -114,11 +194,12 @@ class ShoppingCartPage extends StatelessWidget {
                               'created_at': FieldValue.serverTimestamp(),
                             };
 
+                            // Add the order data to Firestore
                             await FirebaseFirestore.instance
                                 .collection('orders')
                                 .add(orderData);
 
-                            cart.clear();
+                            cart.clear(); // Clear the cart after checkout
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text("Order placed successfully!"),
