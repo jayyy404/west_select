@@ -5,8 +5,6 @@ class AppUser {
   final String email;
   String? displayName;
   final String? profilePictureUrl;
-  final String? address;
-  final String? phoneNumber;
   final List<String>? cart; // List of product IDs in the cart
   final List<Order>? orderHistory; // List of orders
 
@@ -15,8 +13,6 @@ class AppUser {
     required this.email,
     this.displayName,
     this.profilePictureUrl,
-    this.address,
-    this.phoneNumber,
     this.cart,
     this.orderHistory,
   });
@@ -28,8 +24,6 @@ class AppUser {
       email: data['email'] ?? '',
       displayName: data['displayName'],
       profilePictureUrl: data['profilePictureUrl'],
-      address: data['address'],
-      phoneNumber: data['phoneNumber'],
       cart: List<String>.from(data['cart'] ?? []),
       orderHistory: (data['orderHistory'] as List<dynamic>?)
           ?.map((order) => Order.fromFirestore(order))
@@ -44,8 +38,6 @@ class AppUser {
       'email': email,
       'displayName': displayName,
       'profilePictureUrl': profilePictureUrl,
-      'address': address,
-      'phoneNumber': phoneNumber,
       'cart': cart,
       'orderHistory':
           orderHistory?.map((order) => order.toFirestore()).toList(),
@@ -55,10 +47,10 @@ class AppUser {
 
 class Order {
   final String orderId;
-  final List<String> productIds; // IDs of products in the order
+  final List<String> productIds;
   final double totalAmount;
   final DateTime orderDate;
-  final String status; // Either "pending" or "completed"
+  final String status;
 
   Order({
     required this.orderId,
