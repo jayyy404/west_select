@@ -14,38 +14,74 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Colors.black),
-        title: TextField(
-          decoration: InputDecoration(
-            hintText: 'Search an item...',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(20),
-              borderSide: BorderSide.none,
-            ),
-            filled: true,
-            fillColor: Colors.grey[200],
-            prefixIcon: const Icon(Icons.search),
+      backgroundColor: const Color(0xFFF7F7F7),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(125),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+          ),
+          child: Column(
+            children: [
+              const Spacer(),
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 44,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: const Color(0xFF201D1B)),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              decoration: const InputDecoration(
+                                border: InputBorder.none,
+                                hintText: 'Search an item...',
+                                hintStyle: TextStyle(
+                                  fontFamily: "Open Sans",
+                                  fontSize: 13,
+                                  height: 2.2,
+                                  fontWeight: FontWeight.w400,
+                                  color: Color(0xFF201D1B),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const Icon(Icons.search, color: Color(0xFF201D1B)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    icon: const Icon(Icons.notifications,
+                        color: Color(0xFF201D1B)),
+                    onPressed: () {},
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.shopping_cart,
+                        color: Color(0xFF201D1B)),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ShoppingCartPage(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.shopping_cart_outlined),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const ShoppingCartPage()),
-              );
-            },
-          ),
-        ],
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: _firestore.collection('post').snapshots(),
@@ -69,7 +105,13 @@ class HomePage extends StatelessWidget {
                   const SizedBox(height: 16),
                   const Text(
                     "This Week's Listing",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontFamily: 'Open Sans',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xFF201D1B),
+                      height: 1.2,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Expanded(
@@ -90,7 +132,6 @@ class HomePage extends StatelessWidget {
                         }
                         return GestureDetector(
                           onTap: () {
-                            // Fetch the seller name asynchronously
                             _firestore
                                 .collection('users')
                                 .doc(listing.postUserId)
@@ -103,7 +144,6 @@ class HomePage extends StatelessWidget {
                                 final sellerName =
                                     appUser.displayName ?? 'Unknown Seller';
 
-                                // Navigate to ProductDetailPage with the necessary data
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -117,7 +157,6 @@ class HomePage extends StatelessWidget {
                                   ),
                                 );
                               } else {
-                                // Handle the case where the seller data doesn't exist
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -150,7 +189,6 @@ class HomePage extends StatelessWidget {
                                       ),
                                       image: DecorationImage(
                                         image: NetworkImage(
-                                          // Check for null or empty imageUrl
                                           listing.imageUrl.isNotEmpty
                                               ? listing.imageUrl
                                               : 'https://via.placeholder.com/150',
@@ -169,7 +207,10 @@ class HomePage extends StatelessWidget {
                                       Text(
                                         listing.postTitle,
                                         style: const TextStyle(
-                                            fontWeight: FontWeight.bold),
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                          fontFamily: 'Open Sans',
+                                        ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -206,8 +247,9 @@ class HomePage extends StatelessWidget {
                                           return Text(
                                             sellerName,
                                             style: const TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 12),
+                                              color: Colors.grey,
+                                              fontSize: 12,
+                                            ),
                                           );
                                         },
                                       ),
