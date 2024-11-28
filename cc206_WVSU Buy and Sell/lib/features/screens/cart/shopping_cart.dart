@@ -13,6 +13,7 @@ class ShoppingCartPage extends StatelessWidget {
     final cart = Provider.of<CartModel>(context);
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text("Shopping Cart (${cart.items.length})"),
         centerTitle: true,
@@ -141,6 +142,7 @@ class ShoppingCartPage extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 24, vertical: 12),
                           backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8.0),
                           ),
