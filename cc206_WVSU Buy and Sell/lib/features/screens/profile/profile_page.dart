@@ -84,26 +84,32 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.white, // Background color #F7F7F7
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          "Profile",
-          style: TextStyle(color: Colors.black),
-        ),
+        title: null, // Remove title
         actions: [
+          // Edit name icon (Blue), close to the name
           IconButton(
-            icon: const Icon(Icons.settings, color: Colors.grey),
-            onPressed: () {},
+            icon: const Icon(Icons.edit,
+                color: Color(0xFF1976D2)), // Blue icon #1976D2
+            onPressed: _editDisplayName,
+          ),
+          // Sign out icon (Red), aligned to the right
+          IconButton(
+            icon: const Icon(Icons.logout,
+                color: Color(0xFFD32F2F)), // Red icon #D32F2F
+            onPressed: _signOut,
           ),
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Profile info section
             Row(
               children: [
                 CircleAvatar(
@@ -124,28 +130,58 @@ class _ProfilePageState extends State<ProfilePage> {
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
+                          color: Color(0xFF1976D2), // Blue color #1976D2
                         ),
                       ),
-                      TextButton(
-                        onPressed: _editDisplayName,
-                        child: const Text('Edit Name'),
+                      Text(
+                        widget.appUser.email ?? "No Email",
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey,
+                        ),
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
 
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+            const SizedBox(
+                height: 15), // Space between profile and next section
+
+            // Column for "Check your purchases" text and the tab navigation
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildTabButton("Listing", 0),
-                _buildTabButton("Pending", 1),
-                _buildTabButton("Completed", 2),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    'Check your purchases',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.normal,
+                      color: Color(0xFF201D1B), // Text color #201D1B
+                      fontFamily: 'Open Sans',
+                      height: 1.2, // Line height 120%
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20), // Space between text and tabs
+
+                // Add Container without border
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildTabButton("Pending", 0),
+                    _buildTabButton("History", 1),
+                    _buildTabButton("Review", 2),
+                  ],
+                ),
               ],
             ),
-            const SizedBox(height: 20),
+
+            const SizedBox(height: 20), // Space between tabs and content
 
             Expanded(
               child: GridView.builder(
@@ -171,32 +207,13 @@ class _ProfilePageState extends State<ProfilePage> {
                 },
               ),
             ),
-
-            // Sign Out
-            ElevatedButton(
-              onPressed: _signOut,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text(
-                'Sign Out',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
           ],
         ),
       ),
     );
   }
 
+  // Function to switch between tabs
   Widget _buildTabButton(String label, int index) {
     return GestureDetector(
       onTap: () {
@@ -225,13 +242,14 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  // Now returns empty data, replace with actual data fetching logic
   List<Map<String, String>> getCurrentTabData() {
     switch (selectedTabIndex) {
-      case 0:
+      case 0: // Pending tab data
         return [];
-      case 1:
+      case 1: // History tab data
         return [];
-      case 2:
+      case 2: // Review tab data
         return [];
       default:
         return [];
