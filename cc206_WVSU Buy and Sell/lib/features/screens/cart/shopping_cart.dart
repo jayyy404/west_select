@@ -36,7 +36,7 @@ class ShoppingCartPage extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final item = cart.items[index];
                       return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 2.0),
                         child: Card(
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12.0),
