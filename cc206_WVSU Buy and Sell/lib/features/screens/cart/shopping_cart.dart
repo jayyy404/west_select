@@ -15,6 +15,12 @@ class ShoppingCartPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.chevron_left, size: 30,),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
         title: Text("Shopping Cart (${cart.items.length})"),
         centerTitle: true,
         elevation: 0,
