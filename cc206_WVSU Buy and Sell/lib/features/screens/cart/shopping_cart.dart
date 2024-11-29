@@ -106,6 +106,10 @@ class ShoppingCartPage extends StatelessWidget {
                       final orderRef = await FirebaseFirestore.instance
                           .collection('orders')
                           .add(orderData);
+                      // Include the generated order ID in the order data
+                      await orderRef.update({
+                        'orderId': orderRef.id,
+                      });
 
                       // Clear the cart after checkout
                       cart.clear();
