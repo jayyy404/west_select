@@ -1,5 +1,4 @@
 import 'package:cc206_west_select/features/screens/main_page.dart';
-import 'package:cc206_west_select/features/screens/profile/profile_page.dart';
 import 'package:cc206_west_select/features/set_profile.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -86,7 +85,7 @@ class _LogInPageState extends State<LogInPage> {
             uid: user.uid,
             email: user.email ?? '',
             displayName: user.displayName ?? '',
-            profilePictureUrl: user.photoURL ?? '',
+            profilePictureUrl: user.photoURL ?? '', orderHistory: [], userListings: [],
           );
         } else {
           // Get this from FirebaseAuth.currentUser.uid
@@ -160,7 +159,7 @@ class _LogInPageState extends State<LogInPage> {
             uid: user.uid,
             email: user.email ?? '',
             displayName: user.displayName ?? '',
-            profilePictureUrl: user.photoURL ?? '',
+            profilePictureUrl: user.photoURL ?? '', orderHistory: [], userListings: [],
           );
 
           Navigator.pushReplacement(

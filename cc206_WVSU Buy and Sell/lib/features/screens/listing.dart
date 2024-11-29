@@ -1,14 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Listing {
+  final String productId;  // New field for product ID
   final String postTitle;
   final String postDescription;
   final int numComments;
   final String postUserId;
-  final String imageUrl; // New field for image URL
-  final double price; // New field for price
+  final String imageUrl;  // Field for image URL
+  final double price;  // Field for price
 
   Listing({
+    required this.productId, // Initialize productId
     required this.postTitle,
     required this.postDescription,
     required this.numComments,
@@ -20,6 +22,7 @@ class Listing {
   // Convert Firestore document to Listing
   factory Listing.fromFirestore(Map<String, dynamic> doc) {
     return Listing(
+      productId: doc['product_id'] ?? '',  // Map the productId from Firestore
       postTitle: doc['post_title'] ?? '',
       postDescription: doc['post_description'] ?? '',
       numComments: doc['num_comments'] ?? 0,
@@ -34,6 +37,7 @@ class Listing {
   // Convert Listing to Firestore document
   Map<String, dynamic> toFirestore() {
     return {
+      'product_id': productId,  // Include productId in Firestore document
       'post_title': postTitle,
       'post_description': postDescription,
       'num_comments': numComments,

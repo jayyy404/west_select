@@ -21,7 +21,7 @@ class _ProfilePageState extends State<ProfilePage> {
   void initState() {
     super.initState();
     _userStream = FirebaseFirestore.instance
-        .collection('users') // Replace with your Firestore collection name
+        .collection('users') // Firestore collection for users
         .doc(widget.appUser.uid)
         .snapshots();
   }
@@ -57,7 +57,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 final newName = editNameController.text.trim();
                 if (newName.isNotEmpty) {
                   await FirebaseFirestore.instance
-                      .collection('users') // Replace with your Firestore collection name
+                      .collection('users') // Firestore collection for users
                       .doc(widget.appUser.uid)
                       .update({'displayName': newName});
 
@@ -206,41 +206,44 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildOrderList(AppUser appUser) {
-    final orders = selectedTabIndex == 0
-        ? _getPendingOrders(appUser)
-        : _getCompletedOrders(appUser);
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('orders')
+          .where('user_id', isEqualTo: appUser.uid)
+          .orderBy('created_at', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-    if (orders.isEmpty) {
-      return const Center(child: Text("No orders to display"));
-    }
+        final orders = snapshot.data!.docs;
 
-    return ListView.builder(
-      itemCount: orders.length,
-      itemBuilder: (context, index) {
-        final order = orders[index];
-        return Card(
-          child: ListTile(
-            title: Text("Order ID: ${order.orderId}"),
-            subtitle: Text(
-              "Total: \$${order.totalAmount.toStringAsFixed(2)}\nDate: ${order.orderDate.toLocal()}",
-            ),
-          ),
+        if (orders.isEmpty) {
+          return const Center(child: Text("No orders to display"));
+        }
+
+        final filteredOrders = selectedTabIndex == 0
+            ? orders.where((order) => order['status'] == 'pending').toList()
+            : orders.where((order) => order['status'] == 'completed').toList();
+
+        return ListView.builder(
+          itemCount: filteredOrders.length,
+          itemBuilder: (context, index) {
+            final order = filteredOrders[index];
+            final data = order.data() as Map<String, dynamic>;
+
+            return Card(
+              child: ListTile(
+                title: Text("Order ID: ${data['order_id']}"),
+                subtitle: Text(
+                  "Total: PHP ${data['total_price']} - Date: ${data['created_at'].toDate()}",
+                ),
+              ),
+            );
+          },
         );
       },
     );
-  }
-
-  List<UserOrder> _getPendingOrders(AppUser appUser) {
-    return appUser.orderHistory
-        ?.where((order) => order.status == 'pending')
-        .toList() ??
-        [];
-  }
-
-  List<UserOrder> _getCompletedOrders(AppUser appUser) {
-    return appUser.orderHistory
-        ?.where((order) => order.status == 'completed')
-        .toList() ??
-        [];
   }
 }

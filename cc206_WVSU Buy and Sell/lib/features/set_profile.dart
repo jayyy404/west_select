@@ -29,7 +29,7 @@ class SetupProfilePage extends StatelessWidget {
                   uid: user.uid,
                   email: user.email,
                   displayName: _displayNameController.text,
-                  profilePictureUrl: user.profilePictureUrl,
+                  profilePictureUrl: user.profilePictureUrl, orderHistory: [], userListings: [],
                 );
                 await UserRepo().addUser(updatedUser);
                 // Get this from FirebaseAuth.currentUser.uid
