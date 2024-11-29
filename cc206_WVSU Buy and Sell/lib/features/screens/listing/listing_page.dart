@@ -169,49 +169,106 @@ class _CreateListingPageState extends State<CreateListingPage> {
   }
 
   Widget _buildOrdersList() {
+    final currentUser = FirebaseAuth.instance.currentUser; // Get the current user
+    if (currentUser == null) {
+      return const Center(child: Text("User not logged in."));
+    }
+
+    final String currentUserId = currentUser.uid;
+
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('orders')
           .orderBy('created_at', descending: true)
           .snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        final orders = snapshot.data!.docs;
 
-        if (orders.isEmpty) {
+        if (snapshot.hasError) {
+          return Center(child: Text("Error: ${snapshot.error}"));
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const Center(child: Text("No orders found."));
         }
 
-        return ListView.builder(
-          itemCount: orders.length,
-          itemBuilder: (context, index) {
-            final order = orders[index];
-            final data = order.data() as Map<String, dynamic>;
+        final orders = snapshot.data!.docs;
 
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ListTile(
-                title: Text(data['user_name'] ?? 'Unknown User'),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Email: ${data['user_email'] ?? 'N/A'}"),
-                    Text("Total Price: PHP ${data['total_price']}"),
-                    const SizedBox(height: 8),
-                    Text("Products:"),
-                    for (var product in data['products'])
-                      Text(
-                        "- ${product['title']} (x${product['quantity']}): PHP ${product['price']}",
-                      ),
-                  ],
-                ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.check_circle, color: Colors.blue),
-                  onPressed: () => markOrderAsCompleted(order.id),
-                ),
-              ),
+        // Pre-fetch buyer names and store them in a map
+        Map<String, String> buyerNames = {};
+
+        Future<void> fetchBuyerNames() async {
+          for (var order in orders) {
+            final data = order.data() as Map<String, dynamic>;
+            String? buyerId = data['buyerId'];
+            if (buyerId != null && !buyerNames.containsKey(buyerId)) {
+              final userDoc = await FirebaseFirestore.instance.collection('users').doc(buyerId).get();
+              buyerNames[buyerId] = userDoc.exists
+                  ? (userDoc.data()?['displayName'] as String?) ?? 'Unknown Buyer'
+                  : 'Unknown Buyer';
+            }
+          }
+        }
+
+        // Filter orders based on the seller
+        List<QueryDocumentSnapshot> filteredOrders = orders.where((order) {
+          final data = order.data() as Map<String, dynamic>;
+          final products = data['products'] as List<dynamic>;
+          return products.any((product) => product['sellerId'] == currentUserId);
+        }).toList();
+
+        return FutureBuilder<void>(
+          future: fetchBuyerNames(),
+          builder: (context, asyncSnapshot) {
+            if (asyncSnapshot.connectionState != ConnectionState.done) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (filteredOrders.isEmpty) {
+              return const Center(child: Text("No orders for your products."));
+            }
+
+            return ListView.builder(
+              itemCount: filteredOrders.length,
+              itemBuilder: (context, index) {
+                final order = filteredOrders[index];
+                final data = order.data() as Map<String, dynamic>;
+
+                String? buyerId = data['buyerId'];
+                String buyerName = (buyerId != null && buyerNames.containsKey(buyerId))
+                    ? buyerNames[buyerId]!
+                    : 'Unknown Buyer';
+
+                return Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: ListTile(
+                    title: Text(buyerName), // Display the fetched buyer's name
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Total Price: PHP ${data['total_price']}"),
+                        const SizedBox(height: 8),
+                        Text("Products:"),
+                        for (var product in data['products'])
+                          if (product['sellerId'] == currentUserId) // Only display products sold by the current user
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4.0),
+                              child: Text(
+                                "- ${product['title']} (x${product['quantity']}): PHP ${product['price']}",
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                            ),
+                      ],
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.check_circle, color: Colors.blue),
+                      onPressed: () => markOrderAsCompleted(order.id), // Mark order as completed
+                    ),
+                  ),
+                );
+              },
             );
           },
         );
@@ -244,14 +301,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
           .doc(orderId)
           .set(orderData);
 
-      await FirebaseFirestore.instance
-          .collection('orders')
-          .doc(orderId)
-          .delete();
-
-      setState(() {
-        _completedOrderCount++; // Increase completed orders
-      });
+      await FirebaseFirestore.instance.collection('orders').doc(orderId).delete();
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Order marked as completed")),
@@ -264,16 +314,25 @@ class _CreateListingPageState extends State<CreateListingPage> {
     }
   }
 
+
   Future<void> createNewOrder(Map<String, dynamic> orderData) async {
     try {
+      User? currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        print("No user is logged in.");
+        return;
+      }
+
+      String buyerId = currentUser.uid;  // Get buyer's ID
+
+      // Add the buyerId to the order data
+      orderData['buyerId'] = buyerId;
+
       // Add the order to the 'orders' collection
       await FirebaseFirestore.instance.collection('orders').add(orderData);
 
       // Increment the pending order count
-      await FirebaseFirestore.instance
-          .collection('shop_status')
-          .doc('status')
-          .update({
+      await FirebaseFirestore.instance.collection('shop_status').doc('status').update({
         'pending_orders': FieldValue.increment(1),
       });
 
@@ -291,6 +350,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
       );
     }
   }
+
 
   Future<void> uploadImageToCloudinary() async {
     try {
@@ -374,6 +434,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
 
   Future<void> createListing() async {
     try {
+      // Get the current user
       User? currentUser = FirebaseAuth.instance.currentUser;
 
       if (currentUser == null) {
@@ -381,10 +442,11 @@ class _CreateListingPageState extends State<CreateListingPage> {
         return;
       }
 
+      // Get the user ID and display name
       String userId = currentUser.uid;
-
       String userDisplayName = currentUser.displayName ?? 'Unknown Seller';
 
+      // Check if required fields are filled
       if (_titleController.text.isEmpty ||
           _descriptionController.text.isEmpty ||
           _priceController.text.isEmpty ||
@@ -397,23 +459,27 @@ class _CreateListingPageState extends State<CreateListingPage> {
         return;
       }
 
+      // Create the listing data including sellerId (userId)
       final listingData = {
         'post_title': _titleController.text,
         'post_description': _descriptionController.text,
         'price': double.parse(_priceController.text),
         'image_url': _uploadedImageUrl,
-        'post_users': userId,
+        'post_users': userId,  // Store sellerId (userId)
         'num_comments': 0,
         'createdAt': FieldValue.serverTimestamp(),
         'sellerName': userDisplayName,
       };
 
+      // Add the listing data to Firestore
       await FirebaseFirestore.instance.collection('post').add(listingData);
 
+      // Show a success message
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Listing created successfully!")),
       );
 
+      // Reset the form
       setState(() {
         _titleController.clear();
         _descriptionController.clear();
@@ -422,59 +488,84 @@ class _CreateListingPageState extends State<CreateListingPage> {
         _isCreatingListing = false;
       });
     } catch (e) {
-      print("Error creating listing: $e");
+      if (kDebugMode) {
+        print("Error creating listing: $e");
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error creating listing: ${e.toString()}")),
       );
     }
   }
 
+
+  // Build "My Products" List
   Widget _buildMyProductsList() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('post')
-          .where('post_users',
+    // Track whether the delay period has elapsed
+    bool isDelayElapsed = false;
+
+    // Trigger the half-second delay using Future.delayed
+    return FutureBuilder<void>(
+      future: Future.delayed(const Duration(milliseconds: 500)),
+      builder: (context, delaySnapshot) {
+        // Update the delay tracking variable
+        if (delaySnapshot.connectionState == ConnectionState.done) {
+          isDelayElapsed = true;
+        }
+
+        return StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('post')
+              .where('post_users',
               isEqualTo: FirebaseAuth.instance.currentUser?.uid)
-          .orderBy('createdAt', descending: true)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final listings = snapshot.data!.docs;
+              .orderBy('createdAt', descending: true)
+              .snapshots(),
+          builder: (context, snapshot) {
+            // Show a loading spinner if:
+            // - The delay is not yet complete, or
+            // - The data has not yet been fetched
+            if (!isDelayElapsed || !snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-        if (listings.isEmpty) {
-          return const Center(child: Text("You have no products listed."));
-        }
+            final listings = snapshot.data!.docs;
 
-        return ListView.builder(
-          itemCount: listings.length,
-          itemBuilder: (context, index) {
-            final listing = listings[index];
-            final data = listing.data() as Map<String, dynamic>;
+            // Show a "no products" message if there are no listings
+            if (listings.isEmpty) {
+              return const Center(child: Text("You have no products listed."));
+            }
 
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ListTile(
-                title: Text(data['post_title']),
-                subtitle: Text("PHP ${data['price']}"),
-                leading: Image.network(
-                  data['image_url'] ?? '',
-                  width: 50,
-                  height: 50,
-                  fit: BoxFit.cover,
-                ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => deleteListing(listing.id),
-                ),
-              ),
+            // Render the list of products
+            return ListView.builder(
+              itemCount: listings.length,
+              itemBuilder: (context, index) {
+                final listing = listings[index];
+                final data = listing.data() as Map<String, dynamic>;
+
+                return Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: ListTile(
+                    title: Text(data['post_title']),
+                    subtitle: Text("PHP ${data['price']}"),
+                    leading: Image.network(
+                      data['image_url'] ?? '',
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => deleteListing(listing.id),
+                    ),
+                  ),
+                );
+              },
             );
           },
         );
       },
     );
   }
+
 
   Future<void> deleteListing(String listingId) async {
     try {
@@ -488,7 +579,9 @@ class _CreateListingPageState extends State<CreateListingPage> {
         const SnackBar(content: Text("Listing deleted successfully")),
       );
     } catch (e) {
-      print("Error deleting listing: $e");
+      if (kDebugMode) {
+        print("Error deleting listing: $e");
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Failed to delete listing")),
       );

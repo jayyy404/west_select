@@ -1,63 +1,70 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 class CartItem {
-  final String imageUrl;
+  final String id;
   final String title;
-  final String subtitle;
   final double price;
-  int quantity;
+  final String imageUrl;
+  final String sellerId;  // Seller ID
+  late final int quantity;
 
   CartItem({
-    required this.imageUrl,
+    required this.id,
     required this.title,
-    required this.subtitle,
     required this.price,
-    this.quantity = 1,
+    required this.imageUrl,
+    required this.sellerId,  // Seller ID
+    required this.quantity,
   });
 }
 
-class CartModel extends ChangeNotifier {
+class CartModel with ChangeNotifier {
   List<CartItem> _items = [];
 
   List<CartItem> get items => _items;
 
-  double get totalPrice {
-    double total = 0;
-    for (var item in _items) {
-      total += item.price * item.quantity;
-    }
-    return total;
-  }
-
-  void addItem(CartItem item) {
-    final index =
-        _items.indexWhere((existingItem) => existingItem.title == item.title);
-    if (index != -1) {
-      _items[index].quantity += item.quantity;
+  // Add an item to the cart
+  void addToCart(String productId, String productTitle, double productPrice, String imageUrl, String sellerId) {
+    final existingItemIndex = _items.indexWhere((item) => item.id == productId);
+    if (existingItemIndex >= 0) {
+      _items[existingItemIndex].quantity += 1;
     } else {
-      _items.add(item);
+      _items.add(CartItem(
+        id: productId,
+        title: productTitle,
+        price: productPrice,
+        imageUrl: imageUrl,
+        sellerId: sellerId,  // Include sellerId here
+        quantity: 1,
+      ));
     }
     notifyListeners();
   }
 
-  void updateQuantity(CartItem item, int quantity) {
-    if (quantity <= 0) {
-      _items.remove(item);
-    } else {
-      // Update the quantity
-      item.quantity = quantity;
-    }
-    notifyListeners();
-  }
-
+  // Remove an item from the cart
   void removeItem(CartItem item) {
     _items.remove(item);
     notifyListeners();
   }
 
-  // Add clear method to reset the cart
+  // Update the quantity of a cart item
+  void updateQuantity(CartItem item, int newQuantity) {
+    if (newQuantity <= 0) {
+      _items.remove(item);
+    } else {
+      item.quantity = newQuantity;
+    }
+    notifyListeners();
+  }
+
+  // Calculate total price
+  double get totalPrice {
+    return _items.fold(0.0, (total, currentItem) => total + currentItem.price * currentItem.quantity);
+  }
+
+  // Clear the cart
   void clear() {
-    _items.clear(); // Clears the list of items
+    _items.clear();
     notifyListeners();
   }
 }

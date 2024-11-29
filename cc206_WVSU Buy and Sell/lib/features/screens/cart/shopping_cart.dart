@@ -1,4 +1,3 @@
-import 'package:cc206_west_select/firebase/app_user.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'cart_model.dart';
@@ -29,7 +28,9 @@ class ShoppingCartPage extends StatelessWidget {
                   child: ListTile(
                     leading: Image.network(item.imageUrl),
                     title: Text(item.title),
-                    subtitle: Text('${item.subtitle}\nPHP ${item.price}'),
+                    subtitle: Text(
+                      'Seller: ${item.sellerId}\nPHP ${item.price}',
+                    ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -64,8 +65,10 @@ class ShoppingCartPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Total: PHP ${cart.totalPrice.toStringAsFixed(2)}",
-                    style: const TextStyle(fontSize: 18)),
+                Text(
+                  "Total: PHP ${cart.totalPrice.toStringAsFixed(2)}",
+                  style: const TextStyle(fontSize: 18),
+                ),
                 ElevatedButton(
                   onPressed: () async {
                     if (cart.items.isNotEmpty) {
@@ -79,66 +82,34 @@ class ShoppingCartPage extends StatelessWidget {
                         return;
                       }
 
-                      // Fetch user data from Firestore
-                      final userDoc = await FirebaseFirestore.instance
-                          .collection('users') // Ensure this is the correct collection
-                          .doc(user.uid)
-                          .get();
-
-                      if (!userDoc.exists) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("User data not found!"),
-                          ),
-                        );
-                        return;
-                      }
-
-                      final appUser =
-                      AppUser.fromFirestore(userDoc.data()!);
-                      final displayName =
-                          appUser.displayName ?? 'Anonymous';
-
+                      // Create an order including buyerId
                       final orderData = {
-                        'user_name': displayName,
-                        'user_email': user.email,
+                        'buyerId': user.uid,  // Add buyerId
+                        'buyerName': user.displayName ?? 'Anonymous',
+                        'buyerEmail': user.email,
                         'total_price': cart.totalPrice,
                         'products': cart.items.map((item) {
                           return {
+                            'productId': item.id,
                             'title': item.title,
-                            'subtitle': item.subtitle,
                             'price': item.price,
                             'quantity': item.quantity,
                             'imageUrl': item.imageUrl,
+                            'sellerId': item.sellerId, // Include sellerId in the order
                           };
                         }).toList(),
                         'created_at': FieldValue.serverTimestamp(),
-                        'status': 'pending',  // Set the order status as 'pending'
+                        'status': 'pending', // Order status
                       };
 
                       // Add the order data to Firestore
-                      await FirebaseFirestore.instance
+                      final orderRef = await FirebaseFirestore.instance
                           .collection('orders')
                           .add(orderData);
 
-                      // Update the user's order history in Firestore
-                      final orderHistory = appUser.orderHistory ?? [];
-                      orderHistory.add(UserOrder(
-                        orderId: FirebaseFirestore.instance.collection('orders').doc().id,  // Empty until added
-                        productIds: cart.items.map((item) => item.title).toList(),
-                        totalAmount: cart.totalPrice,
-                        orderDate: DateTime.now(),
-                        status: 'pending',
-                      ));
+                      // Clear the cart after checkout
+                      cart.clear();
 
-                      await FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(user.uid)
-                          .update({
-                        'orderHistory': orderHistory.map((order) => order.toFirestore()).toList()
-                      });
-
-                      cart.clear(); // Clear the cart after checkout
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text("Order placed successfully!"),

@@ -1,11 +1,9 @@
 import 'package:cc206_west_select/features/screens/productdetails/product.dart';
-import 'package:cc206_west_select/firebase/app_user.dart';
 import 'package:cc206_west_select/firebase/search_service.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cc206_west_select/features/screens/listing.dart';
 import 'package:cc206_west_select/features/screens/cart/shopping_cart.dart';
+import 'package:cc206_west_select/features/screens/listing.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -17,8 +15,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController _searchController = TextEditingController();
-  final SearchService _searchService =
-      SearchService(FirebaseFirestore.instance);
+  final SearchService _searchService = SearchService(FirebaseFirestore.instance);
   List<QueryDocumentSnapshot<Map<String, dynamic>>> _searchResults = [];
   bool _isSearching = false;
 
@@ -162,7 +159,7 @@ class _HomePageState extends State<HomePage> {
                     child: GridView.builder(
                       padding: const EdgeInsets.only(bottom: 16),
                       gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
+                      const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         childAspectRatio: 0.8,
                         crossAxisSpacing: 8,
@@ -171,52 +168,23 @@ class _HomePageState extends State<HomePage> {
                       itemCount: listings.length,
                       itemBuilder: (context, index) {
                         final listing = listings[index];
-                        if (kDebugMode) {
-                          print(listing.imageUrl);
-                        }
                         return GestureDetector(
                           onTap: () {
-                            _firestore
-                                .collection('users')
-                                .doc(listing.postUserId)
-                                .get()
-                                .then((userSnapshot) {
-                              if (userSnapshot.exists) {
-                                final userData =
-                                    userSnapshot.data() as Map<String, dynamic>;
-                                final appUser = AppUser.fromFirestore(userData);
-                                final sellerName =
-                                    appUser.displayName ?? 'Unknown Seller';
-
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ProductDetailPage(
-                                      imageUrl: listing.imageUrl,
-                                      productTitle: listing.postTitle,
-                                      description: listing.postDescription,
-                                      price: listing.price,
-                                      sellerName: sellerName,
-                                      userId: '',
-                                    ),
-                                  ),
-                                );
-                              } else {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ProductDetailPage(
-                                      imageUrl: listing.imageUrl,
-                                      productTitle: listing.postTitle,
-                                      description: listing.postDescription,
-                                      price: listing.price,
-                                      sellerName: 'Unknown Seller',
-                                      userId: '',
-                                    ),
-                                  ),
-                                );
-                              }
-                            });
+                            // Navigate to ProductDetailPage and pass productId
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ProductDetailPage(
+                                  productId: listing.productId,  // Pass productId
+                                  imageUrl: listing.imageUrl,
+                                  productTitle: listing.postTitle,
+                                  description: listing.postDescription,
+                                  price: listing.price,
+                                  sellerName: 'Unknown Seller', // Will be updated later
+                                  userId: listing.postUserId,
+                                ),
+                              ),
+                            );
                           },
                           child: Card(
                             elevation: 2,
@@ -248,7 +216,7 @@ class _HomePageState extends State<HomePage> {
                                   padding: const EdgeInsets.all(8.0),
                                   child: Column(
                                     crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         listing.postTitle,
@@ -267,38 +235,6 @@ class _HomePageState extends State<HomePage> {
                                             color: Colors.green),
                                       ),
                                       const SizedBox(height: 4),
-                                      FutureBuilder<DocumentSnapshot>(
-                                        future: _firestore
-                                            .collection('users')
-                                            .doc(listing.postUserId)
-                                            .get(),
-                                        builder: (context, userSnapshot) {
-                                          if (userSnapshot.connectionState ==
-                                              ConnectionState.waiting) {
-                                            return const Text('Loading...');
-                                          } else if (userSnapshot.hasError ||
-                                              !userSnapshot.hasData ||
-                                              !userSnapshot.data!.exists) {
-                                            return const Text('Unknown Seller');
-                                          }
-
-                                          final userData = userSnapshot.data!
-                                              .data() as Map<String, dynamic>;
-                                          final appUser =
-                                              AppUser.fromFirestore(userData);
-                                          final sellerName =
-                                              appUser.displayName ??
-                                                  'Unknown Seller';
-
-                                          return Text(
-                                            sellerName,
-                                            style: const TextStyle(
-                                              color: Colors.grey,
-                                              fontSize: 12,
-                                            ),
-                                          );
-                                        },
-                                      ),
                                     ],
                                   ),
                                 ),
