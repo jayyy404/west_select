@@ -6,7 +6,7 @@ class CartItem {
   final double price;
   final String imageUrl;
   final String sellerId;  // Seller ID
-  late final int quantity;
+  late int quantity;      // Fixed to use an integer quantity
 
   CartItem({
     required this.id,
@@ -14,7 +14,7 @@ class CartItem {
     required this.price,
     required this.imageUrl,
     required this.sellerId,  // Seller ID
-    required this.quantity,
+    this.quantity = 1,       // Default quantity set to 1 if not passed
   });
 }
 
@@ -24,20 +24,25 @@ class CartModel with ChangeNotifier {
   List<CartItem> get items => _items;
 
   // Add an item to the cart
-  void addToCart(String productId, String productTitle, double productPrice, String imageUrl, String sellerId) {
+  void addToCart(String productId, String title, double price, String imageUrl, String sellerId) {
+    // Check if the item is already in the cart
     final existingItemIndex = _items.indexWhere((item) => item.id == productId);
+
     if (existingItemIndex >= 0) {
-      _items[existingItemIndex].quantity += 1;
+      // If the item already exists, just increase the quantity
+      _items[existingItemIndex].quantity++;
     } else {
-      _items.add(CartItem(
-        id: productId,
-        title: productTitle,
-        price: productPrice,
+      // Otherwise, add the new item with default quantity of 1
+      final newItem = CartItem(
+        id: productId,  // The productId (post_id)
+        title: title,
+        price: price,
         imageUrl: imageUrl,
-        sellerId: sellerId,  // Include sellerId here
-        quantity: 1,
-      ));
+        sellerId: sellerId,  // The seller ID
+      );
+      _items.add(newItem);
     }
+
     notifyListeners();
   }
 

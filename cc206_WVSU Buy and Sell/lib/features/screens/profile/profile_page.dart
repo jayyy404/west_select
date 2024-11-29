@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cc206_west_select/firebase/auth_service.dart';
 import 'package:cc206_west_select/features/log_in.dart';
 import 'package:cc206_west_select/firebase/app_user.dart';
+import 'package:cc206_west_select/features/screens/profile/order_details_page.dart';
 
 class ProfilePage extends StatefulWidget {
   final AppUser appUser;
@@ -14,9 +15,9 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  int selectedTabIndex = 0;
+  int selectedTabIndex = 0; // Used to track the selected tab (Pending or Completed)
   Stream<DocumentSnapshot<Map<String, dynamic>>>? _userStream;
-
+  late final String status;
   @override
   void initState() {
     super.initState();
@@ -206,44 +207,113 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildOrderList(AppUser appUser) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('orders')
-          .where('user_id', isEqualTo: appUser.uid)
-          .orderBy('created_at', descending: true)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    return Column(
+      children: [
+        // Show orders based on selectedTabIndex (Pending or Completed)
+        if (selectedTabIndex == 0) ...[
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('orders')
+                  .where('buyerId', isEqualTo: appUser.uid)
+                  .where('status', isEqualTo: 'pending')
+                  .orderBy('created_at', descending: true)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-        final orders = snapshot.data!.docs;
+                final orders = snapshot.data!.docs;
 
-        if (orders.isEmpty) {
-          return const Center(child: Text("No orders to display"));
-        }
+                if (orders.isEmpty) {
+                  return const Center(child: Text("No pending orders"));
+                }
 
-        final filteredOrders = selectedTabIndex == 0
-            ? orders.where((order) => order['status'] == 'pending').toList()
-            : orders.where((order) => order['status'] == 'completed').toList();
+                return ListView.builder(
+                  itemCount: orders.length,
+                  itemBuilder: (context, index) {
+                    final order = orders[index];
+                    final data = order.data() as Map<String, dynamic>;
 
-        return ListView.builder(
-          itemCount: filteredOrders.length,
-          itemBuilder: (context, index) {
-            final order = filteredOrders[index];
-            final data = order.data() as Map<String, dynamic>;
+                    return Card(
+                      child: ListTile(
+                        title: Text("Order ID: ${data['orderId']}"),
+                        subtitle: Text(
+                          "Total: PHP ${data['total_price']} - Date: ${data['created_at'].toDate()}",
+                        ),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => OrderDetailScreen(
+                                orderId: data['orderId'],
+                                collection: 'orders', // Use 'orders' for Pending tab
+                              ),
+                            ),
+                          );
+                        },
 
-            return Card(
-              child: ListTile(
-                title: Text("Order ID: ${data['order_id']}"),
-                subtitle: Text(
-                  "Total: PHP ${data['total_price']} - Date: ${data['created_at'].toDate()}",
-                ),
-              ),
-            );
-          },
-        );
-      },
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ] else if (selectedTabIndex == 1) ...[
+          // Completed Orders
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('completed_orders')
+                  .where('buyerId', isEqualTo: appUser.uid)
+                  .orderBy('created_at', descending: true)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final orders = snapshot.data!.docs;
+
+                if (orders.isEmpty) {
+                  return const Center(child: Text("No completed orders"));
+                }
+
+                return ListView.builder(
+                  itemCount: orders.length,
+                  itemBuilder: (context, index) {
+                    final order = orders[index];
+                    final data = order.data() as Map<String, dynamic>;
+
+                    return Card(
+                      child: ListTile(
+                        title: Text("Order ID: ${data['orderId']}"),
+                        subtitle: Text(
+                          "Total: PHP ${data['total_price']} - Date: ${data['created_at'].toDate()}",
+                        ),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => OrderDetailScreen(
+                                orderId: data['orderId'],
+                                collection: 'completed_orders', // Use 'completed_orders' for Completed tab
+                              ),
+                            ),
+                          );
+                        },
+
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

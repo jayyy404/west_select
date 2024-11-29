@@ -22,7 +22,7 @@ class Listing {
   // Convert Firestore document to Listing
   factory Listing.fromFirestore(Map<String, dynamic> doc) {
     return Listing(
-      productId: doc['product_id'] ?? '',  // Map the productId from Firestore
+      productId: doc['post_id'] ?? '',  // Map the productId from Firestore
       postTitle: doc['post_title'] ?? '',
       postDescription: doc['post_description'] ?? '',
       numComments: doc['num_comments'] ?? 0,
@@ -37,7 +37,7 @@ class Listing {
   // Convert Listing to Firestore document
   Map<String, dynamic> toFirestore() {
     return {
-      'product_id': productId,  // Include productId in Firestore document
+      'post_id': productId,  // Include productId in Firestore document
       'post_title': postTitle,
       'post_description': postDescription,
       'num_comments': numComments,

@@ -241,6 +241,13 @@ class _CreateListingPageState extends State<CreateListingPage> {
                     ? buyerNames[buyerId]!
                     : 'Unknown Buyer';
 
+                final orderId = order.id;  // Get the order ID
+                final products = data['products'] as List<dynamic>;
+                final sellerProducts = products.where((product) => product['sellerId'] == currentUserId).toList();
+
+                // Check if all the seller's products are completed
+                bool allCompleted = sellerProducts.every((product) => product['status'] == 'completed');
+
                 return Card(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ListTile(
@@ -251,20 +258,26 @@ class _CreateListingPageState extends State<CreateListingPage> {
                         Text("Total Price: PHP ${data['total_price']}"),
                         const SizedBox(height: 8),
                         Text("Products:"),
-                        for (var product in data['products'])
-                          if (product['sellerId'] == currentUserId) // Only display products sold by the current user
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4.0),
-                              child: Text(
-                                "- ${product['title']} (x${product['quantity']}): PHP ${product['price']}",
-                                style: const TextStyle(fontSize: 14),
-                              ),
+                        for (var product in sellerProducts) // Only display products sold by the current user
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4.0),
+                            child: Text(
+                              "- ${product['title']} (x${product['quantity']}): PHP ${product['price']}",
+                              style: const TextStyle(fontSize: 14),
                             ),
+                          ),
                       ],
                     ),
                     trailing: IconButton(
-                      icon: const Icon(Icons.check_circle, color: Colors.blue),
-                      onPressed: () => markOrderAsCompleted(order.id), // Mark order as completed
+                      icon: Icon(
+                        allCompleted ? Icons.check_circle : Icons.check_circle_outline,
+                        color: allCompleted ? Colors.green : Colors.blue,
+                      ),
+                      onPressed: () {
+                        if (!allCompleted) {
+                          markAllProductsAsCompleted(orderId, sellerProducts);
+                        }
+                      },
                     ),
                   ),
                 );
@@ -276,41 +289,57 @@ class _CreateListingPageState extends State<CreateListingPage> {
     );
   }
 
-  Future<void> markOrderAsCompleted(String orderId) async {
+// Function to mark all products from the seller as completed
+  Future<void> markAllProductsAsCompleted(String orderId, List<dynamic> sellerProducts) async {
     try {
-      final orderDoc = await FirebaseFirestore.instance
-          .collection('orders')
-          .doc(orderId)
-          .get();
-      final orderData = orderDoc.data() as Map<String, dynamic>;
+      // Get the order data from Firestore
+      final orderDoc = await FirebaseFirestore.instance.collection('orders').doc(orderId).get();
+      if (!orderDoc.exists) return;
 
-      if (orderData['status'] == 'completed') {
-        return;
+      final orderData = orderDoc.data() as Map<String, dynamic>;
+      final List<dynamic> products = orderData['products'];
+
+      // Update the status of the seller's products to 'completed'
+      for (var product in sellerProducts) {
+        final productIndex = products.indexWhere((prod) => prod['productId'] == product['productId']);
+        if (productIndex != -1) {
+          products[productIndex]['status'] = 'completed';
+        }
       }
 
-      await FirebaseFirestore.instance
-          .collection('orders')
-          .doc(orderId)
-          .update({
-        'status': 'completed',
-        'completed_at': DateTime.now(),
+      // Save the updated products list back to the order
+      await FirebaseFirestore.instance.collection('orders').doc(orderId).update({
+        'products': products,
       });
 
-      await FirebaseFirestore.instance
-          .collection('completed_orders')
-          .doc(orderId)
-          .set(orderData);
+      // Check if all products in the order are completed
+      bool allProductsCompleted = true;
 
-      await FirebaseFirestore.instance.collection('orders').doc(orderId).delete();
+      // Loop through the products to check if all products are completed
+      for (var product in products) {
+        if (product['status'] != 'completed') {
+          allProductsCompleted = false;
+          break;
+        }
+      }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Order marked as completed")),
-      );
+      // If all products are completed, move the order to completed_orders collection
+      if (allProductsCompleted) {
+        // Create a copy of the order data in completed_orders collection
+        await FirebaseFirestore.instance.collection('completed_orders').doc(orderId).set(orderData);
+        await FirebaseFirestore.instance.collection('completed_orders').doc(orderId).update({
+          'status': 'completed',
+        });
+        // Delete the order from the orders collection
+        await FirebaseFirestore.instance.collection('orders').doc(orderId).delete();
+
+        // Notify the seller that the order is complete
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Order marked as complete and moved to completed orders.")),
+        );
+      }
     } catch (e) {
-      print("Error marking order as completed: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Failed to mark order as completed")),
-      );
+      print("Error marking product as completed: $e");
     }
   }
 
@@ -327,6 +356,12 @@ class _CreateListingPageState extends State<CreateListingPage> {
 
       // Add the buyerId to the order data
       orderData['buyerId'] = buyerId;
+
+      // Assuming the orderData includes a reference to 'postId'
+      orderData['products'] = orderData['products'].map((product) {
+        product['productId'] = product['post_id'];  // Ensure the post_id is included as productId
+        return product;
+      }).toList();
 
       // Add the order to the 'orders' collection
       await FirebaseFirestore.instance.collection('orders').add(orderData);
@@ -350,6 +385,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
       );
     }
   }
+
 
 
   Future<void> uploadImageToCloudinary() async {
@@ -461,6 +497,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
 
       // Create the listing data including sellerId (userId)
       final listingData = {
+        'post_id': '',  // This will be added after saving the post in Firestore
         'post_title': _titleController.text,
         'post_description': _descriptionController.text,
         'price': double.parse(_priceController.text),
@@ -471,8 +508,16 @@ class _CreateListingPageState extends State<CreateListingPage> {
         'sellerName': userDisplayName,
       };
 
-      // Add the listing data to Firestore
-      await FirebaseFirestore.instance.collection('post').add(listingData);
+      // Add the listing data to Firestore, and retrieve the generated postId
+      final docRef = await FirebaseFirestore.instance.collection('post').add(listingData);
+
+      // Generate the postId from the Firestore document reference
+      String postId = docRef.id;
+
+      // Now update the post document with the generated postId
+      await docRef.update({
+        'post_id': postId,
+      });
 
       // Show a success message
       ScaffoldMessenger.of(context).showSnackBar(
@@ -496,6 +541,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
       );
     }
   }
+
 
 
   // Build "My Products" List

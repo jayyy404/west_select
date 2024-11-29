@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../cart/cart_model.dart';
 
 class ProductDetailPage extends StatelessWidget {
-  final String productId;
+  final String productId; // This is the post_id passed here
   final String imageUrl;
   final String productTitle;
   final String description;
@@ -39,9 +39,9 @@ class ProductDetailPage extends StatelessWidget {
           Text('Seller: $sellerName'),
           ElevatedButton(
             onPressed: () {
-              // Add the product to cart with sellerId and buyerId (if necessary)
+              // Add the product to cart with productId (post_id), sellerId and buyerId
               cart.addToCart(
-                productId,  // The product ID
+                productId,  // This is the post_id (productId)
                 productTitle,  // The product title
                 price,  // The price of the product
                 imageUrl,  // The image URL of the product
