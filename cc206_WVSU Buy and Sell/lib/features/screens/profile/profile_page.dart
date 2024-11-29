@@ -15,13 +15,11 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   int selectedTabIndex = 0;
-
   Stream<DocumentSnapshot<Map<String, dynamic>>>? _userStream;
 
   @override
   void initState() {
     super.initState();
-    // Set up a Firestore stream to listen for changes to the user's data.
     _userStream = FirebaseFirestore.instance
         .collection('users') // Replace with your Firestore collection name
         .doc(widget.appUser.uid)
@@ -36,11 +34,11 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  void _editDisplayName() {
+  Future<void> _editDisplayName() async {
     final TextEditingController editNameController =
     TextEditingController(text: widget.appUser.displayName ?? '');
 
-    showDialog(
+    await showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
@@ -67,6 +65,11 @@ class _ProfilePageState extends State<ProfilePage> {
                     const SnackBar(content: Text('Name updated successfully')),
                   );
                   Navigator.pop(context);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Display name cannot be empty')),
+                  );
                 }
               },
               child: const Text('Save'),
@@ -90,7 +93,6 @@ class _ProfilePageState extends State<ProfilePage> {
           return const Center(child: Text("Error loading user data"));
         }
 
-        // Parse updated user data
         final userData = snapshot.data!.data()!;
         final updatedAppUser = AppUser.fromFirestore(userData);
 
@@ -99,19 +101,19 @@ class _ProfilePageState extends State<ProfilePage> {
           appBar: AppBar(
             backgroundColor: Colors.white,
             elevation: 0,
-            title: const Text(
-              "Profile",
-              style: TextStyle(color: Colors.black),
-            ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.settings, color: Colors.grey),
-                onPressed: () {},
+                icon: const Icon(Icons.edit, color: Color(0xFF1976D2)),
+                onPressed: _editDisplayName,
+              ),
+              IconButton(
+                icon: const Icon(Icons.logout, color: Color(0xFFD32F2F)),
+                onPressed: _signOut,
               ),
             ],
           ),
           body: Padding(
-            padding: const EdgeInsets.all(20.0),
+            padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -120,7 +122,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 _buildTabSelection(),
                 const SizedBox(height: 20),
                 Expanded(child: _buildOrderList(updatedAppUser)),
-                _buildSignOutButton(),
               ],
             ),
           ),
@@ -149,11 +150,15 @@ class _ProfilePageState extends State<ProfilePage> {
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
+                  color: Color(0xFF1976D2),
                 ),
               ),
-              TextButton(
-                onPressed: _editDisplayName,
-                child: const Text('Edit Name'),
+              Text(
+                appUser.email,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey,
+                ),
               ),
             ],
           ),
@@ -222,26 +227,6 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildSignOutButton() {
-    return ElevatedButton(
-      onPressed: _signOut,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.red,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-      child: const Text(
-        'Sign Out',
-        style: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
     );
   }
 
