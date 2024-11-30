@@ -85,7 +85,9 @@ class _LogInPageState extends State<LogInPage> {
             uid: user.uid,
             email: user.email ?? '',
             displayName: user.displayName ?? '',
-            profilePictureUrl: user.photoURL ?? '', orderHistory: [], userListings: [],
+            profilePictureUrl: user.photoURL ?? '',
+            orderHistory: [],
+            userListings: [],
           );
         } else {
           // Get this from FirebaseAuth.currentUser.uid
@@ -159,7 +161,9 @@ class _LogInPageState extends State<LogInPage> {
             uid: user.uid,
             email: user.email ?? '',
             displayName: user.displayName ?? '',
-            profilePictureUrl: user.photoURL ?? '', orderHistory: [], userListings: [],
+            profilePictureUrl: user.photoURL ?? '',
+            orderHistory: [],
+            userListings: [],
           );
 
           Navigator.pushReplacement(
