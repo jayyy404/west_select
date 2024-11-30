@@ -20,13 +20,13 @@ class AppUser {
   // Factory method to create an AppUser instance from Firestore data
   factory AppUser.fromFirestore(Map<String, dynamic> data) {
     var orderHistory = (data['orderHistory'] as List<dynamic>?)
-        ?.map((orderData) => UserOrder.fromMap(orderData))
-        .toList() ??
+            ?.map((orderData) => UserOrder.fromMap(orderData))
+            .toList() ??
         [];
 
     var userListings = (data['userListings'] as List<dynamic>?)
-        ?.map((listingData) => UserListing.fromMap(listingData))
-        .toList() ??
+            ?.map((listingData) => UserListing.fromMap(listingData))
+            .toList() ??
         [];
 
     return AppUser(
