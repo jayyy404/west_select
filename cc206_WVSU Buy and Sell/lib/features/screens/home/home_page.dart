@@ -180,7 +180,7 @@ class _HomePageState extends State<HomePage> {
                                   productTitle: listing.postTitle,
                                   description: listing.postDescription,
                                   price: listing.price,
-                                  sellerName: 'Unknown Seller', // Will be updated later
+                                  sellerName: listing.sellerName, // Will be updated later
                                   userId: listing.postUserId,
                                 ),
                               ),
@@ -228,6 +228,7 @@ class _HomePageState extends State<HomePage> {
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
+                                      Text(listing.sellerName),
                                       const SizedBox(height: 4),
                                       Text(
                                         'PHP ${listing.price.toStringAsFixed(2)}',
