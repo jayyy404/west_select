@@ -4,8 +4,16 @@ import 'cart_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-class ShoppingCartPage extends StatelessWidget {
+class ShoppingCartPage extends StatefulWidget {
   const ShoppingCartPage({Key? key}) : super(key: key);
+
+  @override
+  _ShoppingCartPageState createState() => _ShoppingCartPageState();
+}
+
+class _ShoppingCartPageState extends State<ShoppingCartPage> {
+  Map<String, bool> selectedItems = {};
+  bool selectAll = false;
 
   Future<String> fetchSellerName(String sellerId) async {
     try {
@@ -13,7 +21,6 @@ class ShoppingCartPage extends StatelessWidget {
           .collection('users')
           .doc(sellerId)
           .get();
-
       return doc.data()?['displayName'] ?? 'Unknown Seller';
     } catch (e) {
       debugPrint('Error fetching seller name: $e');
@@ -21,9 +28,29 @@ class ShoppingCartPage extends StatelessWidget {
     }
   }
 
+  void toggleSelectAll(bool value, List<CartItem> items) {
+    setState(() {
+      selectAll = value;
+      for (var item in items) {
+        selectedItems[item.id] = value;
+      }
+    });
+  }
+
+  double calculateTotal(List<CartItem> items) {
+    return items
+        .where((item) => selectedItems[item.id] == true)
+        .fold(0.0, (sum, item) => sum + item.price * item.quantity);
+  }
+
   @override
   Widget build(BuildContext context) {
     final cart = Provider.of<CartModel>(context);
+
+    // Initialize selectedItems for first-time usage
+    for (var item in cart.items) {
+      selectedItems.putIfAbsent(item.id, () => false);
+    }
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -74,26 +101,36 @@ class ShoppingCartPage extends StatelessWidget {
                                     padding: const EdgeInsets.all(12.0),
                                     child: Row(
                                       children: [
-                                        // Selection (Optional Placeholder)
+                                        // Custom Circular Checkbox
                                         GestureDetector(
                                           onTap: () {
-                                            // Implement select/deselect functionality here
+                                            setState(() {
+                                              selectedItems[item.id] =
+                                                  !(selectedItems[item.id] ??
+                                                      false);
+                                              selectAll = selectedItems.values
+                                                  .every((isSelected) =>
+                                                      isSelected);
+                                            });
                                           },
                                           child: Container(
                                             height: 24,
                                             width: 24,
                                             decoration: BoxDecoration(
                                               shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: Colors.grey,
-                                                width: 2,
-                                              ),
+                                              color:
+                                                  selectedItems[item.id] == true
+                                                      ? Colors.blue
+                                                      : Colors.grey[300],
                                             ),
-                                            child: const Icon(
-                                              Icons.check,
-                                              color: Colors.blue,
-                                              size: 16,
-                                            ),
+                                            child:
+                                                selectedItems[item.id] == true
+                                                    ? const Icon(
+                                                        Icons.check,
+                                                        size: 16,
+                                                        color: Colors.white,
+                                                      )
+                                                    : null,
                                           ),
                                         ),
                                         const SizedBox(width: 12),
@@ -156,82 +193,62 @@ class ShoppingCartPage extends StatelessWidget {
                                             mainAxisAlignment:
                                                 MainAxisAlignment.center,
                                             children: [
-                                              Container(
-                                                decoration: BoxDecoration(
-                                                  color: Colors.grey[200],
-                                                  borderRadius:
-                                                      BorderRadius.circular(20),
-                                                ),
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 8,
-                                                        vertical: 4),
-                                                child: Row(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    GestureDetector(
-                                                      onTap: () {
-                                                        cart.updateQuantity(
-                                                            item,
-                                                            item.quantity - 1);
-                                                      },
-                                                      child: Container(
-                                                        height: 20,
-                                                        width: 20,
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          shape:
-                                                              BoxShape.circle,
-                                                          color: Colors
-                                                              .transparent,
-                                                        ),
-                                                        alignment:
-                                                            Alignment.center,
-                                                        child: const Icon(
-                                                          Icons.remove,
-                                                          size: 14,
-                                                          color: Colors.black,
-                                                        ),
+                                              Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  GestureDetector(
+                                                    onTap: () {
+                                                      cart.updateQuantity(item,
+                                                          item.quantity - 1);
+                                                    },
+                                                    child: Container(
+                                                      height: 20,
+                                                      width: 20,
+                                                      decoration: BoxDecoration(
+                                                        shape: BoxShape.circle,
+                                                        color: Colors.grey[300],
+                                                      ),
+                                                      alignment:
+                                                          Alignment.center,
+                                                      child: const Icon(
+                                                        Icons.remove,
+                                                        size: 14,
+                                                        color: Colors.black,
                                                       ),
                                                     ),
-                                                    const SizedBox(width: 8),
-                                                    Text(
-                                                      item.quantity.toString(),
-                                                      style: const TextStyle(
-                                                        fontSize: 14,
-                                                        fontWeight:
-                                                            FontWeight.bold,
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Text(
+                                                    item.quantity.toString(),
+                                                    style: const TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  GestureDetector(
+                                                    onTap: () {
+                                                      cart.updateQuantity(item,
+                                                          item.quantity + 1);
+                                                    },
+                                                    child: Container(
+                                                      height: 20,
+                                                      width: 20,
+                                                      decoration: BoxDecoration(
+                                                        shape: BoxShape.circle,
+                                                        color: Colors.grey[300],
+                                                      ),
+                                                      alignment:
+                                                          Alignment.center,
+                                                      child: const Icon(
+                                                        Icons.add,
+                                                        size: 14,
+                                                        color: Colors.black,
                                                       ),
                                                     ),
-                                                    const SizedBox(width: 8),
-                                                    GestureDetector(
-                                                      onTap: () {
-                                                        cart.updateQuantity(
-                                                            item,
-                                                            item.quantity + 1);
-                                                      },
-                                                      child: Container(
-                                                        height: 20,
-                                                        width: 20,
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          shape:
-                                                              BoxShape.circle,
-                                                          color: Colors
-                                                              .transparent,
-                                                        ),
-                                                        alignment:
-                                                            Alignment.center,
-                                                        child: const Icon(
-                                                          Icons.add,
-                                                          size: 14,
-                                                          color: Colors.black,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
+                                                  ),
+                                                ],
                                               ),
                                               IconButton(
                                                 icon: const Icon(
@@ -244,7 +261,7 @@ class ShoppingCartPage extends StatelessWidget {
                                               ),
                                             ],
                                           ),
-                                        )
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -270,36 +287,50 @@ class ShoppingCartPage extends StatelessWidget {
                       ],
                     ),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Total Label and Price Inline
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              "Total:",
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey,
-                              ),
+                        // Custom Circular Checkbox for Select All
+                        GestureDetector(
+                          onTap: () {
+                            toggleSelectAll(!selectAll, cart.items);
+                          },
+                          child: Container(
+                            height: 24,
+                            width: 24,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: selectAll ? Colors.blue : Colors.grey[300],
                             ),
-                            Text('  '),
-                            Text(
-                              "PHP ${cart.totalPrice.toStringAsFixed(2)}",
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue,
-                              ),
-                            ),
-                          ],
+                            child: selectAll
+                                ? const Icon(
+                                    Icons.check,
+                                    size: 16,
+                                    color: Colors.white,
+                                  )
+                                : null,
+                          ),
                         ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          "All",
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                        const Spacer(),
+                        // Total Price
+                        Text(
+                          "Total: PHP ${calculateTotal(cart.items).toStringAsFixed(2)}",
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                          ),
+                        ),
+                        const SizedBox(width: 20),
                         // Checkout Button
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 24, vertical: 12),
+                                horizontal: 20, vertical: 12),
                             backgroundColor: Colors.blue,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
@@ -307,53 +338,74 @@ class ShoppingCartPage extends StatelessWidget {
                             ),
                           ),
                           onPressed: () async {
-                            if (cart.items.isNotEmpty) {
-                              final user = FirebaseAuth.instance.currentUser;
-                              if (user == null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text("You need to log in first!"),
-                                  ),
-                                );
-                                return;
-                              }
+                            // Filter selected items for checkout
+                            final selectedForCheckout = cart.items
+                                .where((item) => selectedItems[item.id] == true)
+                                .toList();
 
-                              // Create order data
-                              final orderData = {
-                                'buyerId': user.uid,
-                                'buyerName': user.displayName ?? 'Anonymous',
-                                'buyerEmail': user.email,
-                                'total_price': cart.totalPrice,
-                                'products': cart.items.map((item) {
-                                  return {
-                                    'productId': item.id,
-                                    'title': item.title,
-                                    'price': item.price,
-                                    'quantity': item.quantity,
-                                    'imageUrl': item.imageUrl,
-                                    'sellerId': item.sellerId,
-                                  };
-                                }).toList(),
-                                'created_at': FieldValue.serverTimestamp(),
-                                'status': 'pending',
-                              };
-
-                              final orderRef = await FirebaseFirestore.instance
-                                  .collection('orders')
-                                  .add(orderData);
-
-                              await orderRef.update({'orderId': orderRef.id});
-
-                              cart.clear();
-
+                            if (selectedForCheckout.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text("Order placed successfully!"),
+                                  content: Text("No items selected!"),
                                 ),
                               );
+                              return;
                             }
+
+                            final user = FirebaseAuth.instance.currentUser;
+                            if (user == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("You need to log in first!"),
+                                ),
+                              );
+                              return;
+                            }
+
+                            // Create order data for selected items
+                            final orderData = {
+                              'buyerId': user.uid,
+                              'buyerName': user.displayName ?? 'Anonymous',
+                              'buyerEmail': user.email,
+                              'total_price': calculateTotal(cart.items),
+                              'products': selectedForCheckout.map((item) {
+                                return {
+                                  'productId': item.id,
+                                  'title': item.title,
+                                  'price': item.price,
+                                  'quantity': item.quantity,
+                                  'imageUrl': item.imageUrl,
+                                  'sellerId': item.sellerId,
+                                };
+                              }).toList(),
+                              'created_at': FieldValue.serverTimestamp(),
+                              'status': 'pending',
+                            };
+
+                            final orderRef = await FirebaseFirestore.instance
+                                .collection('orders')
+                                .add(orderData);
+
+                            await orderRef.update({'orderId': orderRef.id});
+
+                            // Remove selected items from the cart
+                            for (var item in selectedForCheckout) {
+                              cart.removeItem(item);
+                            }
+
+                            setState(() {
+                              selectedItems.clear();
+                              selectAll = false;
+                            });
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Order placed successfully!"),
+                              ),
+                            );
                           },
-                          child: Text("Checkout (${cart.items.length})"),
+                          child: Text(
+                              "Checkout (${cart.items.where((item) => selectedItems[item.id] == true).length})"),
                         ),
                       ],
                     ),
