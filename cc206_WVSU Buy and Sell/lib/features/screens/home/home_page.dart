@@ -1,9 +1,11 @@
 import 'package:cc206_west_select/features/screens/productdetails/product.dart';
+import 'package:cc206_west_select/firebase/app_user.dart';
 import 'package:cc206_west_select/firebase/search_service.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cc206_west_select/features/screens/cart/shopping_cart.dart';
 import 'package:cc206_west_select/features/screens/listing.dart';
+import 'package:intl/intl.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,7 +17,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController _searchController = TextEditingController();
-  final SearchService _searchService = SearchService(FirebaseFirestore.instance);
+  final SearchService _searchService =
+      SearchService(FirebaseFirestore.instance);
   List<QueryDocumentSnapshot<Map<String, dynamic>>> _searchResults = [];
   bool _isSearching = false;
 
@@ -51,7 +54,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F7),
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(125),
+        preferredSize: const Size.fromHeight(80),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: const BoxDecoration(
@@ -159,7 +162,7 @@ class _HomePageState extends State<HomePage> {
                     child: GridView.builder(
                       padding: const EdgeInsets.only(bottom: 16),
                       gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
+                          const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         childAspectRatio: 0.8,
                         crossAxisSpacing: 8,
@@ -168,80 +171,118 @@ class _HomePageState extends State<HomePage> {
                       itemCount: listings.length,
                       itemBuilder: (context, index) {
                         final listing = listings[index];
-                        return GestureDetector(
-                          onTap: () {
-                            // Navigate to ProductDetailPage and pass productId
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ProductDetailPage(
-                                  productId: listing.productId,  // Pass productId
-                                  imageUrl: listing.imageUrl,
-                                  productTitle: listing.postTitle,
-                                  description: listing.postDescription,
-                                  price: listing.price,
-                                  sellerName: listing.sellerName, // Will be updated later
-                                  userId: listing.postUserId,
-                                ),
-                              ),
-                            );
-                          },
-                          child: Card(
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: const BorderRadius.only(
-                                        topLeft: Radius.circular(10),
-                                        topRight: Radius.circular(10),
-                                      ),
-                                      image: DecorationImage(
-                                        image: NetworkImage(
-                                          listing.imageUrl.isNotEmpty
-                                              ? listing.imageUrl
-                                              : 'https://via.placeholder.com/150',
-                                        ),
-                                        fit: BoxFit.cover,
+                        return FutureBuilder<DocumentSnapshot>(
+                          future: _firestore
+                              .collection('users')
+                              .doc(listing.postUserId)
+                              .get(),
+                          builder: (context, userSnapshot) {
+                            if (userSnapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                  child: CircularProgressIndicator());
+                            } else if (userSnapshot.hasError) {
+                              return const Center(
+                                  child: Text("Error fetching seller info"));
+                            } else if (!userSnapshot.hasData ||
+                                !userSnapshot.data!.exists) {
+                              return const Center(
+                                  child: Text("Seller info not available"));
+                            } else {
+                              final sellerName = AppUser.fromFirestore(
+                                      userSnapshot.data!.data()
+                                          as Map<String, dynamic>)
+                                  .displayName;
+
+                              return GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ProductDetailPage(
+                                        productId: listing.productId,
+                                        imageUrl: listing.imageUrl,
+                                        productTitle: listing.postTitle,
+                                        description: listing.postDescription,
+                                        price: listing.price,
+                                        sellerName:
+                                            sellerName ?? 'Unknown Seller',
+                                        userId: listing.postUserId,
                                       ),
                                     ),
+                                  );
+                                },
+                                child: Card(
+                                  elevation: 2,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
                                   child: Column(
                                     crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        listing.postTitle,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13,
-                                          fontFamily: 'Open Sans',
+                                      Expanded(
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            borderRadius:
+                                                const BorderRadius.only(
+                                              topLeft: Radius.circular(10),
+                                              topRight: Radius.circular(10),
+                                            ),
+                                            image: DecorationImage(
+                                              image: NetworkImage(
+                                                listing.imageUrl.isNotEmpty
+                                                    ? listing.imageUrl
+                                                    : 'https://via.placeholder.com/150',
+                                              ),
+                                              fit: BoxFit.cover,
+                                            ),
+                                          ),
                                         ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                      Text(listing.sellerName),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'PHP ${listing.price.toStringAsFixed(2)}',
-                                        style: const TextStyle(
-                                            color: Colors.green),
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              listing.postTitle,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 13,
+                                                fontFamily: 'Open Sans',
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              'Seller: ${sellerName ?? 'Unknown Seller'}',
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                                fontFamily: 'Open Sans',
+                                                color: Colors.black,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              'PHP ${NumberFormat('#,##0.00', 'en_US').format(listing.price)}',
+                                              style: const TextStyle(
+                                                  color: Colors.green),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                      const SizedBox(height: 4),
                                     ],
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
+                              );
+                            }
+                          },
                         );
                       },
                     ),

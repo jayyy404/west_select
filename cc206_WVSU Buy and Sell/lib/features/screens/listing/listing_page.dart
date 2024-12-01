@@ -160,7 +160,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
             ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: createListing,
+            onPressed: _validateAndCreateListing,
             child: const Text("Publish Listing"),
           ),
         ],
@@ -168,8 +168,52 @@ class _CreateListingPageState extends State<CreateListingPage> {
     );
   }
 
+// Add this validation function
+  void _validateAndCreateListing() {
+    final priceText = _priceController.text;
+
+    // Check if price is numeric
+    if (priceText.isEmpty || double.tryParse(priceText) == null) {
+      _showErrorDialog("Please enter a valid numeric price.");
+      return;
+    }
+
+    final price = double.parse(priceText);
+
+    // Check if price exceeds 100,000
+    if (price > 100000) {
+      _showErrorDialog("Price cannot exceed PHP 100,000.");
+      return;
+    }
+
+    // Proceed with creating the listing
+    createListing();
+  }
+
+// Helper function to show an error dialog
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Invalid Input"),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text("OK"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildOrdersList() {
-    final currentUser = FirebaseAuth.instance.currentUser; // Get the current user
+    final currentUser =
+        FirebaseAuth.instance.currentUser; // Get the current user
     if (currentUser == null) {
       return const Center(child: Text("User not logged in."));
     }
@@ -204,9 +248,13 @@ class _CreateListingPageState extends State<CreateListingPage> {
             final data = order.data() as Map<String, dynamic>;
             String? buyerId = data['buyerId'];
             if (buyerId != null && !buyerNames.containsKey(buyerId)) {
-              final userDoc = await FirebaseFirestore.instance.collection('users').doc(buyerId).get();
+              final userDoc = await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(buyerId)
+                  .get();
               buyerNames[buyerId] = userDoc.exists
-                  ? (userDoc.data()?['displayName'] as String?) ?? 'Unknown Buyer'
+                  ? (userDoc.data()?['displayName'] as String?) ??
+                      'Unknown Buyer'
                   : 'Unknown Buyer';
             }
           }
@@ -216,7 +264,8 @@ class _CreateListingPageState extends State<CreateListingPage> {
         List<QueryDocumentSnapshot> filteredOrders = orders.where((order) {
           final data = order.data() as Map<String, dynamic>;
           final products = data['products'] as List<dynamic>;
-          return products.any((product) => product['sellerId'] == currentUserId);
+          return products
+              .any((product) => product['sellerId'] == currentUserId);
         }).toList();
 
         return FutureBuilder<void>(
@@ -237,19 +286,24 @@ class _CreateListingPageState extends State<CreateListingPage> {
                 final data = order.data() as Map<String, dynamic>;
 
                 String? buyerId = data['buyerId'];
-                String buyerName = (buyerId != null && buyerNames.containsKey(buyerId))
-                    ? buyerNames[buyerId]!
-                    : 'Unknown Buyer';
+                String buyerName =
+                    (buyerId != null && buyerNames.containsKey(buyerId))
+                        ? buyerNames[buyerId]!
+                        : 'Unknown Buyer';
 
-                final orderId = order.id;  // Get the order ID
+                final orderId = order.id; // Get the order ID
                 final products = data['products'] as List<dynamic>;
-                final sellerProducts = products.where((product) => product['sellerId'] == currentUserId).toList();
+                final sellerProducts = products
+                    .where((product) => product['sellerId'] == currentUserId)
+                    .toList();
 
                 // Check if all the seller's products are completed
-                bool allCompleted = sellerProducts.every((product) => product['status'] == 'completed');
+                bool allCompleted = sellerProducts
+                    .every((product) => product['status'] == 'completed');
 
                 return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ListTile(
                     title: Text(buyerName), // Display the fetched buyer's name
                     subtitle: Column(
@@ -258,7 +312,8 @@ class _CreateListingPageState extends State<CreateListingPage> {
                         Text("Total Price: PHP ${data['total_price']}"),
                         const SizedBox(height: 8),
                         Text("Products:"),
-                        for (var product in sellerProducts) // Only display products sold by the current user
+                        for (var product
+                            in sellerProducts) // Only display products sold by the current user
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: 4.0),
                             child: Text(
@@ -270,7 +325,9 @@ class _CreateListingPageState extends State<CreateListingPage> {
                     ),
                     trailing: IconButton(
                       icon: Icon(
-                        allCompleted ? Icons.check_circle : Icons.check_circle_outline,
+                        allCompleted
+                            ? Icons.check_circle
+                            : Icons.check_circle_outline,
                         color: allCompleted ? Colors.green : Colors.blue,
                       ),
                       onPressed: () {
@@ -290,10 +347,14 @@ class _CreateListingPageState extends State<CreateListingPage> {
   }
 
 // Function to mark all products from the seller as completed
-  Future<void> markAllProductsAsCompleted(String orderId, List<dynamic> sellerProducts) async {
+  Future<void> markAllProductsAsCompleted(
+      String orderId, List<dynamic> sellerProducts) async {
     try {
       // Get the order data from Firestore
-      final orderDoc = await FirebaseFirestore.instance.collection('orders').doc(orderId).get();
+      final orderDoc = await FirebaseFirestore.instance
+          .collection('orders')
+          .doc(orderId)
+          .get();
       if (!orderDoc.exists) return;
 
       final orderData = orderDoc.data() as Map<String, dynamic>;
@@ -301,14 +362,18 @@ class _CreateListingPageState extends State<CreateListingPage> {
 
       // Update the status of the seller's products to 'completed'
       for (var product in sellerProducts) {
-        final productIndex = products.indexWhere((prod) => prod['productId'] == product['productId']);
+        final productIndex = products
+            .indexWhere((prod) => prod['productId'] == product['productId']);
         if (productIndex != -1) {
           products[productIndex]['status'] = 'completed';
         }
       }
 
       // Save the updated products list back to the order
-      await FirebaseFirestore.instance.collection('orders').doc(orderId).update({
+      await FirebaseFirestore.instance
+          .collection('orders')
+          .doc(orderId)
+          .update({
         'products': products,
       });
 
@@ -326,23 +391,33 @@ class _CreateListingPageState extends State<CreateListingPage> {
       // If all products are completed, move the order to completed_orders collection
       if (allProductsCompleted) {
         // Create a copy of the order data in completed_orders collection
-        await FirebaseFirestore.instance.collection('completed_orders').doc(orderId).set(orderData);
-        await FirebaseFirestore.instance.collection('completed_orders').doc(orderId).update({
+        await FirebaseFirestore.instance
+            .collection('completed_orders')
+            .doc(orderId)
+            .set(orderData);
+        await FirebaseFirestore.instance
+            .collection('completed_orders')
+            .doc(orderId)
+            .update({
           'status': 'completed',
         });
         // Delete the order from the orders collection
-        await FirebaseFirestore.instance.collection('orders').doc(orderId).delete();
+        await FirebaseFirestore.instance
+            .collection('orders')
+            .doc(orderId)
+            .delete();
 
         // Notify the seller that the order is complete
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Order marked as complete and moved to completed orders.")),
+          const SnackBar(
+              content: Text(
+                  "Order marked as complete and moved to completed orders.")),
         );
       }
     } catch (e) {
       print("Error marking product as completed: $e");
     }
   }
-
 
   Future<void> createNewOrder(Map<String, dynamic> orderData) async {
     try {
@@ -352,14 +427,15 @@ class _CreateListingPageState extends State<CreateListingPage> {
         return;
       }
 
-      String buyerId = currentUser.uid;  // Get buyer's ID
+      String buyerId = currentUser.uid; // Get buyer's ID
 
       // Add the buyerId to the order data
       orderData['buyerId'] = buyerId;
 
       // Assuming the orderData includes a reference to 'postId'
       orderData['products'] = orderData['products'].map((product) {
-        product['productId'] = product['post_id'];  // Ensure the post_id is included as productId
+        product['productId'] =
+            product['post_id']; // Ensure the post_id is included as productId
         return product;
       }).toList();
 
@@ -367,7 +443,10 @@ class _CreateListingPageState extends State<CreateListingPage> {
       await FirebaseFirestore.instance.collection('orders').add(orderData);
 
       // Increment the pending order count
-      await FirebaseFirestore.instance.collection('shop_status').doc('status').update({
+      await FirebaseFirestore.instance
+          .collection('shop_status')
+          .doc('status')
+          .update({
         'pending_orders': FieldValue.increment(1),
       });
 
@@ -385,8 +464,6 @@ class _CreateListingPageState extends State<CreateListingPage> {
       );
     }
   }
-
-
 
   Future<void> uploadImageToCloudinary() async {
     try {
@@ -497,19 +574,20 @@ class _CreateListingPageState extends State<CreateListingPage> {
 
       // Create the listing data including sellerId (userId)
       final listingData = {
-        'post_id': '',  // This will be added after saving the post in Firestore
+        'post_id': '', // This will be added after saving the post in Firestore
         'post_title': _titleController.text,
         'post_description': _descriptionController.text,
         'price': double.parse(_priceController.text),
         'image_url': _uploadedImageUrl,
-        'post_users': userId,  // Store sellerId (userId)
+        'post_users': userId, // Store sellerId (userId)
         'num_comments': 0,
         'createdAt': FieldValue.serverTimestamp(),
         'sellerName': userDisplayName,
       };
 
       // Add the listing data to Firestore, and retrieve the generated postId
-      final docRef = await FirebaseFirestore.instance.collection('post').add(listingData);
+      final docRef =
+          await FirebaseFirestore.instance.collection('post').add(listingData);
 
       // Generate the postId from the Firestore document reference
       String postId = docRef.id;
@@ -542,8 +620,6 @@ class _CreateListingPageState extends State<CreateListingPage> {
     }
   }
 
-
-
   // Build "My Products" List
   Widget _buildMyProductsList() {
     // Track whether the delay period has elapsed
@@ -562,7 +638,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
           stream: FirebaseFirestore.instance
               .collection('post')
               .where('post_users',
-              isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+                  isEqualTo: FirebaseAuth.instance.currentUser?.uid)
               .orderBy('createdAt', descending: true)
               .snapshots(),
           builder: (context, snapshot) {
@@ -588,7 +664,8 @@ class _CreateListingPageState extends State<CreateListingPage> {
                 final data = listing.data() as Map<String, dynamic>;
 
                 return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ListTile(
                     title: Text(data['post_title']),
                     subtitle: Text("PHP ${data['price']}"),
@@ -611,7 +688,6 @@ class _CreateListingPageState extends State<CreateListingPage> {
       },
     );
   }
-
 
   Future<void> deleteListing(String listingId) async {
     try {

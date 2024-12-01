@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../cart/cart_model.dart';
 import '../favorite/favorite_model.dart';
+import 'package:intl/intl.dart';
 
 class ProductDetailPage extends StatefulWidget {
   final String productId; // This is the post_id passed here
@@ -124,11 +125,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       ),
                       // Product price
                       Text(
-                        'PHP ${widget.price.toStringAsFixed(2)}',
+                        'PHP ${NumberFormat('#,##0.00', 'en_US').format(widget.price)}',
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black,
+                          color: Colors.green,
                         ),
                       ),
                     ],
@@ -287,7 +288,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 padding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8.0),
                 ),
