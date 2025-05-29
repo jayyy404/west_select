@@ -1,0 +1,42 @@
+buildscript {
+    repositories {
+        google()       // Google's Maven repository
+        mavenCentral() // Maven Central repository
+    }
+    dependencies {
+        // Android Gradle Plugin version
+        classpath 'com.android.tools.build:gradle:8.7.2'
+
+        // Google services plugin for Firebase, Analytics, etc.
+        classpath 'com.google.gms:google-services:4.4.2'
+
+        // Kotlin Gradle Plugin for Kotlin support
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.0'
+    }
+}
+
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = "../build"
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+subprojects {
+    project.evaluationDependsOn(":app")
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    kotlinOptions {
+        freeCompilerArgs += "-Xlint:deprecation"
+    }
+}

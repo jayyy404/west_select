@@ -1,0 +1,89 @@
+name: cc206_west_select
+description: "A new Flutter project."
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.1 <4.0.0'
+
+dependencies:
+  win32: ^5.0.0
+  flutter:
+    sdk: flutter
+  firebase_auth: ^5.3.1
+  firebase_core: ^3.6.0 
+  google_sign_in: ^6.2.1
+  flutter_facebook_auth: ^7.1.1
+
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  cupertino_icons: ^1.0.6
+  flutter_launcher_icons: ^0.14.1
+  cloud_firestore: ^5.5.0
+  firebase_storage: ^12.3.6
+  image_picker: ^1.1.2
+  permission_handler: ^11.3.1
+  provider: ^6.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # The "flutter_lints" package below contains a set of recommended lints to
+  # encourage good coding practices. The lint set provided by the package is
+  # activated in the `analysis_options.yaml` file located at the root of your
+  # package. See that file for information about deactivating specific lint
+  # rules and activating additional ones.
+  flutter_lints: ^5.0.0
+
+flutter:
+
+  uses-material-design: true
+
+  assets:
+     - assets/logo.png
+     - assets/Shopping bag.png
+     - assets/App.png 
+     - assets/google.png
+     - assets/screenshot.png
+  #   - images/a_dot_ham.jpeg
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/App.png" 
+  adaptive_icon_background: "#ffffff"  
+  adaptive_icon_foreground: "assets/App.png"  
+
+  # An image asset can refer to one or more resolution-specific "variants", see
+  # https://flutter.dev/assets-and-images/#resolution-aware
+
+  # For details regarding adding assets from package dependencies, see
+  # https://flutter.dev/assets-and-images/#from-packages
+
+  # To add custom fonts to your application, add a fonts section here,
+  # in this "flutter" section. Each entry in this list should have a
+  # "family" key with the font family name, and a "fonts" key with a
+  # list giving the asset and other descriptors for the font. For
+  # example:
+  fonts:
+    - family: Raleway
+      fonts:
+        - asset: assets/fonts/Raleway/Raleway-Regular.ttf
+        - asset: assets/fonts/Raleway/Raleway-Italic.ttf
+          style: italic
+        - asset: assets/fonts/Raleway/Raleway-Bold.ttf
+        - asset: assets/fonts/Raleway/Raleway-Medium.ttf
+
+    - family: Open Sans
+      fonts:
+        - asset: assets/fonts/OpenSans/OpenSans-Regular.ttf
+        - asset: assets/fonts/OpenSans/OpenSans-Light.ttf
+          style: italic
+        - asset: assets/fonts/OpenSans/OpenSans-Bold.ttf
+        - asset: assets/fonts/OpenSans/OpenSans-Medium.ttf
+
+
+  #
+  # For details regarding fonts from package dependencies,
+  # see https://flutter.dev/custom-fonts/#from-packages
