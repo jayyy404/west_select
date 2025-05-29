@@ -1,0 +1,5 @@
+{
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.compile.nullAnalysis.mode": "automatic",
+    "cmake.sourceDirectory": "C:/Users/John Paul/Desktop/AppDev/cc206-WVSU Buy and Sell/cc206_WVSU Buy and Sell/windows/runner"
+}
