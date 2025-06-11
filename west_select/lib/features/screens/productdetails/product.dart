@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../cart/cart_model.dart';
@@ -29,6 +30,7 @@ class ProductDetailPage extends StatefulWidget {
 }
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
+  String? currentUser = FirebaseAuth.instance.currentUser?.uid;
   int quantity = 1;
   bool isFavorite = false; // To track if the product is favorited
 
@@ -87,11 +89,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     "price": widget.price.toString(),
                     "seller": widget.sellerName,
                   };
-
                   if (isFavorite) {
-                    favoriteModel.removeFavorite(widget.userId, product);
+                    favoriteModel.removeFavorite(currentUser!, product);
                   } else {
-                    favoriteModel.addFavorite(widget.userId, product);
+                    favoriteModel.addFavorite(currentUser!, product);
                   }
 
                   setState(() {
