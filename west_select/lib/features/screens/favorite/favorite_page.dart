@@ -44,19 +44,65 @@ class FavoritePage extends StatelessWidget {
                   final product = items[index];
                   return Card(
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Image.network(product["imageUrl"]!, height: 120, fit: BoxFit.cover),
-                        ListTile(
-                          title: Text(product["title"] ?? ""),
-                          subtitle: Text(product["price"] ?? ""),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.favorite, color: Colors.red),
-                            onPressed: () {
-                              model.removeFavorite(currUser, product);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('${product["title"]} removed')),
-                              );
-                            },
+                        Image.network(
+                          product["imageUrl"]!,
+                          height: 120,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      product["title"] ?? "",
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.favorite, color: Colors.red),
+                                    onPressed: () {
+                                      model.removeFavorite(currUser, product);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('${product["title"]} removed')),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 1),
+                              Text(
+                                product["price"] ?? "",
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                              const SizedBox(height: 1),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      product["seller"] ?? "",
+                                      style: const TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 12,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       ],
