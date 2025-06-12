@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cc206_west_select/features/screens/favorite/favorite_model.dart' as fav;
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -106,6 +107,7 @@ class AuthService {
 
   // Sign out
   Future<void> signOut() async {
+    fav.FavoriteModel().clearFavorites();
     await _auth.signOut();
     await GoogleSignIn().signOut();
   }
