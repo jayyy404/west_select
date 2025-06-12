@@ -168,7 +168,10 @@ class _HomePageState extends State<HomePage> {
                             MaterialPageRoute(
                               builder: (context) => ProductDetailPage(
                                 productId: listing.productId,
-                                imageUrl: listing.imageUrl,
+                                imageUrls: listing.imageUrls is List
+                                    ? List<String>.from(
+                                        listing.imageUrls as List)
+                                    : [listing.imageUrls as String],
                                 productTitle: listing.postTitle,
                                 description: listing.postDescription,
                                 price: listing.price,
@@ -195,8 +198,8 @@ class _HomePageState extends State<HomePage> {
                                     ),
                                     image: DecorationImage(
                                       image: NetworkImage(
-                                        listing.imageUrl.isNotEmpty
-                                            ? listing.imageUrl
+                                        listing.imageUrls.isNotEmpty
+                                            ? listing.imageUrls[0]
                                             : 'https://via.placeholder.com/150',
                                       ),
                                       fit: BoxFit.cover,
