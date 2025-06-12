@@ -33,11 +33,52 @@ class ProductDetailPage extends StatefulWidget {
 }
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
+  @override
+  void initState() {
+    super.initState();
+    checkIfFavorite();
+  }
+
   String? currentUser = FirebaseAuth.instance.currentUser?.uid;
   int quantity = 1;
-  bool isFavorite = false;
   int _currentImageIndex = 0;
+  bool isFavorite = false;
+  bool isLoading = true;
   final PageController _pageController = PageController();
+
+  Future<void> checkIfFavorite() async {
+    final result = await isFavoriteProduct(widget.productId);
+    setState(() {
+      isFavorite = result;
+      isLoading = false;
+    });
+  }
+
+  Future<bool> isFavoriteProduct(String productId) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return false;
+
+      final doc = await FirebaseFirestore.instance
+          .collection('favorites')
+          .doc(user.uid)
+          .get();
+
+      if (!doc.exists) return false;
+
+      final data = doc.data();
+      if (data == null || !data.containsKey('items')) return false;
+
+      List<dynamic> items = data['items'];
+
+      // Check if any item in the list has a matching 'id'
+      return items.any((item) => item['id'] == productId);
+    } catch (e) {
+      print('Error checking favorite: $e');
+      return false;
+    }
+  }
+
 
   @override
   void dispose() {
@@ -126,7 +167,18 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               onPressed: () => Navigator.pop(context),
             ),
             actions: [
-              IconButton(
+              isLoading
+                  ? Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Center(
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              )
+                  : IconButton(
                 icon: Icon(
                   isFavorite ? Icons.favorite : Icons.favorite_border,
                   color: isFavorite ? Colors.red : Colors.white,
