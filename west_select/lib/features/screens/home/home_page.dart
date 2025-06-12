@@ -168,10 +168,7 @@ class _HomePageState extends State<HomePage> {
                             MaterialPageRoute(
                               builder: (context) => ProductDetailPage(
                                 productId: listing.productId,
-                                imageUrls: listing.imageUrls is List
-                                    ? List<String>.from(
-                                        listing.imageUrls as List)
-                                    : [listing.imageUrls as String],
+                                imageUrls: List<String>.from(listing.imageUrls),
                                 productTitle: listing.postTitle,
                                 description: listing.postDescription,
                                 price: listing.price,

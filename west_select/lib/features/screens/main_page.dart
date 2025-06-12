@@ -29,7 +29,9 @@ class _MainPageState extends State<MainPage> {
       FavoritePage(),
       CreateListingPage(),
       MessagePage(),
-      ProfilePage(appUser: widget.appUser!),
+      ProfilePage(
+        appUser: widget.appUser!,
+      ),
     ];
   }
 

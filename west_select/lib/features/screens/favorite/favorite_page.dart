@@ -4,16 +4,21 @@ import 'package:provider/provider.dart';
 import 'favorite_model.dart';
 
 class FavoritePage extends StatelessWidget {
-
-
   const FavoritePage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final favoriteModel = Provider.of<FavoriteModel>(context, listen: false);
     final String? currUser = FirebaseAuth.instance.currentUser?.uid;
+
+    if (currUser == null) {
+      return const Scaffold(
+        body: Center(child: Text("Please log in to view favorites.")),
+      );
+    }
+
     return FutureBuilder(
-      future: favoriteModel.fetchFavorites(currUser!), // <- correct user
+      future: favoriteModel.fetchFavorites(currUser),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -42,16 +47,28 @@ class FavoritePage extends StatelessWidget {
                 itemCount: items.length,
                 itemBuilder: (context, index) {
                   final product = items[index];
+                  final imageUrls = product["imageUrls"]?.split(",") ?? [];
+
                   return Card(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Image.network(
-                          product["imageUrl"]!,
-                          height: 120,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
+                        imageUrls.isNotEmpty
+                            ? Image.network(
+                                imageUrls[0],
+                                height: 120,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(Icons.broken_image,
+                                      size: 120);
+                                },
+                              )
+                            : const SizedBox(
+                                height: 120,
+                                child: Center(
+                                    child: Icon(Icons.image_not_supported)),
+                              ),
                         const SizedBox(height: 8),
                         Padding(
                           padding: const EdgeInsets.all(8.0),
@@ -59,7 +76,8 @@ class FavoritePage extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Expanded(
                                     child: Text(
@@ -71,11 +89,15 @@ class FavoritePage extends StatelessWidget {
                                     ),
                                   ),
                                   IconButton(
-                                    icon: const Icon(Icons.favorite, color: Colors.red),
+                                    icon: const Icon(Icons.favorite,
+                                        color: Colors.red),
                                     onPressed: () {
                                       model.removeFavorite(currUser, product);
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('${product["title"]} removed')),
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                            content: Text(
+                                                '${product["title"]} removed')),
                                       );
                                     },
                                   ),
@@ -88,7 +110,8 @@ class FavoritePage extends StatelessWidget {
                               ),
                               const SizedBox(height: 1),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Flexible(
                                     child: Text(
@@ -117,4 +140,3 @@ class FavoritePage extends StatelessWidget {
     );
   }
 }
-
