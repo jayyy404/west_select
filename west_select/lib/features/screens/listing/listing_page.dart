@@ -19,7 +19,11 @@ class _CreateListingPageState extends State<CreateListingPage> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
-  String? _uploadedImageUrl;
+
+  // Changed from single image URL to list of URLs
+  List<String> _uploadedImageUrls = [];
+  bool _isUploadingImage = false;
+
   bool _isCreatingListing = false;
   bool _isViewingMyProducts = false;
   bool _isViewingAllOrders = false;
@@ -144,20 +148,103 @@ class _CreateListingPageState extends State<CreateListingPage> {
             decoration: const InputDecoration(labelText: "Price (PHP)"),
           ),
           const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: uploadImageToCloudinary,
-            icon: const Icon(Icons.image),
-            label: const Text("Upload Image"),
+
+          // Image upload section
+          Row(
+            children: [
+              ElevatedButton.icon(
+                onPressed: _isUploadingImage || _uploadedImageUrls.length >= 3
+                    ? null
+                    : uploadImageToCloudinary,
+                icon: _isUploadingImage
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.image),
+                label:
+                    Text(_isUploadingImage ? "Uploading..." : "Upload Image"),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                "${_uploadedImageUrls.length}/3",
+                style: TextStyle(
+                  color: _uploadedImageUrls.length >= 3
+                      ? Colors.red
+                      : Colors.grey[600],
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
-          if (_uploadedImageUrl != null)
+
+          // Display uploaded images
+          if (_uploadedImageUrls.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16.0),
-              child: Image.network(
-                _uploadedImageUrl!,
-                height: 200,
-                fit: BoxFit.cover,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Uploaded Images:",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 120,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _uploadedImageUrls.length,
+                      itemBuilder: (context, index) {
+                        return Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          child: Stack(
+                            children: [
+                              Container(
+                                width: 100,
+                                height: 100,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  image: DecorationImage(
+                                    image:
+                                        NetworkImage(_uploadedImageUrls[index]),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                top: 4,
+                                right: 4,
+                                child: GestureDetector(
+                                  onTap: () => _removeImage(index),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.red,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.close,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
+
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: _validateAndCreateListing,
@@ -168,7 +255,14 @@ class _CreateListingPageState extends State<CreateListingPage> {
     );
   }
 
-// Add this validation function
+  // Function to remove an image from the list
+  void _removeImage(int index) {
+    setState(() {
+      _uploadedImageUrls.removeAt(index);
+    });
+  }
+
+  // Add this validation function
   void _validateAndCreateListing() {
     final priceText = _priceController.text;
 
@@ -190,7 +284,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
     createListing();
   }
 
-// Helper function to show an error dialog
+  // Helper function to show an error dialog
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
@@ -212,8 +306,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
   }
 
   Widget _buildOrdersList() {
-    final currentUser =
-        FirebaseAuth.instance.currentUser; // Get the current user
+    final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
       return const Center(child: Text("User not logged in."));
     }
@@ -291,7 +384,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
                         ? buyerNames[buyerId]!
                         : 'Unknown Buyer';
 
-                final orderId = order.id; // Get the order ID
+                final orderId = order.id;
                 final products = data['products'] as List<dynamic>;
                 final sellerProducts = products
                     .where((product) => product['sellerId'] == currentUserId)
@@ -305,15 +398,14 @@ class _CreateListingPageState extends State<CreateListingPage> {
                   margin:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ListTile(
-                    title: Text(buyerName), // Display the fetched buyer's name
+                    title: Text(buyerName),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text("Total Price: PHP ${data['total_price']}"),
                         const SizedBox(height: 8),
                         Text("Products:"),
-                        for (var product
-                            in sellerProducts) // Only display products sold by the current user
+                        for (var product in sellerProducts)
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: 4.0),
                             child: Text(
@@ -346,7 +438,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
     );
   }
 
-// Function to mark all products from the seller as completed
+  // Function to mark all products from the seller as completed
   Future<void> markAllProductsAsCompleted(
       String orderId, List<dynamic> sellerProducts) async {
     try {
@@ -427,15 +519,14 @@ class _CreateListingPageState extends State<CreateListingPage> {
         return;
       }
 
-      String buyerId = currentUser.uid; // Get buyer's ID
+      String buyerId = currentUser.uid;
 
       // Add the buyerId to the order data
       orderData['buyerId'] = buyerId;
 
       // Assuming the orderData includes a reference to 'postId'
       orderData['products'] = orderData['products'].map((product) {
-        product['productId'] =
-            product['post_id']; // Ensure the post_id is included as productId
+        product['productId'] = product['post_id'];
         return product;
       }).toList();
 
@@ -466,6 +557,17 @@ class _CreateListingPageState extends State<CreateListingPage> {
   }
 
   Future<void> uploadImageToCloudinary() async {
+    if (_uploadedImageUrls.length >= 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Maximum 3 images allowed")),
+      );
+      return;
+    }
+
+    setState(() {
+      _isUploadingImage = true;
+    });
+
     try {
       final picker = ImagePicker();
       final pickedFile = await picker.pickImage(source: ImageSource.gallery);
@@ -527,8 +629,15 @@ class _CreateListingPageState extends State<CreateListingPage> {
         }
 
         setState(() {
-          _uploadedImageUrl = imageUrl;
+          _uploadedImageUrls.add(imageUrl);
         });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                "Image ${_uploadedImageUrls.length} uploaded successfully!"),
+          ),
+        );
       } else {
         if (kDebugMode) {
           print("Upload failed with status: ${response.statusCode}");
@@ -542,6 +651,10 @@ class _CreateListingPageState extends State<CreateListingPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Failed to upload image: ${e.toString()}")),
       );
+    } finally {
+      setState(() {
+        _isUploadingImage = false;
+      });
     }
   }
 
@@ -563,22 +676,25 @@ class _CreateListingPageState extends State<CreateListingPage> {
       if (_titleController.text.isEmpty ||
           _descriptionController.text.isEmpty ||
           _priceController.text.isEmpty ||
-          _uploadedImageUrl == null) {
+          _uploadedImageUrls.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("Please fill all fields and upload an image"),
+            content:
+                Text("Please fill all fields and upload at least one image"),
           ),
         );
         return;
       }
 
-      // Create the listing data including sellerId (userId)
+      // Create the listing data including sellerId (userId) and multiple image URLs
       final listingData = {
         'post_id': '', // This will be added after saving the post in Firestore
         'post_title': _titleController.text,
         'post_description': _descriptionController.text,
         'price': double.parse(_priceController.text),
-        'image_url': _uploadedImageUrl,
+        'image_url': _uploadedImageUrls
+            .first, // Keep the first image as primary for backward compatibility
+        'image_urls': _uploadedImageUrls, // Store all image URLs
         'post_users': userId, // Store sellerId (userId)
         'num_comments': 0,
         'createdAt': FieldValue.serverTimestamp(),
@@ -607,7 +723,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
         _titleController.clear();
         _descriptionController.clear();
         _priceController.clear();
-        _uploadedImageUrl = null;
+        _uploadedImageUrls.clear();
         _isCreatingListing = false;
       });
     } catch (e) {
@@ -663,18 +779,34 @@ class _CreateListingPageState extends State<CreateListingPage> {
                 final listing = listings[index];
                 final data = listing.data() as Map<String, dynamic>;
 
+                // Get the first image URL (for backward compatibility)
+                String primaryImageUrl = '';
+                if (data['image_urls'] != null &&
+                    (data['image_urls'] as List).isNotEmpty) {
+                  primaryImageUrl = (data['image_urls'] as List).first;
+                } else if (data['image_url'] != null) {
+                  primaryImageUrl = data['image_url'];
+                }
+
                 return Card(
                   margin:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ListTile(
                     title: Text(data['post_title']),
                     subtitle: Text("PHP ${data['price']}"),
-                    leading: Image.network(
-                      data['image_url'] ?? '',
-                      width: 50,
-                      height: 50,
-                      fit: BoxFit.cover,
-                    ),
+                    leading: primaryImageUrl.isNotEmpty
+                        ? Image.network(
+                            primaryImageUrl,
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                          )
+                        : Container(
+                            width: 50,
+                            height: 50,
+                            color: Colors.grey[300],
+                            child: const Icon(Icons.image),
+                          ),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete, color: Colors.red),
                       onPressed: () => deleteListing(listing.id),

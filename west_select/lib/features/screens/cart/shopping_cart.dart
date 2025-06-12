@@ -139,7 +139,9 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                                           borderRadius:
                                               BorderRadius.circular(8.0),
                                           child: Image.network(
-                                            item.imageUrl,
+                                            item.imageUrls.isNotEmpty
+                                                ? item.imageUrls.first
+                                                : '',
                                             height: 60,
                                             width: 60,
                                             fit: BoxFit.cover,
@@ -374,7 +376,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                                   'title': item.title,
                                   'price': item.price,
                                   'quantity': item.quantity,
-                                  'imageUrl': item.imageUrl,
+                                  'imageUrl': item.imageUrls,
                                   'sellerId': item.sellerId,
                                 };
                               }).toList(),

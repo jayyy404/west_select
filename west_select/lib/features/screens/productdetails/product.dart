@@ -5,23 +5,23 @@ import '../favorite/favorite_model.dart';
 import 'package:intl/intl.dart';
 
 class ProductDetailPage extends StatefulWidget {
-  final String productId; // This is the post_id passed here
-  final String imageUrl;
+  final String productId;
+  final List<String> imageUrls;
   final String productTitle;
   final String description;
   final double price;
   final String sellerName;
-  final String userId; // Seller ID passed here
+  final String userId;
 
   const ProductDetailPage({
     Key? key,
     required this.productId,
-    required this.imageUrl,
+    required this.imageUrls,
     required this.productTitle,
     required this.description,
     required this.price,
     required this.sellerName,
-    required this.userId, // Seller ID passed here
+    required this.userId,
   }) : super(key: key);
 
   @override
@@ -30,7 +30,15 @@ class ProductDetailPage extends StatefulWidget {
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
   int quantity = 1;
-  bool isFavorite = false; // To track if the product is favorited
+  bool isFavorite = false;
+  int _currentImageIndex = 0;
+  final PageController _pageController = PageController();
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +48,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          // SliverAppBar for the full-screen image with overlay buttons
           SliverAppBar(
             expandedHeight: 350,
             pinned: true,
@@ -48,20 +55,61 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Full-screen image
-                  Image.network(
-                    widget.imageUrl,
-                    fit: BoxFit.cover,
+                  PageView.builder(
+                    controller: _pageController,
+                    itemCount: widget.imageUrls.length,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentImageIndex = index;
+                      });
+                    },
+                    itemBuilder: (context, index) {
+                      return Image.network(
+                        widget.imageUrls[index],
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Center(
+                              child: Icon(Icons.error, color: Colors.red));
+                        },
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                  : null,
+                            ),
+                          );
+                        },
+                      );
+                    },
                   ),
                   Container(
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black54,
-                          Colors.transparent,
-                        ],
+                        colors: [Colors.black54, Colors.transparent],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 16.0,
+                    right: 16.0,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12.0, vertical: 6.0),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${_currentImageIndex + 1}/${widget.imageUrls.length}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16.0,
+                        ),
                       ),
                     ),
                   ),
@@ -73,7 +121,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               onPressed: () => Navigator.pop(context),
             ),
             actions: [
-              // Favorite Icon Button
               IconButton(
                 icon: Icon(
                   isFavorite ? Icons.favorite : Icons.favorite_border,
@@ -83,7 +130,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   final product = {
                     "id": widget.productId,
                     "title": widget.productTitle,
-                    "imageUrl": widget.imageUrl,
+                    "imageUrls": widget.imageUrls.join(','),
                     "price": widget.price.toString(),
                     "seller": widget.sellerName,
                   };
@@ -101,8 +148,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               ),
             ],
           ),
-
-          // Product details
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -112,7 +157,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Product title
                       Expanded(
                         child: Text(
                           widget.productTitle,
@@ -123,7 +167,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      // Product price
                       Text(
                         'PHP ${NumberFormat('#,##0.00', 'en_US').format(widget.price)}',
                         style: const TextStyle(
@@ -135,8 +178,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     ],
                   ),
                   const SizedBox(height: 8),
-
-                  // Description
                   const Text(
                     'Description',
                     style: TextStyle(
@@ -150,10 +191,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     style: const TextStyle(fontSize: 16),
                   ),
                   const SizedBox(height: 16),
-
-                  // Seller's Details
                   const Text(
-                    'Seller’s Details',
+                    'Seller Details',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -165,24 +204,15 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       CircleAvatar(
                         radius: 24,
                         backgroundColor: Colors.grey[300],
-                        child: const Icon(
-                          Icons.person,
-                          size: 24,
-                          color: Colors.white,
-                        ),
+                        child: const Icon(Icons.person, size: 24),
                       ),
                       const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.sellerName,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
+                      Text(
+                        widget.sellerName,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
@@ -192,8 +222,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           ),
         ],
       ),
-
-      // Bottom nav bar
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16.0),
         decoration: const BoxDecoration(
@@ -213,7 +241,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
             const SizedBox(width: 8),
-            // Quantity Selector
             Container(
               decoration: BoxDecoration(
                 color: Colors.grey[200],
@@ -223,23 +250,13 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // - Button
                   GestureDetector(
                     onTap: () {
                       setState(() {
                         if (quantity > 1) quantity--;
                       });
                     },
-                    child: Container(
-                      height: 20,
-                      width: 20,
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.remove,
-                        size: 14,
-                        color: Colors.black,
-                      ),
-                    ),
+                    child: const Icon(Icons.remove, size: 14),
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -248,41 +265,31 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(width: 8),
-                  // + Button
                   GestureDetector(
                     onTap: () {
                       setState(() {
                         quantity++;
                       });
                     },
-                    child: Container(
-                      height: 20,
-                      width: 20,
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.add,
-                        size: 14,
-                        color: Colors.black,
-                      ),
-                    ),
+                    child: const Icon(Icons.add, size: 14),
                   ),
                 ],
               ),
             ),
             const Spacer(),
-            // Add to Cart Button
             ElevatedButton(
               onPressed: () {
                 cart.addToCart(
-                  widget.productId, // This is the post_id (productId)
-                  widget.productTitle, // The product title
-                  widget.price, // The price of the product
-                  widget.imageUrl, // The image URL of the product
-                  widget.userId, // The seller ID
+                  widget.productId,
+                  widget.productTitle,
+                  widget.price,
+                  widget.imageUrls,
+                  widget.userId,
                 );
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                      content: Text('${widget.productTitle} added to cart')),
+                    content: Text('${widget.productTitle} added to cart'),
+                  ),
                 );
               },
               style: ElevatedButton.styleFrom(

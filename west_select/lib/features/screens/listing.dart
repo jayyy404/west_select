@@ -6,7 +6,8 @@ class Listing {
   final String postDescription;
   final int numComments;
   final String postUserId; // user id of the poster (seller)
-  final String imageUrl;
+  final List<String> imageUrls;
+
   final double price;
   // sellerName is dynamic because it's not stored in the post document but fetched separately from users collection
   final String sellerName;
@@ -17,7 +18,7 @@ class Listing {
     required this.postDescription,
     required this.numComments,
     required this.postUserId,
-    required this.imageUrl,
+    required this.imageUrls,
     required this.price,
     required this.sellerName,
   });
@@ -31,7 +32,7 @@ class Listing {
       postUserId: doc['post_users'] is DocumentReference
           ? (doc['post_users'] as DocumentReference).id
           : (doc['post_users'] ?? ''),
-      imageUrl: doc['image_url'] ?? '',
+      imageUrls: List<String>.from(doc['image_urls'] ?? []),
       price: (doc['price'] ?? 0).toDouble(),
       sellerName: doc['sellerName'] ?? '',
     );
@@ -44,7 +45,7 @@ class Listing {
       'post_description': postDescription,
       'num_comments': numComments,
       'post_users': postUserId,
-      'image_url': imageUrl,
+      'image_urls': imageUrls,
       'price': price,
       'sellerName': sellerName,
     };
