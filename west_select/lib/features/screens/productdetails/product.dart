@@ -1,3 +1,6 @@
+import 'package:cc206_west_select/features/screens/profile/profile_page.dart';
+import 'package:cc206_west_select/firebase/app_user.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -136,6 +139,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     "price": widget.price.toString(),
                     "seller": widget.sellerName,
                   };
+
                   if (isFavorite) {
                     favoriteModel.removeFavorite(currentUser!, product);
                   } else {
@@ -208,13 +212,50 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         child: const Icon(Icons.person, size: 24),
                       ),
                       const SizedBox(width: 12),
-                      Text(
-                        widget.sellerName,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                      InkWell(
+                        onTap: () async {
+                          final sellerDoc = await FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(widget.userId)
+                              .get();
+
+                          if (sellerDoc.exists) {
+                            final sellerData = sellerDoc.data();
+                            if (sellerData != null) {
+                              final seller = AppUser(
+                                uid: widget.userId,
+                                email: sellerData['email'] ?? '',
+                                userListings: sellerData['userListings'] ?? [],
+                                orderHistory: sellerData['orderHistory'] ?? [],
+                                displayName: sellerData['displayName'] ?? '',
+                              );
+
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ProfilePage(
+                                    appUser: seller,
+                                  ),
+                                ),
+                              );
+                            }
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text("Seller profile not found.")),
+                            );
+                          }
+                        },
+                        child: Text(
+                          widget.sellerName,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                            decoration: TextDecoration.underline,
+                          ),
                         ),
-                      ),
+                      )
                     ],
                   ),
                 ],

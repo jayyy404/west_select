@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cc206_west_select/firebase/auth_service.dart';
 import 'package:cc206_west_select/features/log_in.dart';
 import 'package:cc206_west_select/firebase/app_user.dart';
@@ -7,22 +8,34 @@ import 'package:cc206_west_select/features/screens/profile/order_details_page.da
 
 class ProfilePage extends StatefulWidget {
   final AppUser appUser;
+  final bool? readonly;
 
-  const ProfilePage({super.key, required this.appUser});
+  const ProfilePage({super.key, required this.appUser, this.readonly});
 
   @override
   _ProfilePageState createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  int selectedTabIndex = 0; // Used to track the selected tab (Pending or Completed)
+  int selectedTabIndex = 0;
   Stream<DocumentSnapshot<Map<String, dynamic>>>? _userStream;
-  late final String status;
+  late bool isReadOnly;
+
   @override
   void initState() {
     super.initState();
+
+    // Get current user from FirebaseAuth
+    final currentUser = FirebaseAuth.instance.currentUser;
+    // Compare current user's UID with profile's UID
+    if (currentUser != null && currentUser.uid == widget.appUser.uid) {
+      isReadOnly = false;
+    } else {
+      isReadOnly = true;
+    }
+
     _userStream = FirebaseFirestore.instance
-        .collection('users') // Firestore collection for users
+        .collection('users')
         .doc(widget.appUser.uid)
         .snapshots();
   }
@@ -37,7 +50,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _editDisplayName() async {
     final TextEditingController editNameController =
-    TextEditingController(text: widget.appUser.displayName ?? '');
+        TextEditingController(text: widget.appUser.displayName ?? '');
 
     await showDialog(
       context: context,
@@ -58,7 +71,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 final newName = editNameController.text.trim();
                 if (newName.isNotEmpty) {
                   await FirebaseFirestore.instance
-                      .collection('users') // Firestore collection for users
+                      .collection('users')
                       .doc(widget.appUser.uid)
                       .update({'displayName': newName});
 
@@ -83,6 +96,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    print('ProfilePage build: isReadOnly = $isReadOnly');
+
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: _userStream,
       builder: (context, snapshot) {
@@ -102,16 +117,18 @@ class _ProfilePageState extends State<ProfilePage> {
           appBar: AppBar(
             backgroundColor: Colors.white,
             elevation: 0,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.edit, color: Color(0xFF1976D2)),
-                onPressed: _editDisplayName,
-              ),
-              IconButton(
-                icon: const Icon(Icons.logout, color: Color(0xFFD32F2F)),
-                onPressed: _signOut,
-              ),
-            ],
+            actions: isReadOnly
+                ? null
+                : [
+                    IconButton(
+                      icon: const Icon(Icons.edit, color: Color(0xFF1976D2)),
+                      onPressed: _editDisplayName,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.logout, color: Color(0xFFD32F2F)),
+                      onPressed: _signOut,
+                    ),
+                  ],
           ),
           body: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -120,9 +137,11 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 _buildProfileHeader(updatedAppUser),
                 const SizedBox(height: 20),
-                _buildTabSelection(),
-                const SizedBox(height: 20),
-                Expanded(child: _buildOrderList(updatedAppUser)),
+                if (!isReadOnly) ...[
+                  _buildTabSelection(),
+                  const SizedBox(height: 20),
+                  Expanded(child: _buildOrderList(updatedAppUser)),
+                ],
               ],
             ),
           ),
@@ -209,8 +228,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildOrderList(AppUser appUser) {
     return Column(
       children: [
-        // Show orders based on selectedTabIndex (Pending or Completed)
-        if (selectedTabIndex == 0) ...[
+        if (selectedTabIndex == 0)
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -248,21 +266,19 @@ class _ProfilePageState extends State<ProfilePage> {
                             MaterialPageRoute(
                               builder: (context) => OrderDetailScreen(
                                 orderId: data['orderId'],
-                                collection: 'orders', // Use 'orders' for Pending tab
+                                collection: 'orders',
                               ),
                             ),
                           );
                         },
-
                       ),
                     );
                   },
                 );
               },
             ),
-          ),
-        ] else if (selectedTabIndex == 1) ...[
-          // Completed Orders
+          )
+        else if (selectedTabIndex == 1)
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -299,12 +315,11 @@ class _ProfilePageState extends State<ProfilePage> {
                             MaterialPageRoute(
                               builder: (context) => OrderDetailScreen(
                                 orderId: data['orderId'],
-                                collection: 'completed_orders', // Use 'completed_orders' for Completed tab
+                                collection: 'completed_orders',
                               ),
                             ),
                           );
                         },
-
                       ),
                     );
                   },
@@ -312,7 +327,6 @@ class _ProfilePageState extends State<ProfilePage> {
               },
             ),
           ),
-        ],
       ],
     );
   }

@@ -55,7 +55,7 @@ class AppUser {
 class UserOrder {
   final String orderId;
   final double totalAmount;
-  final String status; // e.g., "pending", "completed"
+  final String status; // "pending", "completed"
   final DateTime orderDate;
 
   UserOrder({
