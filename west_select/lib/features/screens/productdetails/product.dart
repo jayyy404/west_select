@@ -33,18 +33,18 @@ class ProductDetailPage extends StatefulWidget {
 }
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
-  @override
-  void initState() {
-    super.initState();
-    checkIfFavorite();
-  }
-
   String? currentUser = FirebaseAuth.instance.currentUser?.uid;
   int quantity = 1;
   int _currentImageIndex = 0;
   bool isFavorite = false;
   bool isLoading = true;
   final PageController _pageController = PageController();
+
+  @override
+  void initState() {
+    super.initState();
+    checkIfFavorite();
+  }
 
   Future<void> checkIfFavorite() async {
     final result = await isFavoriteProduct(widget.productId);
@@ -70,15 +70,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       if (data == null || !data.containsKey('items')) return false;
 
       List<dynamic> items = data['items'];
-
-      // Check if any item in the list has a matching 'id'
       return items.any((item) => item['id'] == productId);
     } catch (e) {
       print('Error checking favorite: $e');
       return false;
     }
   }
-
 
   @override
   void dispose() {
@@ -113,10 +110,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       return Image.network(
                         widget.imageUrls[index],
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Center(
-                              child: Icon(Icons.error, color: Colors.red));
-                        },
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Center(
+                                child: Icon(Icons.error, color: Colors.red)),
                         loadingBuilder: (context, child, loadingProgress) {
                           if (loadingProgress == null) return child;
                           return Center(
@@ -131,17 +127,30 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       );
                     },
                   ),
-                  Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Colors.black54, Colors.transparent],
+                  Positioned(
+                    bottom: 12,
+                    left: 0,
+                    right: 0,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        widget.imageUrls.length,
+                        (index) => Container(
+                          width: 8,
+                          height: 8,
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _currentImageIndex == index
+                                ? Colors.white
+                                : Colors.white38,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                   Positioned(
-                    bottom: 16.0,
+                    bottom: 40.0,
                     right: 16.0,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
@@ -169,40 +178,40 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             actions: [
               isLoading
                   ? Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Center(
-                  child: SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-              )
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                    )
                   : IconButton(
-                icon: Icon(
-                  isFavorite ? Icons.favorite : Icons.favorite_border,
-                  color: isFavorite ? Colors.red : Colors.white,
-                ),
-                onPressed: () {
-                  final product = {
-                    "id": widget.productId,
-                    "title": widget.productTitle,
-                    "imageUrls": widget.imageUrls.join(','),
-                    "price": widget.price.toString(),
-                    "seller": widget.sellerName,
-                  };
+                      icon: Icon(
+                        isFavorite ? Icons.favorite : Icons.favorite_border,
+                        color: isFavorite ? Colors.red : Colors.white,
+                      ),
+                      onPressed: () {
+                        final product = {
+                          "id": widget.productId,
+                          "title": widget.productTitle,
+                          "imageUrls": widget.imageUrls.join(','),
+                          "price": widget.price.toString(),
+                          "seller": widget.sellerName,
+                        };
 
-                  if (isFavorite) {
-                    favoriteModel.removeFavorite(currentUser!, product);
-                  } else {
-                    favoriteModel.addFavorite(currentUser!, product);
-                  }
+                        if (isFavorite) {
+                          favoriteModel.removeFavorite(currentUser!, product);
+                        } else {
+                          favoriteModel.addFavorite(currentUser!, product);
+                        }
 
-                  setState(() {
-                    isFavorite = !isFavorite;
-                  });
-                },
-              ),
+                        setState(() {
+                          isFavorite = !isFavorite;
+                        });
+                      },
+                    ),
             ],
           ),
           SliverToBoxAdapter(
