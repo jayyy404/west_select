@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../productdetails/product.dart';
 import 'favorite_model.dart';
 
 class FavoritePage extends StatelessWidget {
@@ -48,88 +49,106 @@ class FavoritePage extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final product = items[index];
                   final imageUrls = product["imageUrls"]?.split(",") ?? [];
-
-                  return Card(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        imageUrls.isNotEmpty
-                            ? Image.network(
-                                imageUrls[0],
-                                height: 120,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Icon(Icons.broken_image,
-                                      size: 120);
-                                },
-                              )
-                            : const SizedBox(
-                                height: 120,
-                                child: Center(
-                                    child: Icon(Icons.image_not_supported)),
-                              ),
-                        const SizedBox(height: 8),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      product["title"] ?? "",
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.favorite,
-                                        color: Colors.red),
-                                    onPressed: () {
-                                      model.removeFavorite(currUser, product);
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                            content: Text(
-                                                '${product["title"]} removed')),
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 1),
-                              Text(
-                                product["price"] ?? "",
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                              const SizedBox(height: 1),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      product["seller"] ?? "",
-                                      style: const TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 12,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                  return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ProductDetailPage(
+                              productId: product["id"]?? "",
+                              imageUrls: List<String>.from(imageUrls),
+                              productTitle: product["title"] ?? "",
+                              description: product["description"] ?? "",
+                              price: double.tryParse(product["price"] ?? "0")?? 0,
+                              sellerName: product["seller"] ?? 'Unknown Seller',
+                              userId: product["postUserId"] ?? "",
+                            ),
                           ),
+                        );
+                      },
+                      child: Card(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            imageUrls.isNotEmpty
+                                ? Image.network(
+                                    imageUrls[0],
+                                    height: 120,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return const Icon(Icons.broken_image,
+                                          size: 120);
+                                    },
+                                  )
+                                : const SizedBox(
+                                    height: 120,
+                                    child: Center(
+                                        child: Icon(Icons.image_not_supported)),
+                                  ),
+                            const SizedBox(height: 8),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          product["title"] ?? "",
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.favorite,
+                                            color: Colors.red),
+                                        onPressed: () {
+                                          model.removeFavorite(
+                                              currUser, product);
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                                content: Text(
+                                                    '${product["title"]} removed')),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 1),
+                                  Text(
+                                    product["price"] ?? "",
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
+                                  const SizedBox(height: 1),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          product["seller"] ?? "",
+                                          style: const TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 12,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      )
                   );
                 },
               );
