@@ -55,13 +55,7 @@ class FavoritePage extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                             builder: (context) => ProductDetailPage(
-                              productId: product["id"]?? "",
-                              imageUrls: List<String>.from(imageUrls),
-                              productTitle: product["title"] ?? "",
-                              description: product["description"] ?? "",
-                              price: double.tryParse(product["price"] ?? "0")?? 0,
-                              sellerName: product["seller"] ?? 'Unknown Seller',
-                              userId: product["postUserId"] ?? "",
+                              productId: product["id"]?? ""
                             ),
                           ),
                         );
