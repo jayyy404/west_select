@@ -168,12 +168,6 @@ class _HomePageState extends State<HomePage> {
                             MaterialPageRoute(
                               builder: (context) => ProductDetailPage(
                                 productId: listing.productId,
-                                imageUrls: List<String>.from(listing.imageUrls),
-                                productTitle: listing.postTitle,
-                                description: listing.postDescription,
-                                price: listing.price,
-                                sellerName: sellerName ?? 'Unknown Seller',
-                                userId: listing.postUserId,
                               ),
                             ),
                           );
