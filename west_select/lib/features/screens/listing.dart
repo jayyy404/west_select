@@ -1,15 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Listing {
-  final String productId; // product ID
+  final String productId;
   final String postTitle;
   final String postDescription;
   final int numComments;
-  final String postUserId; // user id of the poster (seller)
+  final String postUserId;
   final List<String> imageUrls;
 
   final double price;
-  // sellerName is dynamic because it's not stored in the post document but fetched separately from users collection
+
   final String sellerName;
 
   Listing({
