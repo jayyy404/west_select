@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cc206_west_select/features/screens/favorite/favorite_page.dart';
-import 'package:cc206_west_select/features/screens/message/message_dart.dart';
+import 'package:cc206_west_select/features/screens/message/message_page.dart';
 import 'package:cc206_west_select/features/screens/home/home_page.dart';
 import 'package:cc206_west_select/features/screens/listing/listing_page.dart';
 import 'package:cc206_west_select/features/screens/profile/profile_page.dart';
@@ -28,7 +28,10 @@ class _MainPageState extends State<MainPage> {
       HomePage(),
       FavoritePage(),
       CreateListingPage(),
-      MessagePage(),
+      MessagePage(
+        userName: '',
+        receiverId: '',
+      ),
       ProfilePage(
         appUser: widget.appUser!,
       ),

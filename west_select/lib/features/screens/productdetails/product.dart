@@ -1,3 +1,4 @@
+import 'package:cc206_west_select/features/screens/message/message_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -30,11 +31,7 @@ class Product {
       imageUrls: List<String>.from(data['image_urls'] ?? []),
       productTitle: data['post_title'] ?? '',
       description: data['post_description'] ?? '',
-      price: (data['price'] is int)
-          ? data['price']
-          : (data['price'] is double)
-              ? (data['price'] as double).toInt()
-              : 0,
+      price: (data['price'] ?? 0).toDouble(),
       userId: data['post_users'] ?? '',
       sellerName: data['sellerName'] ?? '',
     );
@@ -113,6 +110,34 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       print('Favorite error: $e');
       setState(() => isLoadingFavorite = false);
     }
+  }
+
+  void _navigateToMessagePage() {
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please login to send messages')),
+      );
+      return;
+    }
+
+    if (product == null) return;
+
+    if (currentUser == product!.userId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You cannot message yourself')),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MessagePage(
+          receiverId: product!.userId,
+          userName: product!.sellerName,
+        ),
+      ),
+    );
   }
 
   @override
@@ -243,32 +268,43 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                               child: Icon(Icons.person),
                             ),
                             const SizedBox(width: 12),
-                            InkWell(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => ProfilePage(
-                                      appUser: AppUser(
-                                        uid: product!.userId,
-                                        displayName: product!.sellerName,
-                                        email: '',
-                                        userListings: [],
-                                        orderHistory: [],
+                            Expanded(
+                              child: InkWell(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => ProfilePage(
+                                        appUser: AppUser(
+                                          uid: product!.userId,
+                                          displayName: product!.sellerName,
+                                          email: '',
+                                          userListings: [],
+                                          orderHistory: [],
+                                        ),
                                       ),
                                     ),
+                                  );
+                                },
+                                child: Text(
+                                  product!.sellerName,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue,
+                                    decoration: TextDecoration.underline,
                                   ),
-                                );
-                              },
-                              child: Text(
-                                product!.sellerName,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue,
-                                  decoration: TextDecoration.underline,
                                 ),
                               ),
+                            ),
+                            // Message button added here
+                            IconButton(
+                              icon: const Icon(
+                                Icons.message,
+                                color: Colors.blue,
+                              ),
+                              onPressed: _navigateToMessagePage,
+                              tooltip: 'Message Seller',
                             ),
                           ],
                         ),
