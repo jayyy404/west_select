@@ -5,16 +5,16 @@ class CartItem {
   final String title;
   final double price;
   final List<String> imageUrls;
-  final String sellerId; // Seller ID
-  late int quantity; // Fixed to use an integer quantity
+  final String sellerId;
+  late int quantity;
 
   CartItem({
     required this.id,
     required this.title,
     required this.price,
     required this.imageUrls,
-    required this.sellerId, // Seller ID
-    this.quantity = 1, // Default quantity set to 1 if not passed
+    required this.sellerId,
+    this.quantity = 1,
   });
 }
 
@@ -35,7 +35,7 @@ class CartModel with ChangeNotifier {
         id: productId,
         title: title,
         price: price,
-        imageUrls: imageUrls, // Store all images
+        imageUrls: imageUrls,
         sellerId: sellerId,
       );
       _items.add(newItem);
