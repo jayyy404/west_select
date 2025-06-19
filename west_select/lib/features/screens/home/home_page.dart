@@ -59,7 +59,10 @@ class _HomePageState extends State<HomePage> {
       final searchKey = searchText.toLowerCase();
 
       // query all posts
-      final allPosts = await _firestore.collection('post').get();
+      final allPosts = await _firestore
+          .collection('post')
+          .orderBy('createdAt', descending: true)
+          .get();
       List<QueryDocumentSnapshot<Map<String, dynamic>>> filteredResults = [];
 
       for (var postDoc in allPosts.docs) {
@@ -350,7 +353,10 @@ class _HomePageState extends State<HomePage> {
                   title: 'Search Results',
                 )
               : StreamBuilder<QuerySnapshot>(
-                  stream: _firestore.collection('post').snapshots(),
+                  stream: _firestore
+                      .collection('post')
+                      .orderBy('createdAt', descending: true)
+                      .snapshots(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
