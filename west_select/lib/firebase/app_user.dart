@@ -4,6 +4,7 @@ class AppUser {
   final String uid;
   final String email;
   final String? displayName;
+  final String? description;
   final String? profilePictureUrl;
   final List<UserOrder> orderHistory; // List of orders
   final List<UserListing> userListings; // List of listings
@@ -12,6 +13,7 @@ class AppUser {
     required this.uid,
     required this.email,
     this.displayName,
+    this.description,
     this.profilePictureUrl,
     required this.orderHistory,
     required this.userListings,
@@ -33,6 +35,7 @@ class AppUser {
       uid: data['uid'] ?? '',
       email: data['email'] ?? '',
       displayName: data['displayName'],
+      description: data['description'],
       profilePictureUrl: data['profilePictureUrl'],
       orderHistory: orderHistory,
       userListings: userListings,
