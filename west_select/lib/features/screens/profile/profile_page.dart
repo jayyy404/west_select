@@ -48,18 +48,30 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Future<void> _editDisplayName() async {
+  Future<void> _editDisplayNameAndDescription(AppUser appUser) async {
     final TextEditingController editNameController =
-        TextEditingController(text: widget.appUser.displayName ?? '');
+    TextEditingController(text: appUser.displayName ?? '');
+    final TextEditingController editDescriptionController =
+    TextEditingController(text: appUser.description ?? '');
 
     await showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Edit Display Name'),
-          content: TextField(
-            controller: editNameController,
-            decoration: const InputDecoration(labelText: 'Display Name'),
+          title: const Text('Edit Profile'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: editNameController,
+                decoration: const InputDecoration(labelText: 'Display Name'),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: editDescriptionController,
+                decoration: const InputDecoration(labelText: 'Description'),
+              ),
+            ],
           ),
           actions: [
             TextButton(
@@ -69,22 +81,27 @@ class _ProfilePageState extends State<ProfilePage> {
             ElevatedButton(
               onPressed: () async {
                 final newName = editNameController.text.trim();
-                if (newName.isNotEmpty) {
-                  await FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(widget.appUser.uid)
-                      .update({'displayName': newName});
+                final newDescription = editDescriptionController.text.trim();
 
+                if (newName.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Name updated successfully')),
+                    const SnackBar(content: Text('Display name cannot be empty')),
                   );
-                  Navigator.pop(context);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Display name cannot be empty')),
-                  );
+                  return;
                 }
+
+                await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(widget.appUser.uid)
+                    .update({
+                  'displayName': newName,
+                  'description': newDescription,
+                });
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Profile updated successfully')),
+                );
+                Navigator.pop(context);
               },
               child: const Text('Save'),
             ),
@@ -93,6 +110,7 @@ class _ProfilePageState extends State<ProfilePage> {
       },
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -122,7 +140,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 : [
                     IconButton(
                       icon: const Icon(Icons.edit, color: Color(0xFF1976D2)),
-                      onPressed: _editDisplayName,
+                      onPressed: () => _editDisplayNameAndDescription(updatedAppUser),
                     ),
                     IconButton(
                       icon: const Icon(Icons.logout, color: Color(0xFFD32F2F)),
@@ -151,41 +169,55 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildProfileHeader(AppUser appUser) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CircleAvatar(
-          radius: 40,
-          backgroundImage: appUser.profilePictureUrl != null
-              ? NetworkImage(appUser.profilePictureUrl!)
-              : null,
-          backgroundColor: Colors.grey,
+        Row(
+          children: [
+            CircleAvatar(
+              radius: 40,
+              backgroundImage: appUser.profilePictureUrl != null
+                  ? NetworkImage(appUser.profilePictureUrl!)
+                  : null,
+              backgroundColor: Colors.grey,
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    appUser.displayName ?? "User's Name",
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1976D2),
+                    ),
+                  ),
+                  Text(
+                    appUser.email,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 20),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                appUser.displayName ?? "User's Name",
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1976D2),
-                ),
-              ),
-              Text(
-                appUser.email,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey,
-                ),
-              ),
-            ],
+        const SizedBox(height: 12),
+          Text(
+            appUser.description ?? 'No description',
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.black87,
+            ),
           ),
-        ),
       ],
     );
   }
+
 
   Widget _buildTabSelection() {
     return Row(
