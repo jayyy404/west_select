@@ -1,4 +1,4 @@
-import 'package:cc206_west_select/features/screens/main_page.dart';
+import 'package:cc206_west_select/features/navigation/nav_bar.dart';
 import 'package:cc206_west_select/features/set_profile.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';

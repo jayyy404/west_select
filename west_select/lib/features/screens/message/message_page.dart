@@ -1,141 +1,247 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 class MessagePage extends StatefulWidget {
   final String? receiverId;
   final String? userName;
+  final String? productName;
+  final double? productPrice;
+  final String? productImage;
 
-  const MessagePage({super.key, this.receiverId, this.userName});
+  const MessagePage({
+    super.key,
+    this.receiverId,
+    this.userName,
+    this.productName,
+    this.productPrice,
+    this.productImage,
+  });
 
   @override
   State<MessagePage> createState() => _MessagePageState();
 }
 
 class _MessagePageState extends State<MessagePage> {
-  final TextEditingController _messageController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
-  final String? currentUserId = FirebaseAuth.instance.currentUser?.uid;
+  final _msgCtrl = TextEditingController();
+  final _listCtrl = ScrollController();
+  final _me = FirebaseAuth.instance.currentUser?.uid;
 
-  String? selectedReceiverId;
-  String? selectedUserName;
+  String? _selectedId;
+  String? _selectedName;
+  bool _isExternalSelection = false;
+
+  String? get _productName => widget.productName;
+  double? get _productPrice => widget.productPrice;
+  String? get _productImage => widget.productImage;
 
   @override
   void initState() {
     super.initState();
-
     if (widget.receiverId != null && widget.userName != null) {
-      selectedReceiverId = widget.receiverId;
-      selectedUserName = widget.userName;
+      _selectedId = widget.receiverId;
+      _selectedName = widget.userName;
+      _isExternalSelection = true;
     }
   }
 
-  String get conversationId {
-    final ids = [currentUserId, selectedReceiverId]..sort();
+  void _checkForReset() {
+    if (widget.receiverId == null && _isExternalSelection) {
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() {
+          _selectedId = null;
+          _selectedName = null;
+          _isExternalSelection = false;
+        });
+      });
+    }
+  }
+
+  String get _conversationId {
+    if (_me == null || _selectedId == null) return '';
+    final ids = [_me, _selectedId!]..sort();
     return ids.join('_');
   }
 
-  Future<void> sendMessage() async {
-    final text = _messageController.text.trim();
-    if (text.isEmpty || currentUserId == null || selectedReceiverId == null) {
-      return;
-    }
+  String _fmt(DateTime dt) {
+    final d = DateTime.now().difference(dt);
+    if (d.inMinutes < 60) return '${d.inMinutes}m ago';
+    if (d.inHours < 24) return '${d.inHours}h ago';
+    return '${dt.month}/${dt.day}/${dt.year}';
+  }
 
-    final convoRef = FirebaseFirestore.instance
+  Future<void> _send() async {
+    final txt = _msgCtrl.text.trim();
+    if (txt.isEmpty || _me == null || _selectedId == null) return;
+
+    final convo = FirebaseFirestore.instance
         .collection('conversations')
-        .doc(conversationId);
-    final messagesRef = convoRef.collection('messages');
+        .doc(_conversationId);
+    final msgsCol = convo.collection('messages');
 
-    await messagesRef.add({
-      'senderId': currentUserId,
-      'receiverId': selectedReceiverId,
-      'text': text,
+    await msgsCol.add({
+      'senderId': _me,
+      'receiverId': _selectedId,
+      'text': txt,
       'timestamp': FieldValue.serverTimestamp(),
     });
 
-    await convoRef.set({
-      'participants': [currentUserId, selectedReceiverId],
-      'lastMessage': text,
+    await convo.set({
+      'participants': [_me, _selectedId],
+      'lastMessage': txt,
       'lastUpdated': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
-    _messageController.clear();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          0.0,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+    _msgCtrl.clear();
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (_listCtrl.hasClients) {
+        _listCtrl.animateTo(0,
+            duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
       }
     });
   }
 
-  String _formatTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final diff = now.difference(dateTime);
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    return '${dateTime.month}/${dateTime.day}/${dateTime.year}';
+  Widget _buildProductBar() {
+    if (_productName == null ||
+        _productPrice == null ||
+        _productImage == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+      ),
+      child: Row(
+        children: [
+          // Product Image
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              image: DecorationImage(
+                image: NetworkImage(_productImage!),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 16),
+
+          // Product Details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _productName!,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'PHP ${NumberFormat('#,##0.00', 'en_US').format(_productPrice!)}',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Add to Cart Button
+          ElevatedButton(
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Added $_productName to cart')),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF5191DB),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+            child: const Text(
+              'Add to cart',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
-  Widget buildConversationList() {
+  Widget _conversationList() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('conversations')
-          .where('participants', arrayContains: currentUserId)
+          .where('participants', arrayContains: _me)
           .orderBy('lastUpdated', descending: true)
           .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
+      builder: (_, snap) {
+        if (!snap.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
-
-        final conversations = snapshot.data!.docs;
-
-        if (conversations.isEmpty) {
-          return const Center(
-            child: Text("No messages yet."),
-          );
+        final convos = snap.data!.docs;
+        if (convos.isEmpty) {
+          return const Center(child: Text('No messages yet.'));
         }
 
         return ListView.builder(
-          itemCount: conversations.length,
-          itemBuilder: (context, index) {
-            final data = conversations[index].data() as Map<String, dynamic>;
-            final participants = List<String>.from(data['participants']);
-            final otherUserId =
-                participants.firstWhere((id) => id != currentUserId);
-            final lastMessage = data['lastMessage'] ?? '';
-            final lastUpdated = data['lastUpdated'] as Timestamp?;
+          itemCount: convos.length,
+          itemBuilder: (_, i) {
+            final data = convos[i].data() as Map<String, dynamic>;
+            final other = (List<String>.from(data['participants']))
+                .firstWhere((id) => id != _me);
+            final last = data['lastMessage'] ?? '';
+            final ts = data['lastUpdated'] as Timestamp?;
 
             return FutureBuilder<DocumentSnapshot>(
               future: FirebaseFirestore.instance
                   .collection('users')
-                  .doc(otherUserId)
+                  .doc(other)
                   .get(),
-              builder: (context, userSnapshot) {
-                final userData =
-                    userSnapshot.data?.data() as Map<String, dynamic>?;
-                final userName = userData?['displayName'] ?? 'User';
+              builder: (_, uSnap) {
+                final uData =
+                    (uSnap.data?.data() as Map<String, dynamic>?) ?? {};
+
+                final name = uData['displayName'] ?? 'User';
+
+                final String? photoUrl =
+                    (uData['profilePictureUrl'] as String?)?.trim();
 
                 return ListTile(
                   leading: CircleAvatar(
-                    child: Text(userName[0].toUpperCase()),
+                    radius: 24,
+                    backgroundColor: Colors.grey[300],
+                    backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
+                        ? NetworkImage(photoUrl)
+                        : null,
+                    child: (photoUrl == null || photoUrl.isEmpty)
+                        ? Text(name[0].toUpperCase(),
+                            style: const TextStyle(color: Colors.white))
+                        : null,
                   ),
-                  title: Text(userName),
-                  subtitle: Text(lastMessage),
-                  trailing: lastUpdated != null
-                      ? Text(_formatTime(lastUpdated.toDate()),
+                  title: Text(name),
+                  subtitle: Text(last),
+                  trailing: ts != null
+                      ? Text(_fmt(ts.toDate()),
                           style: const TextStyle(fontSize: 12))
                       : null,
-                  onTap: () {
-                    setState(() {
-                      selectedReceiverId = otherUserId;
-                      selectedUserName = userName;
-                    });
-                  },
+                  onTap: () => setState(() {
+                    _selectedId = other;
+                    _selectedName = name;
+                    _isExternalSelection = false;
+                  }),
                 );
               },
             );
@@ -145,64 +251,58 @@ class _MessagePageState extends State<MessagePage> {
     );
   }
 
-  Widget buildChatView() {
-    final convoRef = FirebaseFirestore.instance
+  Widget _chatView() {
+    final query = FirebaseFirestore.instance
         .collection('conversations')
-        .doc(conversationId);
-    final messagesQuery =
-        convoRef.collection('messages').orderBy('timestamp', descending: true);
+        .doc(_conversationId)
+        .collection('messages')
+        .orderBy('timestamp', descending: true);
 
     return Column(
       children: [
+        // Product bar at the top
+        _buildProductBar(),
+
+        // Chat messages
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
-            stream: messagesQuery.snapshots(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
+            stream: query.snapshots(),
+            builder: (_, snap) {
+              if (!snap.hasData) {
                 return const Center(child: CircularProgressIndicator());
               }
-
-              final messages = snapshot.data!.docs;
-
+              final msgs = snap.data!.docs;
               return ListView.builder(
-                controller: _scrollController,
+                controller: _listCtrl,
                 reverse: true,
-                itemCount: messages.length,
-                itemBuilder: (context, index) {
-                  final msg = messages[index].data() as Map<String, dynamic>;
-                  final isMe = msg['senderId'] == currentUserId;
-                  final messageText = msg['text'] ?? '';
-                  final timestamp = msg['timestamp'] as Timestamp?;
-
+                itemCount: msgs.length,
+                itemBuilder: (_, i) {
+                  final m = msgs[i].data() as Map<String, dynamic>;
+                  final me = m['senderId'] == _me;
+                  final ts = m['timestamp'] as Timestamp?;
                   return Align(
                     alignment:
-                        isMe ? Alignment.centerRight : Alignment.centerLeft,
+                        me ? Alignment.centerRight : Alignment.centerLeft,
                     child: Container(
                       margin: const EdgeInsets.symmetric(
                           vertical: 4, horizontal: 8),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: isMe ? Colors.blue : Colors.grey[300],
+                        color: me ? Colors.blue : Colors.grey[300],
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            messageText,
-                            style: TextStyle(
-                              color: isMe ? Colors.white : Colors.black,
-                              fontSize: 16,
-                            ),
-                          ),
-                          if (timestamp != null)
-                            Text(
-                              _formatTime(timestamp.toDate()),
+                          Text(m['text'] ?? '',
                               style: TextStyle(
-                                fontSize: 10,
-                                color: isMe ? Colors.white60 : Colors.black54,
-                              ),
-                            ),
+                                  color: me ? Colors.white : Colors.black)),
+                          if (ts != null)
+                            Text(_fmt(ts.toDate()),
+                                style: TextStyle(
+                                    fontSize: 10,
+                                    color:
+                                        me ? Colors.white70 : Colors.black54)),
                         ],
                       ),
                     ),
@@ -212,61 +312,66 @@ class _MessagePageState extends State<MessagePage> {
             },
           ),
         ),
+
+        // Message input
         SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(8),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
-                    controller: _messageController,
-                    decoration: const InputDecoration(
-                      hintText: 'Type a message...',
-                      border: OutlineInputBorder(),
+                    controller: _msgCtrl,
+                    decoration: InputDecoration(
+                      hintText: 'Write a message...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
                     ),
-                    onSubmitted: (_) => sendMessage(),
+                    onSubmitted: (_) => _send(),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: sendMessage,
+                const SizedBox(width: 8),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.blue,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.send, color: Colors.white),
+                    onPressed: _send,
+                  ),
                 ),
               ],
             ),
           ),
-        )
+        ),
       ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final isChatSelected =
-        selectedReceiverId != null && selectedUserName != null;
+    _checkForReset();
+    final inChat = _selectedId != null && _selectedName != null;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isChatSelected ? selectedUserName! : "Messages"),
-        leading: isChatSelected
+        title: Text(inChat ? _selectedName! : 'Messages'),
+        leading: inChat
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
-                onPressed: () {
-                  setState(() {
-                    selectedReceiverId = null;
-                    selectedUserName = null;
-                  });
-                },
+                onPressed: () => setState(() {
+                  _selectedId = null;
+                  _selectedName = null;
+                  _isExternalSelection = false;
+                }),
               )
             : null,
       ),
-      body: isChatSelected ? buildChatView() : buildConversationList(),
+      body: inChat ? _chatView() : _conversationList(),
     );
-  }
-
-  @override
-  void dispose() {
-    _messageController.dispose();
-    _scrollController.dispose();
-    super.dispose();
   }
 }

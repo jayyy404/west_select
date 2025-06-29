@@ -96,7 +96,18 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     }
   }
 
-  Future<void> checkIfFavorite() async {
+/*************  ✨ Windsurf Command ⭐  *************/
+  /// Checks if the current product is marked as a favorite by the current user.
+  ///
+  /// It queries the 'favorites' collection in Firestore using the
+  /// current user's ID to retrieve the list of favorite items.
+  /// The method sets the `isFavorite` flag to true if the product
+  /// with the given `productId` is found in the user's favorites.
+  /// The `isLoadingFavorite` flag is set to false after the check
+  /// is completed, regardless of success or failure.
+
+/*******  119597dc-1e1d-426c-ac4e-03298c18ef23  *******/ Future<void>
+      checkIfFavorite() async {
     try {
       final doc = await FirebaseFirestore.instance
           .collection('favorites')
@@ -107,7 +118,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       isFavorite = items.any((item) => item['id'] == widget.productId);
       setState(() => isLoadingFavorite = false);
     } catch (e) {
-      print('Favorite error: $e');
       setState(() => isLoadingFavorite = false);
     }
   }
@@ -135,6 +145,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         builder: (context) => MessagePage(
           receiverId: product!.userId,
           userName: product!.sellerName,
+          productName: product!.productTitle,
+          productPrice: product!.price,
+          productImage: product!.imageUrls.first,
         ),
       ),
     );
@@ -297,7 +310,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                 ),
                               ),
                             ),
-                            // Message button added here
                             IconButton(
                               icon: const Icon(
                                 Icons.message,
@@ -581,6 +593,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                 Text('${product!.productTitle} added to cart')),
                       );
                     },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFFFFA42D),
+                    ),
                     child: const Text("Add to Cart"),
                   )
                 ],

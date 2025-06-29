@@ -26,6 +26,8 @@ dependencies:
   permission_handler: ^11.3.1
   provider: ^6.1.2
   intl: ^0.20.2
+  http: ^1.4.0
+  http_parser: ^4.0.2
 
 dev_dependencies:
   flutter_test:
@@ -48,6 +50,13 @@ flutter:
      - assets/App.png 
      - assets/google.png
      - assets/screenshot.png
+     - assets/categories/merch.png
+     - assets/categories/food.png
+     - assets/categories/clothes.png
+     - assets/categories/footwear.png
+     - assets/categories/gadgets.png
+     - assets/categories/school_supplies.png
+    
   #   - images/a_dot_ham.jpeg
 flutter_launcher_icons:
   android: true
