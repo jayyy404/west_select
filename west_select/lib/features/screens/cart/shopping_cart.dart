@@ -101,7 +101,6 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                                     padding: const EdgeInsets.all(12.0),
                                     child: Row(
                                       children: [
-                                        // Custom Circular Checkbox
                                         GestureDetector(
                                           onTap: () {
                                             setState(() {
@@ -181,7 +180,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                                                 style: const TextStyle(
                                                   fontSize: 14,
                                                   fontWeight: FontWeight.bold,
-                                                  color: Colors.green,
+                                                  color: Colors.red,
                                                 ),
                                                 overflow: TextOverflow.ellipsis,
                                                 maxLines: 1,
@@ -275,7 +274,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                       },
                     ),
                   ),
-                  // Bottom Bar with Inline Total
+
                   Container(
                     padding: const EdgeInsets.all(16.0),
                     decoration: const BoxDecoration(
@@ -290,7 +289,6 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                     ),
                     child: Row(
                       children: [
-                        // Custom Circular Checkbox for Select All
                         GestureDetector(
                           onTap: () {
                             toggleSelectAll(!selectAll, cart.items);
@@ -324,7 +322,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: Colors.blue,
+                            color: Colors.red,
                           ),
                         ),
                         const SizedBox(width: 20),
@@ -333,7 +331,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 20, vertical: 12),
-                            backgroundColor: Colors.blue,
+                            backgroundColor: Color(0xFFFFA42D),
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8.0),

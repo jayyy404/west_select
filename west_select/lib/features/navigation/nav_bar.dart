@@ -40,9 +40,8 @@ class _MainPageState extends State<MainPage> {
           children: [
             _buildNavItem(Icons.home, Icons.home_outlined, 0),
             _buildNavItem(Icons.favorite, Icons.favorite_border, 1),
-            _buildNavItem(Icons.receipt, Icons.receipt_long_outlined, 2),
-            _buildNavItem(Icons.message, Icons.message_outlined, 3),
-            _buildNavItem(Icons.person, Icons.person_outline, 4),
+            _buildNavItem(Icons.message, Icons.message_outlined, 2),
+            _buildNavItem(Icons.person, Icons.person_outline, 3),
           ],
         ),
       ),
@@ -55,6 +54,7 @@ class _MainPageState extends State<MainPage> {
         return HomePage();
       case 1:
         return FavoritePage();
+
       case 2:
         return MessagePage();
       case 3:

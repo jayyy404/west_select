@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cc206_west_select/features/screens/main_page.dart';
+import 'package:cc206_west_select/features/navigation/nav_bar.dart';
 import 'package:cc206_west_select/firebase/app_user.dart';
 import 'package:cc206_west_select/firebase/user_repo.dart';
 

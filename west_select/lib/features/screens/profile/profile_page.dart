@@ -1,3 +1,4 @@
+import 'package:cc206_west_select/features/screens/listing/myShop.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -50,9 +51,9 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _editDisplayNameAndDescription(AppUser appUser) async {
     final TextEditingController editNameController =
-    TextEditingController(text: appUser.displayName ?? '');
+        TextEditingController(text: appUser.displayName ?? '');
     final TextEditingController editDescriptionController =
-    TextEditingController(text: appUser.description ?? '');
+        TextEditingController(text: appUser.description ?? '');
 
     await showDialog(
       context: context,
@@ -85,7 +86,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
                 if (newName.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Display name cannot be empty')),
+                    const SnackBar(
+                        content: Text('Display name cannot be empty')),
                   );
                   return;
                 }
@@ -110,7 +112,6 @@ class _ProfilePageState extends State<ProfilePage> {
       },
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -140,7 +141,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 : [
                     IconButton(
                       icon: const Icon(Icons.edit, color: Color(0xFF1976D2)),
-                      onPressed: () => _editDisplayNameAndDescription(updatedAppUser),
+                      onPressed: () =>
+                          _editDisplayNameAndDescription(updatedAppUser),
                     ),
                     IconButton(
                       icon: const Icon(Icons.logout, color: Color(0xFFD32F2F)),
@@ -189,35 +191,48 @@ class _ProfilePageState extends State<ProfilePage> {
                   Text(
                     appUser.displayName ?? "User's Name",
                     style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1976D2),
-                    ),
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1976D2)),
                   ),
-                  Text(
-                    appUser.email,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey,
-                    ),
-                  ),
+                  Text(appUser.email,
+                      style: const TextStyle(fontSize: 16, color: Colors.grey)),
                 ],
               ),
             ),
           ],
         ),
         const SizedBox(height: 12),
-          Text(
-            appUser.description ?? 'No description',
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.black87,
+        Text(appUser.description ?? 'No description',
+            style: const TextStyle(fontSize: 14, color: Colors.black87)),
+        const SizedBox(height: 12),
+        if (!isReadOnly)
+          SizedBox(
+            width: double.infinity,
+            child: TextButton.icon(
+              style: TextButton.styleFrom(
+                backgroundColor: const Color(0xFFFFC67B),
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  side: const BorderSide(color: Color(0xFFE6A954), width: 1),
+                ),
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => InventoryPage()),
+                );
+              },
+              icon: const Icon(Icons.store),
+              label: const Text('View my Shop',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ),
       ],
     );
   }
-
 
   Widget _buildTabSelection() {
     return Row(
