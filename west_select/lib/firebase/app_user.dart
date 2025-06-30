@@ -8,6 +8,7 @@ class AppUser {
   final String? profilePictureUrl;
   final List<UserOrder> orderHistory; // List of orders
   final List<UserListing> userListings; // List of listings
+  final List<String> fcmTokens;
 
   AppUser({
     required this.uid,
@@ -17,6 +18,7 @@ class AppUser {
     this.profilePictureUrl,
     required this.orderHistory,
     required this.userListings,
+    required this.fcmTokens,
   });
 
   // Factory method to create an AppUser instance from Firestore data
@@ -30,6 +32,10 @@ class AppUser {
             ?.map((listingData) => UserListing.fromMap(listingData))
             .toList() ??
         [];
+    var fcmTokens = (data['fcmTokens'] as List<dynamic>?)
+        ?.map((token) => token.toString())
+        .toList() ??
+        [];
 
     return AppUser(
       uid: data['uid'] ?? '',
@@ -39,6 +45,7 @@ class AppUser {
       profilePictureUrl: data['profilePictureUrl'],
       orderHistory: orderHistory,
       userListings: userListings,
+      fcmTokens: fcmTokens,
     );
   }
 
@@ -51,6 +58,7 @@ class AppUser {
       'profilePictureUrl': profilePictureUrl,
       'orderHistory': orderHistory.map((order) => order.toMap()).toList(),
       'userListings': userListings.map((listing) => listing.toMap()).toList(),
+      'fcmToken': fcmTokens,
     };
   }
 }

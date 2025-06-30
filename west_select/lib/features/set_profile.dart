@@ -107,6 +107,7 @@ class _SetupProfilePageState extends State<SetupProfilePage> {
         profilePictureUrl: widget.user.profilePictureUrl,
         orderHistory: [],
         userListings: [],
+        fcmTokens: [],
       );
 
       // Save the user to Firebase

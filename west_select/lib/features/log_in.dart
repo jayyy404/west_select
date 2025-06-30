@@ -88,6 +88,7 @@ class _LogInPageState extends State<LogInPage> {
             profilePictureUrl: user.photoURL ?? '',
             orderHistory: [],
             userListings: [],
+            fcmTokens: [],
           );
         } else {
           // Get this from FirebaseAuth.currentUser.uid
@@ -164,6 +165,7 @@ class _LogInPageState extends State<LogInPage> {
             profilePictureUrl: user.photoURL ?? '',
             orderHistory: [],
             userListings: [],
+            fcmTokens: [],
           );
 
           Navigator.pushReplacement(

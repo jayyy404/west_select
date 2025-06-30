@@ -294,6 +294,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                           email: '',
                                           userListings: [],
                                           orderHistory: [],
+                                          fcmTokens: [],
                                         ),
                                       ),
                                     ),
