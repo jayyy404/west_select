@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cc206_west_select/features/screens/cart/cart_model.dart';
 import 'package:cc206_west_select/features/auth_gate.dart';
+import 'package:cc206_west_select/firebase/notification_service2.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp();
+  await NotificationService.instance.initialize();
 
   runApp(
     MultiProvider(
