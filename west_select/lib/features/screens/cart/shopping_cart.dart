@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'cart_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cc206_west_select/firebase/notification_service.dart';
 
 class ShoppingCartPage extends StatefulWidget {
   const ShoppingCartPage({Key? key}) : super(key: key);
@@ -346,8 +347,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                             if (selectedForCheckout.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text("No items selected!"),
-                                ),
+                                    content: Text("No items selected!")),
                               );
                               return;
                             }
@@ -356,13 +356,12 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                             if (user == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text("You need to log in first!"),
-                                ),
+                                    content: Text("You need to log in first!")),
                               );
                               return;
                             }
 
-                            // Create order data for selected items
+                            // Create order data
                             final orderData = {
                               'buyerId': user.uid,
                               'buyerName': user.displayName ?? 'Anonymous',
@@ -382,14 +381,23 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                               'status': 'pending',
                             };
 
+                            // Save order to Firestore
                             final orderRef = await FirebaseFirestore.instance
                                 .collection('orders')
                                 .add(orderData);
-
                             await orderRef.update({'orderId': orderRef.id});
 
                             // Remove selected items from the cart
                             for (var item in selectedForCheckout) {
+                              await NotificationService.instance.sendPushNotification(
+                                recipientUserId: item.sellerId,
+                                title: 'You’ve got a new order!',
+                                body: '${item.title} was just purchased.',
+                                data: {
+                                  'screen': 'seller_orders',
+                                  'productId': item.id,
+                                },
+                              );
                               cart.removeItem(item);
                             }
 
@@ -400,8 +408,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
 
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text("Order placed successfully!"),
-                              ),
+                                  content: Text("Order placed successfully!")),
                             );
                           },
                           child: Text(
