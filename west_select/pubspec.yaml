@@ -58,6 +58,7 @@ flutter:
      - assets/categories/footwear.png
      - assets/categories/gadgets.png
      - assets/categories/school_supplies.png
+     - assets/shop_icon.png
 
   #   - images/a_dot_ham.jpeg
 flutter_launcher_icons:

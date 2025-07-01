@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'cart_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cc206_west_select/firebase/notification_service.dart';
+import 'package:cc206_west_select/services/notification_service.dart'
+    as local_notification;
 
 class ShoppingCartPage extends StatefulWidget {
   const ShoppingCartPage({Key? key}) : super(key: key);
@@ -277,69 +280,80 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                   ),
 
                   Container(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     decoration: const BoxDecoration(
                       color: Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey,
-                          blurRadius: 6,
-                          offset: Offset(0, -3),
-                        ),
-                      ],
+                      border: Border(
+                        top: BorderSide(
+                            color: Color(0xFFE0E0E0)), // thin divider
+                      ),
                     ),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
+                        // ─── “All” circular checkbox ────────────────────────
                         GestureDetector(
-                          onTap: () {
-                            toggleSelectAll(!selectAll, cart.items);
-                          },
+                          onTap: () => toggleSelectAll(!selectAll, cart.items),
                           child: Container(
                             height: 24,
                             width: 24,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: selectAll ? Colors.blue : Colors.grey[300],
+                              border: Border.all(
+                                  color: Colors.grey.shade600, width: 2),
+                              color: selectAll
+                                  ? const Color(0xFFFFA42D)
+                                  : Colors.transparent,
                             ),
                             child: selectAll
-                                ? const Icon(
-                                    Icons.check,
-                                    size: 16,
-                                    color: Colors.white,
-                                  )
+                                ? const Icon(Icons.check,
+                                    size: 16, color: Colors.white)
                                 : null,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          "All",
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.bold),
-                        ),
+                        const SizedBox(width: 10),
+                        const Text('All', style: TextStyle(fontSize: 15)),
+
                         const Spacer(),
-                        // Total Price
-                        Text(
-                          "Total: PHP ${calculateTotal(cart.items).toStringAsFixed(2)}",
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.red,
-                          ),
+
+                        const Spacer(),
+
+                        // ─── Total price (stacked, centered) ────────────────
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Text('Total', style: TextStyle(fontSize: 14)),
+                            const SizedBox(height: 5),
+                            Text(
+                              'Php ${NumberFormat('#,##0').format(calculateTotal(cart.items))}',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFFE6003D), // vivid pink‑red
+                              ),
+                            ),
+                          ],
                         ),
+
+                        const Spacer(),
+
                         const SizedBox(width: 20),
-                        // Checkout Button
+
+                        // ─── Checkout button (stacked) ───────────────────────
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 12),
-                            backgroundColor: Color(0xFFFFA42D),
+                                horizontal: 50, vertical: 10),
+                            backgroundColor: const Color(0xFFFFA42D),
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
+                                borderRadius: BorderRadius.circular(5)),
+                            elevation: 0,
                           ),
                           onPressed: () async {
-                            // Filter selected items for checkout
+                            // existing checkout logic (unchanged) ────────────
                             final selectedForCheckout = cart.items
                                 .where((item) => selectedItems[item.id] == true)
                                 .toList();
@@ -347,7 +361,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                             if (selectedForCheckout.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                    content: Text("No items selected!")),
+                                    content: Text('No items selected!')),
                               );
                               return;
                             }
@@ -356,63 +370,121 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                             if (user == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                    content: Text("You need to log in first!")),
+                                    content: Text('You need to log in first!')),
                               );
                               return;
                             }
 
-                            // Create order data
-                            final orderData = {
-                              'buyerId': user.uid,
-                              'buyerName': user.displayName ?? 'Anonymous',
-                              'buyerEmail': user.email,
-                              'total_price': calculateTotal(cart.items),
-                              'products': selectedForCheckout.map((item) {
-                                return {
-                                  'productId': item.id,
-                                  'title': item.title,
-                                  'price': item.price,
-                                  'quantity': item.quantity,
-                                  'imageUrl': item.imageUrls,
-                                  'sellerId': item.sellerId,
-                                };
-                              }).toList(),
-                              'created_at': FieldValue.serverTimestamp(),
-                              'status': 'pending',
-                            };
-
-                            // Save order to Firestore
-                            final orderRef = await FirebaseFirestore.instance
-                                .collection('orders')
-                                .add(orderData);
-                            await orderRef.update({'orderId': orderRef.id});
-
-                            // Remove selected items from the cart
-                            for (var item in selectedForCheckout) {
-                              await NotificationService.instance.sendPushNotification(
-                                recipientUserId: item.sellerId,
-                                title: 'You’ve got a new order!',
-                                body: '${item.title} was just purchased.',
-                                data: {
-                                  'screen': 'seller_orders',
-                                  'productId': item.id,
-                                },
-                              );
-                              cart.removeItem(item);
-                            }
-
-                            setState(() {
-                              selectedItems.clear();
-                              selectAll = false;
-                            });
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text("Order placed successfully!")),
+                            // Show loading indicator
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (context) => const Center(
+                                child: CircularProgressIndicator(),
+                              ),
                             );
+
+                            try {
+                              final orderData = {
+                                'buyerId': user.uid,
+                                'buyerName': user.displayName ?? 'Anonymous',
+                                'buyerEmail': user.email,
+                                'total_price': calculateTotal(cart.items),
+                                'products': selectedForCheckout.map((item) {
+                                  return {
+                                    'productId': item.id,
+                                    'title': item.title,
+                                    'price': item.price,
+                                    'quantity': item.quantity,
+                                    'imageUrl': item.imageUrls,
+                                    'sellerId': item.sellerId,
+                                  };
+                                }).toList(),
+                                'created_at': FieldValue.serverTimestamp(),
+                                'status': 'pending',
+                              };
+
+                              final orderRef = await FirebaseFirestore.instance
+                                  .collection('orders')
+                                  .add(orderData);
+                              await orderRef.update({'orderId': orderRef.id});
+
+                              // Send notifications
+                              final localNotificationService =
+                                  local_notification.NotificationService();
+                              final currentUser =
+                                  FirebaseAuth.instance.currentUser;
+                              final buyerName =
+                                  currentUser?.displayName ?? 'Unknown Buyer';
+
+                              for (var item in selectedForCheckout) {
+                                // Send push notification
+                                await NotificationService.instance
+                                    .sendPushNotification(
+                                  recipientUserId: item.sellerId,
+                                  title: 'You\'ve got a new order!',
+                                  body: '${item.title} was just purchased.',
+                                  data: {
+                                    'type': 'order',
+                                    'productId': item.id,
+                                    'productName': item.title,
+                                    'buyerName': buyerName,
+                                  },
+                                );
+
+                                // Send in-app notification
+                                await localNotificationService
+                                    .createOrderNotification(
+                                  sellerId: item.sellerId,
+                                  productName: item.title,
+                                  buyerName: buyerName,
+                                  productId: item.id,
+                                );
+                              }
+
+                              // Remove all selected items at once for faster UI update
+                              cart.removeMultipleItems(selectedForCheckout);
+
+                              setState(() {
+                                // Clear only the checked out items from selectedItems map
+                                for (var item in selectedForCheckout) {
+                                  selectedItems.remove(item.id);
+                                }
+                                selectAll = false;
+                              });
+
+                              // Close loading dialog
+                              if (Navigator.canPop(context)) {
+                                Navigator.of(context).pop();
+                              }
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content:
+                                        Text('Order placed successfully!')),
+                              );
+                            } catch (e) {
+                              // Close loading dialog on error
+                              if (Navigator.canPop(context)) {
+                                Navigator.of(context).pop();
+                              }
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                    content: Text(
+                                        'Error placing order: ${e.toString()}')),
+                              );
+                            }
                           },
                           child: Text(
-                              "Checkout (${cart.items.where((item) => selectedItems[item.id] == true).length})"),
+                            'Checkout\n(${cart.items.where((i) => selectedItems[i.id] == true).length} item)',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              height: 1.1,
+                            ),
+                          ),
                         ),
                       ],
                     ),

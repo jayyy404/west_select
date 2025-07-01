@@ -3,9 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cc206_west_select/firebase/auth_service.dart';
-import 'package:cc206_west_select/features/log_in.dart';
+import 'package:cc206_west_select/features/landingpage/log_in.dart';
 import 'package:cc206_west_select/firebase/app_user.dart';
-import 'package:cc206_west_select/features/screens/profile/order_details_page.dart';
 
 class ProfilePage extends StatefulWidget {
   final AppUser appUser;
@@ -14,10 +13,10 @@ class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key, required this.appUser, this.readonly});
 
   @override
-  _ProfilePageState createState() => _ProfilePageState();
+  ProfilePageState createState() => ProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
+class ProfilePageState extends State<ProfilePage> {
   int selectedTabIndex = 0;
   Stream<DocumentSnapshot<Map<String, dynamic>>>? _userStream;
   late bool isReadOnly;
@@ -113,6 +112,27 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Future<String> _fetchSellerName(String sellerId) async {
+    if (sellerId == 'unknown') return 'Unknown Seller';
+
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(sellerId)
+          .get();
+
+      if (userDoc.exists && userDoc.data() != null) {
+        final displayName = userDoc.data()!['displayName'] as String?;
+        return displayName ?? 'Unknown Seller';
+      } else {
+        return 'Unknown Seller';
+      }
+    } catch (e) {
+      print('Error fetching seller name: $e');
+      return 'Unknown Seller';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     print('ProfilePage build: isReadOnly = $isReadOnly');
@@ -177,13 +197,13 @@ class _ProfilePageState extends State<ProfilePage> {
         Row(
           children: [
             CircleAvatar(
-              radius: 40,
+              radius: 30,
               backgroundImage: appUser.profilePictureUrl != null
                   ? NetworkImage(appUser.profilePictureUrl!)
                   : null,
               backgroundColor: Colors.grey,
             ),
-            const SizedBox(width: 20),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -191,21 +211,21 @@ class _ProfilePageState extends State<ProfilePage> {
                   Text(
                     appUser.displayName ?? "User's Name",
                     style: const TextStyle(
-                        fontSize: 20,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF1976D2)),
                   ),
                   Text(appUser.email,
-                      style: const TextStyle(fontSize: 16, color: Colors.grey)),
+                      style: const TextStyle(fontSize: 14, color: Colors.grey)),
                 ],
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Text(appUser.description ?? 'No description',
-            style: const TextStyle(fontSize: 14, color: Colors.black87)),
-        const SizedBox(height: 12),
+            style: const TextStyle(fontSize: 13, color: Colors.black87)),
+        const SizedBox(height: 8),
         if (!isReadOnly)
           SizedBox(
             width: double.infinity,
@@ -213,9 +233,9 @@ class _ProfilePageState extends State<ProfilePage> {
               style: TextButton.styleFrom(
                 backgroundColor: const Color(0xFFFFC67B),
                 foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                padding: const EdgeInsets.symmetric(vertical: 10),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(20),
                   side: const BorderSide(color: Color(0xFFE6A954), width: 1),
                 ),
               ),
@@ -225,9 +245,15 @@ class _ProfilePageState extends State<ProfilePage> {
                   MaterialPageRoute(builder: (_) => InventoryPage()),
                 );
               },
-              icon: const Icon(Icons.store),
-              label: const Text('View my Shop',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              icon: Image.asset(
+                'assets/shop_icon.png',
+                width: 20,
+                height: 20,
+              ),
+              label: const Text(
+                'View my Shop',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
             ),
           ),
       ],
@@ -238,8 +264,8 @@ class _ProfilePageState extends State<ProfilePage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        _buildTabButton("Pending", 0),
-        _buildTabButton("Completed", 1),
+        _buildTabButton("Pending Orders", 0),
+        _buildTabButton("Completed Orders", 1),
       ],
     );
   }
@@ -273,108 +299,221 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildOrderList(AppUser appUser) {
-    return Column(
-      children: [
-        if (selectedTabIndex == 0)
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('orders')
-                  .where('buyerId', isEqualTo: appUser.uid)
-                  .where('status', isEqualTo: 'pending')
-                  .orderBy('created_at', descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+    // pick the proper collection based on the tab
+    final _stream = (selectedTabIndex == 0
+            ? FirebaseFirestore.instance.collection('orders')
+            : FirebaseFirestore.instance.collection('completed_orders'))
+        .where('buyerId', isEqualTo: appUser.uid)
+        .orderBy('created_at', descending: true)
+        .snapshots();
 
-                final orders = snapshot.data!.docs;
+    return Expanded(
+      child: StreamBuilder<QuerySnapshot>(
+        stream: _stream,
+        builder: (context, snap) {
+          if (!snap.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snap.data!.docs.isEmpty) {
+            return Center(
+                child: Text(selectedTabIndex == 0
+                    ? "No pending orders"
+                    : "No completed orders"));
+          }
 
-                if (orders.isEmpty) {
-                  return const Center(child: Text("No pending orders"));
-                }
+          // Aggregate identical products
+          final Map<String, Map<String, dynamic>> merged = {};
 
-                return ListView.builder(
-                  itemCount: orders.length,
-                  itemBuilder: (context, index) {
-                    final order = orders[index];
-                    final data = order.data() as Map<String, dynamic>;
+          for (final doc in snap.data!.docs) {
+            final orderData = doc.data() as Map<String, dynamic>;
+            final products = orderData['products'] as List<dynamic>? ?? [];
 
-                    return Card(
-                      child: ListTile(
-                        title: Text("Order ID: ${data['orderId']}"),
-                        subtitle: Text(
-                          "Total: PHP ${data['total_price']} - Date: ${data['created_at'].toDate()}",
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => OrderDetailScreen(
-                                orderId: data['orderId'],
-                                collection: 'orders',
+            for (final p in products) {
+              final sellerId = p['sellerId'] ?? 'unknown';
+              final productId = p['productId'] ?? 'unknown';
+              final title = p['title'] ?? 'Unknown Product';
+              final price = (p['price'] ?? 0).toDouble();
+              final qty = (p['quantity'] ?? 1) as int;
+              final imgUrl =
+                  (p['imageUrl'] is List && (p['imageUrl'] as List).isNotEmpty)
+                      ? (p['imageUrl'] as List).first.toString()
+                      : '';
+
+              final k = productId;
+              if (merged.containsKey(k)) {
+                merged[k]!['quantity'] += qty;
+              } else {
+                merged[k] = {
+                  'sellerId': sellerId,
+                  'productId': productId,
+                  'title': title,
+                  'price': price,
+                  'quantity': qty,
+                  'imageUrl': imgUrl,
+                };
+              }
+            }
+          }
+
+          final Map<String, List<Map<String, dynamic>>> sellerMap = {};
+          merged.values.forEach((prod) {
+            final id = prod['sellerId'];
+            (sellerMap[id] ??= []).add(prod);
+          });
+
+          return ListView(
+            children: sellerMap.entries.map((entry) {
+              final sellerId = entry.key;
+              final products = entry.value;
+
+              final totalItems = products.fold<int>(
+                  0, (sum, p) => sum + (p['quantity'] as int));
+              final totalPrice = products.fold<double>(
+                  0,
+                  (sum, p) =>
+                      sum + (p['price'] as double) * (p['quantity'] as int));
+
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      //seller name + status pill
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: FutureBuilder<String>(
+                              future: _fetchSellerName(sellerId),
+                              builder: (_, s) => Text(
+                                s.data ?? 'Loading seller…',
+                                style: const TextStyle(
+                                    fontSize: 18, fontWeight: FontWeight.bold),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                          );
-                        },
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          )
-        else if (selectedTabIndex == 1)
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('completed_orders')
-                  .where('buyerId', isEqualTo: appUser.uid)
-                  .orderBy('created_at', descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                final orders = snapshot.data!.docs;
-
-                if (orders.isEmpty) {
-                  return const Center(child: Text("No completed orders"));
-                }
-
-                return ListView.builder(
-                  itemCount: orders.length,
-                  itemBuilder: (context, index) {
-                    final order = orders[index];
-                    final data = order.data() as Map<String, dynamic>;
-
-                    return Card(
-                      child: ListTile(
-                        title: Text("Order ID: ${data['orderId']}"),
-                        subtitle: Text(
-                          "Total: PHP ${data['total_price']} - Date: ${data['created_at'].toDate()}",
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => OrderDetailScreen(
-                                orderId: data['orderId'],
-                                collection: 'completed_orders',
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: selectedTabIndex == 0
+                                  ? Colors.orange[100]
+                                  : Colors.green[100],
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              selectedTabIndex == 0 ? 'Pending' : 'Completed',
+                              style: TextStyle(
+                                color: selectedTabIndex == 0
+                                    ? Colors.orange[800]
+                                    : Colors.green[800],
+                                fontSize: 12,
                               ),
                             ),
-                          );
-                        },
+                          ),
+                        ],
                       ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-      ],
+                      const SizedBox(height: 12),
+                      ...products.map((p) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 50,
+                                  height: 50,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[200],
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: (p['imageUrl'] as String).isNotEmpty
+                                      ? ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          child: Image.network(
+                                            p['imageUrl'],
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) =>
+                                                const Icon(
+                                                    Icons.image_not_supported,
+                                                    color: Colors.grey),
+                                          ),
+                                        )
+                                      : const Icon(Icons.image_not_supported,
+                                          color: Colors.grey),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(p['title'],
+                                          style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis),
+                                      Text(
+                                        '× ${p['quantity']} pcs',
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[600]),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Text(
+                                    'Php: ${(p['price'] as double).toStringAsFixed(0)}',
+                                    style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          )),
+                      const SizedBox(height: 8),
+                      Divider(height: 1, color: Colors.grey[300]),
+                      const SizedBox(height: 8),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('$totalItems items',
+                              style: TextStyle(
+                                  fontSize: 14, color: Colors.grey[600])),
+                          Text('Total Price:  ${totalPrice.toStringAsFixed(0)}',
+                              style: const TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      /* message button */
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          onPressed: () {
+                            // TODO: send message
+                          },
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.blue),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8)),
+                          ),
+                          child: const Text('Send a message',
+                              style: TextStyle(color: Colors.blue)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          );
+        },
+      ),
     );
   }
 }

@@ -2,7 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:cc206_west_select/features/screens/favorite/favorite_model.dart' as fav;
+import 'package:cc206_west_select/features/screens/favorite/favorite_model.dart'
+    as fav;
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -117,11 +118,13 @@ class AuthService {
     });
   }
 
-
   // Sign out
   Future<void> signOut() async {
     fav.FavoriteModel().clearFavorites();
-    await removeFcmToken(_auth.currentUser as String);
+    final currentUser = _auth.currentUser;
+    if (currentUser != null) {
+      await removeFcmToken(currentUser.uid);
+    }
     await _auth.signOut();
     await GoogleSignIn().signOut();
   }

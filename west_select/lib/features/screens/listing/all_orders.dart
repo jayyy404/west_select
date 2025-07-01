@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class OrdersList extends StatefulWidget {
-  const OrdersList({Key? key}) : super(key: key);
+  const OrdersList({super.key});
 
   @override
   State<OrdersList> createState() => _OrdersListState();

@@ -1,6 +1,8 @@
-import 'package:cc206_west_select/features/screens/listing/all_orders.dart';
-import 'package:cc206_west_select/features/screens/listing/create_listing.dart';
-import 'package:cc206_west_select/features/screens/listing/myProducts.dart';
+import 'package:cc206_west_select/features/screens/listing/orders_page.dart';
+import 'package:cc206_west_select/features/screens/listing/my_products_page.dart';
+import 'package:cc206_west_select/features/screens/listing/create_listing_page.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class InventoryPage extends StatefulWidget {
@@ -11,50 +13,105 @@ class InventoryPage extends StatefulWidget {
 }
 
 class _InventoryPageState extends State<InventoryPage> {
-  bool _isCreatingListing = false;
-  bool _isViewingMyProducts = false;
-  bool _isViewingAllOrders = false;
+  Future<Map<String, int>> _getCounts() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      return {'pending': 0, 'completed': 0, 'reviews': 0};
+    }
 
-  int _pendingOrderCount = 1;
-  int _completedOrderCount = 1;
-  int _reviewsCount = 3;
+    final currentUserId = currentUser.uid;
+
+    // Get pending orders count
+    final pendingOrdersSnapshot =
+        await FirebaseFirestore.instance.collection('orders').get();
+
+    int pendingCount = 0;
+    for (var doc in pendingOrdersSnapshot.docs) {
+      final data = doc.data();
+      final products = data['products'] as List<dynamic>;
+      if (products.any((product) =>
+          product['sellerId'] == currentUserId &&
+          product['status'] != 'completed')) {
+        pendingCount++;
+      }
+    }
+
+    // Get completed orders count
+    final completedOrdersSnapshot =
+        await FirebaseFirestore.instance.collection('completed_orders').get();
+
+    int completedCount = 0;
+    for (var doc in completedOrdersSnapshot.docs) {
+      final data = doc.data();
+      final products = data['products'] as List<dynamic>;
+      if (products.any((product) => product['sellerId'] == currentUserId)) {
+        completedCount++;
+      }
+    }
+
+    // Get reviews count
+    final productsSnapshot = await FirebaseFirestore.instance
+        .collection('products')
+        .where('sellerId', isEqualTo: currentUserId)
+        .get();
+
+    int reviewsCount = 0;
+    for (var doc in productsSnapshot.docs) {
+      final data = doc.data();
+      final reviews = data['reviews'] as List<dynamic>? ?? [];
+      reviewsCount += reviews.length;
+    }
+
+    return {
+      'pending': pendingCount,
+      'completed': completedCount,
+      'reviews': reviewsCount,
+    };
+  }
 
   Widget _buildStatusTile(String count, String label) {
-    return Container(
-      width: 100,
-      height: 100,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          )
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            count,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF201D1B),
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        constraints: const BoxConstraints(
+          minHeight: 100,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            )
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              count,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF201D1B),
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.grey,
+            const SizedBox(height: 4),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 11,
+                color: Colors.grey,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -92,11 +149,21 @@ class _InventoryPageState extends State<InventoryPage> {
         trailing: const Icon(Icons.chevron_right, color: Color(0xFF201D1B)),
         onTap: () {
           if (title == "All orders") {
-            setState(() => _isViewingAllOrders = true);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const OrdersPage()),
+            );
           } else if (title == "My Products") {
-            setState(() => _isViewingMyProducts = true);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const MyProductsPage()),
+            );
           } else if (title == "Create Listing") {
-            setState(() => _isCreatingListing = true);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => const CreateListingPage()),
+            );
           }
         },
       ),
@@ -114,10 +181,6 @@ class _InventoryPageState extends State<InventoryPage> {
                 const EdgeInsets.only(top: 40, bottom: 20, left: 16, right: 16),
             decoration: const BoxDecoration(
               color: Color(0xFFFFCF68),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(20),
-                bottomRight: Radius.circular(20),
-              ),
             ),
             child: Stack(
               children: [
@@ -158,15 +221,36 @@ class _InventoryPageState extends State<InventoryPage> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildStatusTile(
-                            "$_pendingOrderCount", "Pending Orders"),
-                        _buildStatusTile(
-                            "$_completedOrderCount", "Completed Orders"),
-                        _buildStatusTile("$_reviewsCount", "Reviews Received"),
-                      ],
+                    FutureBuilder<Map<String, int>>(
+                      future: _getCounts(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return Row(
+                            children: [
+                              _buildStatusTile("...", "Pending Orders"),
+                              const SizedBox(width: 8),
+                              _buildStatusTile("...", "Completed Orders"),
+                              const SizedBox(width: 8),
+                              _buildStatusTile("...", "Reviews Received"),
+                            ],
+                          );
+                        }
+                        final counts = snapshot.data ??
+                            {'pending': 0, 'completed': 0, 'reviews': 0};
+                        return Row(
+                          children: [
+                            _buildStatusTile(
+                                "${counts['pending']}", "Pending Orders"),
+                            const SizedBox(width: 8),
+                            _buildStatusTile(
+                                "${counts['completed']}", "Completed Orders"),
+                            const SizedBox(width: 8),
+                            _buildStatusTile(
+                                "${counts['reviews']}", "Reviews Received"),
+                          ],
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -209,21 +293,15 @@ class _InventoryPageState extends State<InventoryPage> {
                 // Content display area
                 Expanded(
                   flex: 3,
-                  child: _isCreatingListing
-                      ? const CreateListingForm()
-                      : _isViewingMyProducts
-                          ? const MyProductsList()
-                          : _isViewingAllOrders
-                              ? const OrdersList()
-                              : Center(
-                                  child: Text(
-                                    "Select an option to manage your shop",
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
-                                      fontStyle: FontStyle.italic,
-                                    ),
-                                  ),
-                                ),
+                  child: Center(
+                    child: Text(
+                      "Select an option to manage your shop",
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),

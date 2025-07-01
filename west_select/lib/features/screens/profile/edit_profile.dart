@@ -7,7 +7,7 @@ class EditProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F4EF), // Light background color
+      backgroundColor: const Color(0xFFF9F4EF),
       appBar: AppBar(
         title: const Text(
           'Edit profile',
@@ -38,7 +38,7 @@ class EditProfilePage extends StatelessWidget {
                   const SizedBox(height: 10),
                   TextButton(
                     onPressed: () {
-                      // Logic for changing profile picture
+                      // Logic for changing profile picture, di naman need gro ah kay may ara naman wvsu account
                     },
                     child: const Text(
                       'Change profile',
@@ -83,7 +83,6 @@ class EditProfilePage extends StatelessWidget {
             Center(
               child: ElevatedButton(
                 onPressed: () {
-                  // Logic to save changes
                   Navigator.pop(context);
                 },
                 style: ElevatedButton.styleFrom(

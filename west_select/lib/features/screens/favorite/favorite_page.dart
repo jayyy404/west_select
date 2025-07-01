@@ -5,7 +5,7 @@ import '../productdetails/product.dart';
 import 'favorite_model.dart';
 
 class FavoritePage extends StatelessWidget {
-  const FavoritePage({Key? key}) : super(key: key);
+  const FavoritePage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +43,7 @@ class FavoritePage extends StatelessWidget {
                   crossAxisCount: 2,
                   mainAxisSpacing: 10,
                   crossAxisSpacing: 10,
-                  childAspectRatio: 3 / 4,
+                  childAspectRatio: 0.75, // Adjusted for better proportions
                 ),
                 itemCount: items.length,
                 itemBuilder: (context, index) {
@@ -55,8 +55,7 @@ class FavoritePage extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                             builder: (context) => ProductDetailPage(
-                              productId: product["id"]?? ""
-                            ),
+                                productId: product["id"] ?? ""),
                           ),
                         );
                       },
@@ -64,86 +63,102 @@ class FavoritePage extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            imageUrls.isNotEmpty
-                                ? Image.network(
-                                    imageUrls[0],
-                                    height: 120,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return const Icon(Icons.broken_image,
-                                          size: 120);
-                                    },
-                                  )
-                                : const SizedBox(
-                                    height: 120,
-                                    child: Center(
-                                        child: Icon(Icons.image_not_supported)),
-                                  ),
-                            const SizedBox(height: 8),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          product["title"] ?? "",
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.favorite,
-                                            color: Colors.red),
-                                        onPressed: () {
-                                          model.removeFavorite(
-                                              currUser, product);
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            SnackBar(
-                                                content: Text(
-                                                    '${product["title"]} removed')),
+                            // Image section with flexible height
+                            Expanded(
+                              flex: 3,
+                              child: Container(
+                                width: double.infinity,
+                                child: imageUrls.isNotEmpty
+                                    ? Image.network(
+                                        imageUrls[0],
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                          return const Center(
+                                            child: Icon(Icons.broken_image,
+                                                size: 40),
                                           );
                                         },
+                                      )
+                                    : const Center(
+                                        child: Icon(Icons.image_not_supported,
+                                            size: 40),
                                       ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 1),
-                                  Text(
-                                    product["price"] ?? "",
-                                    style: const TextStyle(fontSize: 14),
-                                  ),
-                                  const SizedBox(height: 1),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Flexible(
-                                        child: Text(
-                                          product["seller"] ?? "",
-                                          style: const TextStyle(
-                                            color: Colors.grey,
-                                            fontSize: 12,
+                              ),
+                            ),
+                            // Content section with flexible height
+                            Expanded(
+                              flex: 2,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            product["title"] ?? "",
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                            maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
+                                        SizedBox(
+                                          width: 40,
+                                          height: 20,
+                                          child: IconButton(
+                                            padding: EdgeInsets.zero,
+                                            icon: const Icon(Icons.favorite,
+                                                color: Colors.red, size: 20),
+                                            onPressed: () {
+                                              model.removeFavorite(
+                                                  currUser, product);
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                    content: Text(
+                                                        '${product["title"]} removed')),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      "PHP ${product["price"] ?? ""}",
+                                      style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.red,
+                                          fontWeight: FontWeight.bold),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 1),
+                                    Flexible(
+                                      child: Text(
+                                        product["seller"] ?? "",
+                                        style: const TextStyle(
+                                          color: Colors.black54,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                    ],
-                                  ),
-                                ],
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
                         ),
-                      )
-                  );
+                      ));
                 },
               );
             },

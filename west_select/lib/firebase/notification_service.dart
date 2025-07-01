@@ -78,11 +78,11 @@ class NotificationService {
 
     await _localNotifications
         .resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>()
+            AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
 
     const initializationSettingsAndroid =
-    AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@mipmap/ic_launcher');
 
     final initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
@@ -90,7 +90,8 @@ class NotificationService {
 
     await _localNotifications.initialize(
       initializationSettings,
-      onDidReceiveBackgroundNotificationResponse: notificationTapBackgroundHandler,
+      onDidReceiveBackgroundNotificationResponse:
+          notificationTapBackgroundHandler,
     );
 
     _isFlutterLocalNotificationsInitialized = true;

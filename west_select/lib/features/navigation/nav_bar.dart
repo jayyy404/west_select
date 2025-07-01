@@ -23,7 +23,7 @@ class _MainPageState extends State<MainPage> {
       body: _getCurrentPage(),
       bottomNavigationBar: Container(
         width: double.infinity,
-        height: 88,
+        height: 75,
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: Colors.white,

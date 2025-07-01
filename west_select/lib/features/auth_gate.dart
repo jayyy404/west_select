@@ -1,4 +1,4 @@
-import 'package:cc206_west_select/features/log_in.dart';
+import 'package:cc206_west_select/features/landingpage/log_in.dart';
 import 'package:cc206_west_select/features/navigation/nav_bar.dart';
 import 'package:cc206_west_select/firebase/user_repo.dart';
 import 'package:cc206_west_select/firebase/app_user.dart';

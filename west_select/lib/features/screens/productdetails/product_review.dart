@@ -6,7 +6,7 @@ import 'package:intl/intl.dart'; // For date formatting
 class ProductReviews extends StatefulWidget {
   final String productId;
 
-  const ProductReviews({Key? key, required this.productId}) : super(key: key);
+  const ProductReviews({super.key, required this.productId});
 
   @override
   State<ProductReviews> createState() => _ProductReviewsState();
@@ -50,7 +50,7 @@ class _ProductReviewsState extends State<ProductReviews> {
       };
 
       final reviewRef = FirebaseFirestore.instance
-          .collection('product_reviews')
+          .collection('post')
           .doc(widget.productId)
           .collection('reviews')
           .doc(user!.uid);
@@ -71,7 +71,7 @@ class _ProductReviewsState extends State<ProductReviews> {
 
     try {
       await FirebaseFirestore.instance
-          .collection('product_reviews')
+          .collection('post')
           .doc(widget.productId)
           .collection('reviews')
           .doc(user!.uid)
@@ -116,7 +116,7 @@ class _ProductReviewsState extends State<ProductReviews> {
   Widget _buildReviewsList() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
-          .collection('product_reviews')
+          .collection('post')
           .doc(widget.productId)
           .collection('reviews')
           .orderBy('timestamp', descending: true)
