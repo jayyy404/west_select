@@ -1,3 +1,4 @@
+import 'package:cc206_west_select/features/screens/cart/shopping_cart.dart';
 import 'package:cc206_west_select/features/screens/message/message_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -5,9 +6,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:cc206_west_select/features/screens/cart/cart_model.dart';
-import 'package:cc206_west_select/features/screens/profile/profile_page.dart';
-import 'package:cc206_west_select/firebase/app_user.dart';
 import '../favorite/favorite_model.dart';
+import 'product_review.dart';
+import 'seller_profile_view.dart';
 
 class Product {
   final List<String> imageUrls;
@@ -54,8 +55,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   bool isFavorite = false;
   bool isLoadingProduct = true;
   bool isLoadingFavorite = true;
+  bool _isSubmittingReview = false;
 
   final PageController _pageController = PageController();
+  final TextEditingController _reviewController = TextEditingController();
 
   @override
   void initState() {
@@ -96,18 +99,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     }
   }
 
-/*************  ✨ Windsurf Command ⭐  *************/
-  /// Checks if the current product is marked as a favorite by the current user.
-  ///
-  /// It queries the 'favorites' collection in Firestore using the
-  /// current user's ID to retrieve the list of favorite items.
-  /// The method sets the `isFavorite` flag to true if the product
-  /// with the given `productId` is found in the user's favorites.
-  /// The `isLoadingFavorite` flag is set to false after the check
-  /// is completed, regardless of success or failure.
-
-/*******  119597dc-1e1d-426c-ac4e-03298c18ef23  *******/ Future<void>
-      checkIfFavorite() async {
+  Future<void> checkIfFavorite() async {
     try {
       final doc = await FirebaseFirestore.instance
           .collection('favorites')
@@ -156,6 +148,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   @override
   void dispose() {
     _pageController.dispose();
+    _reviewController.dispose();
     super.dispose();
   }
 
@@ -165,443 +158,839 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     final favoriteModel = Provider.of<FavoriteModel>(context);
 
     return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          isLoadingFavorite
+              ? const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: CircularProgressIndicator(strokeWidth: 2.0))
+              : IconButton(
+                  icon: Icon(
+                    isFavorite ? Icons.favorite : Icons.favorite_border,
+                    color: isFavorite ? Colors.red : Colors.black,
+                  ),
+                  onPressed: () {
+                    final map = {
+                      'id': widget.productId,
+                      'title': product!.productTitle,
+                      'imageUrls': product!.imageUrls.join(','),
+                      'price': product!.price.toString(),
+                      'seller': product!.sellerName,
+                    };
+
+                    if (isFavorite) {
+                      favoriteModel.removeFavorite(currentUser!, map);
+                    } else {
+                      favoriteModel.addFavorite(currentUser!, map);
+                    }
+
+                    setState(() => isFavorite = !isFavorite);
+                  },
+                ),
+          IconButton(
+            icon: const Icon(Icons.shopping_bag_outlined, color: Colors.black),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ShoppingCartPage(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       body: isLoadingProduct || product == null
           ? const Center(child: CircularProgressIndicator())
-          : CustomScrollView(
-              slivers: [
-                SliverAppBar(
-                  expandedHeight: 300,
-                  pinned: true,
-                  flexibleSpace: FlexibleSpaceBar(
-                    background: Stack(
-                      fit: StackFit.expand,
+          : SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Image carousel
+                  Container(
+                    height: 300,
+                    child: Stack(
                       children: [
                         PageView.builder(
                           controller: _pageController,
                           itemCount: product!.imageUrls.length,
                           onPageChanged: (index) =>
                               setState(() => _currentImageIndex = index),
-                          itemBuilder: (_, index) => Image.network(
-                            product!.imageUrls[index],
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 12,
-                          left: 0,
-                          right: 0,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(
-                              product!.imageUrls.length,
-                              (index) => Container(
-                                margin:
-                                    const EdgeInsets.symmetric(horizontal: 4),
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: _currentImageIndex == index
-                                      ? Colors.white
-                                      : Colors.white38,
-                                ),
+                          itemBuilder: (_, index) => Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 16),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              image: DecorationImage(
+                                image: NetworkImage(product!.imageUrls[index]),
+                                fit: BoxFit.cover,
                               ),
                             ),
                           ),
-                        )
-                      ],
-                    ),
-                  ),
-                  leading: BackButton(color: Colors.white),
-                  actions: [
-                    isLoadingFavorite
-                        ? const Padding(
-                            padding: EdgeInsets.all(16),
-                            child: CircularProgressIndicator(strokeWidth: 2.0))
-                        : IconButton(
-                            icon: Icon(
-                              isFavorite
-                                  ? Icons.favorite
-                                  : Icons.favorite_border,
-                              color: isFavorite ? Colors.red : Colors.white,
-                            ),
-                            onPressed: () {
-                              final map = {
-                                'id': widget.productId,
-                                'title': product!.productTitle,
-                                'imageUrls': product!.imageUrls.join(','),
-                                'price': product!.price.toString(),
-                                'seller': product!.sellerName,
-                              };
-
-                              if (isFavorite) {
-                                favoriteModel.removeFavorite(currentUser!, map);
-                              } else {
-                                favoriteModel.addFavorite(currentUser!, map);
-                              }
-
-                              setState(() => isFavorite = !isFavorite);
-                            },
-                          ),
-                  ],
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(product!.productTitle,
-                            style: const TextStyle(
-                                fontSize: 24, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
-                        Text(
-                          'PHP ${NumberFormat('#,##0.00', 'en_US').format(product!.price)}',
-                          style: const TextStyle(
-                              fontSize: 18,
-                              color: Colors.green,
-                              fontWeight: FontWeight.bold),
                         ),
-                        const SizedBox(height: 16),
-                        const Text('Description',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
-                        Text(product!.description,
-                            style: const TextStyle(fontSize: 16)),
-                        const SizedBox(height: 24),
-                        const Text('Seller Details',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const CircleAvatar(
-                              radius: 24,
-                              child: Icon(Icons.person),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: InkWell(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => ProfilePage(
-                                        appUser: AppUser(
-                                          uid: product!.userId,
-                                          displayName: product!.sellerName,
-                                          email: '',
-                                          userListings: [],
-                                          orderHistory: [],
-                                          fcmTokens: [],
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                                child: Text(
-                                  product!.sellerName,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue,
-                                    decoration: TextDecoration.underline,
+                        if (product!.imageUrls.length > 1)
+                          Positioned(
+                            bottom: 16,
+                            left: 0,
+                            right: 0,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(
+                                product!.imageUrls.length,
+                                (index) => Container(
+                                  margin:
+                                      const EdgeInsets.symmetric(horizontal: 4),
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: _currentImageIndex == index
+                                        ? Colors.blue
+                                        : Colors.white54,
                                   ),
                                 ),
                               ),
                             ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.message,
-                                color: Colors.blue,
-                              ),
-                              onPressed: _navigateToMessagePage,
-                              tooltip: 'Message Seller',
-                            ),
-                          ],
+                          ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Product title and price
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          product!.productTitle,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-
-                        // ------------------- REVIEWS SECTION -------------------
-                        const SizedBox(height: 24),
-                        const Divider(),
-                        const Text('Reviews',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
+                        Text(
+                          'PHP ${NumberFormat('#,##0', 'en_US').format(product!.price)}',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
+                  const SizedBox(height: 20),
+
+                  // Product Details Section
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Product Details',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Fetch and display product details
                         FutureBuilder<DocumentSnapshot>(
                           future: FirebaseFirestore.instance
                               .collection('post')
                               .doc(widget.productId)
-                              .collection('reviews')
-                              .doc(currentUser)
                               .get(),
                           builder: (context, snapshot) {
-                            String existingComment = '';
-                            if (snapshot.hasData && snapshot.data!.exists) {
-                              final data = snapshot.data!.data()
-                                  as Map<String, dynamic>?;
-                              existingComment = data?['comment'] ?? '';
+                            if (!snapshot.hasData) {
+                              return const SizedBox.shrink();
                             }
 
-                            final TextEditingController reviewController =
-                                TextEditingController(text: existingComment);
-
-                            final hasReview =
-                                snapshot.hasData && snapshot.data!.exists;
+                            final data =
+                                snapshot.data!.data() as Map<String, dynamic>?;
+                            if (data == null) return const SizedBox.shrink();
 
                             return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                if (hasReview) ...[
-                                  Text(
-                                    existingComment,
-                                    style: const TextStyle(fontSize: 16),
-                                  ),
-                                  Row(
-                                    children: [
-                                      TextButton(
-                                        child: const Text("Edit"),
-                                        onPressed: () async {
-                                          final newComment =
-                                              await showDialog<String>(
-                                            context: context,
-                                            builder: (_) => AlertDialog(
-                                              title: const Text("Edit Review"),
-                                              content: TextField(
-                                                controller: reviewController,
-                                                maxLines: 3,
-                                                decoration:
-                                                    const InputDecoration(
-                                                        hintText:
-                                                            "Your review"),
-                                              ),
-                                              actions: [
-                                                TextButton(
-                                                  onPressed: () =>
-                                                      Navigator.pop(
-                                                          context, null),
-                                                  child: const Text("Cancel"),
-                                                ),
-                                                ElevatedButton(
-                                                  onPressed: () =>
-                                                      Navigator.pop(
-                                                          context,
-                                                          reviewController
-                                                              .text),
-                                                  child: const Text("Save"),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-
-                                          if (newComment != null &&
-                                              newComment.trim().isNotEmpty) {
-                                            await FirebaseFirestore.instance
-                                                .collection('post')
-                                                .doc(widget.productId)
-                                                .collection('reviews')
-                                                .doc(currentUser)
-                                                .set({
-                                              'comment': newComment.trim(),
-                                              'createdAt':
-                                                  FieldValue.serverTimestamp(),
-                                              'userId': currentUser,
-                                            });
-                                            setState(() {});
-                                          }
-                                        },
-                                      ),
-                                      TextButton(
-                                        child: const Text("Delete"),
-                                        onPressed: () async {
-                                          await FirebaseFirestore.instance
-                                              .collection('post')
-                                              .doc(widget.productId)
-                                              .collection('reviews')
-                                              .doc(currentUser)
-                                              .delete();
-                                          setState(() {});
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ] else ...[
-                                  TextField(
-                                    controller: reviewController,
-                                    maxLines: 3,
-                                    decoration: const InputDecoration(
-                                      labelText: "Write a review",
-                                      border: OutlineInputBorder(),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  ElevatedButton(
-                                    onPressed: () async {
-                                      final comment =
-                                          reviewController.text.trim();
-                                      if (comment.isNotEmpty) {
-                                        await FirebaseFirestore.instance
-                                            .collection('post')
-                                            .doc(widget.productId)
-                                            .collection('reviews')
-                                            .doc(currentUser)
-                                            .set({
-                                          'comment': comment,
-                                          'createdAt':
-                                              FieldValue.serverTimestamp(),
-                                          'userId': currentUser,
-                                        });
-                                        setState(() {});
-                                      }
-                                    },
-                                    child: const Text("Post Review"),
-                                  ),
-                                ],
+                                _buildDetailRow('Category', data['category']),
+                                if (data['condition'] != null &&
+                                    data['condition'].toString().isNotEmpty)
+                                  _buildDetailRow(
+                                      'Condition', data['condition']),
+                                if (data['color'] != null &&
+                                    data['color'].toString().isNotEmpty)
+                                  _buildDetailRow('Color', data['color']),
+                                if (data['size'] != null &&
+                                    data['size'].toString().isNotEmpty)
+                                  _buildDetailRow('Sizing', data['size']),
                               ],
-                            );
-                          },
-                        ),
-
-                        const SizedBox(height: 24),
-                        const Text('All Reviews',
-                            style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
-                        StreamBuilder<QuerySnapshot>(
-                          stream: FirebaseFirestore.instance
-                              .collection('post')
-                              .doc(widget.productId)
-                              .collection('reviews')
-                              .orderBy('createdAt', descending: true)
-                              .snapshots(),
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const Center(
-                                  child: CircularProgressIndicator());
-                            }
-                            if (!snapshot.hasData ||
-                                snapshot.data!.docs.isEmpty) {
-                              return const Text("No reviews yet.");
-                            }
-
-                            return ListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: snapshot.data!.docs.length,
-                              itemBuilder: (context, index) {
-                                final reviewDoc = snapshot.data!.docs[index];
-
-                                if (!reviewDoc.exists) {
-                                  return const ListTile(
-                                    title: Text("Review not found"),
-                                    subtitle: Text(
-                                        "This review may have been deleted."),
-                                  );
-                                }
-
-                                final data =
-                                    reviewDoc.data() as Map<String, dynamic>?;
-
-                                if (data == null ||
-                                    !data.containsKey('comment') ||
-                                    !data.containsKey('userId')) {
-                                  return const ListTile(
-                                    title: Text("Incomplete review"),
-                                    subtitle: Text(
-                                        "Missing comment or user information."),
-                                  );
-                                }
-
-                                final comment = data['comment'];
-                                final userId = data['userId'];
-
-                                return FutureBuilder<DocumentSnapshot>(
-                                  future: FirebaseFirestore.instance
-                                      .collection('users')
-                                      .doc(userId)
-                                      .get(),
-                                  builder: (context, userSnap) {
-                                    String username = 'Anonymous';
-                                    if (userSnap.hasData &&
-                                        userSnap.data != null &&
-                                        userSnap.data!.exists) {
-                                      final userData = userSnap.data!.data()
-                                          as Map<String, dynamic>?;
-                                      username = userData?['displayName'] ??
-                                          'Anonymous';
-                                    }
-
-                                    return ListTile(
-                                      leading: const CircleAvatar(
-                                          child: Icon(Icons.person)),
-                                      title: Text(username),
-                                      subtitle: Text(comment),
-                                    );
-                                  },
-                                );
-                              },
                             );
                           },
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
+
+                  const SizedBox(height: 20),
+
+                  // Description
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Description',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          product!.description,
+                          style: const TextStyle(fontSize: 14, height: 1.5),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Pickup Location
+                  FutureBuilder<DocumentSnapshot>(
+                    future: FirebaseFirestore.instance
+                        .collection('post')
+                        .doc(widget.productId)
+                        .get(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) return const SizedBox.shrink();
+
+                      final data =
+                          snapshot.data!.data() as Map<String, dynamic>?;
+                      final location = data?['location'];
+
+                      if (location == null || location.toString().isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Pickup Location',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              location.toString(),
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+
+                  // Meet the Seller
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Meet the Seller',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            FutureBuilder<DocumentSnapshot>(
+                              future: FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(product!.userId)
+                                  .get(),
+                              builder: (context, snapshot) {
+                                String? profilePicUrl;
+                                if (snapshot.hasData && snapshot.data!.exists) {
+                                  final userData = snapshot.data!.data()
+                                      as Map<String, dynamic>?;
+                                  profilePicUrl =
+                                      userData?['profilePictureUrl'];
+                                }
+                                return CircleAvatar(
+                                  radius: 20,
+                                  backgroundImage: profilePicUrl != null &&
+                                          profilePicUrl.isNotEmpty
+                                      ? NetworkImage(profilePicUrl)
+                                      : null,
+                                  backgroundColor: Colors.grey,
+                                  child: (profilePicUrl == null ||
+                                          profilePicUrl.isEmpty)
+                                      ? const Icon(Icons.person,
+                                          size: 20, color: Colors.white)
+                                      : null,
+                                );
+                              },
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => SellerProfileView(
+                                        sellerId: product!.userId,
+                                        sellerName: product!.sellerName,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      product!.sellerName,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.blue,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                    // Add year or additional info if available
+                                    FutureBuilder<DocumentSnapshot>(
+                                      future: FirebaseFirestore.instance
+                                          .collection('users')
+                                          .doc(product!.userId)
+                                          .get(),
+                                      builder: (context, snapshot) {
+                                        if (!snapshot.hasData ||
+                                            !snapshot.data!.exists) {
+                                          return const SizedBox.shrink();
+                                        }
+
+                                        final userData = snapshot.data!.data()
+                                            as Map<String, dynamic>?;
+                                        final year = userData?['year'];
+
+                                        if (year == null)
+                                          return const SizedBox.shrink();
+
+                                        return Text(
+                                          year.toString(),
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.message_outlined),
+                              onPressed: _navigateToMessagePage,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Reviews Section
+                  StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('post')
+                        .doc(widget.productId)
+                        .collection('reviews')
+                        .orderBy('timestamp', descending: true)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      final reviewCount =
+                          snapshot.hasData ? snapshot.data!.docs.length : 0;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Reviews header
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Reviews ($reviewCount)',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                if (reviewCount > 0)
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => Scaffold(
+                                            appBar: AppBar(
+                                              title: const Text('All Reviews'),
+                                              backgroundColor: Colors.white,
+                                              foregroundColor: Colors.black,
+                                              elevation: 1,
+                                            ),
+                                            body: ProductReviews(
+                                                productId: widget.productId),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    child: const Text('View All'),
+                                  ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          // Add Review Input (only for logged in users)
+                          if (currentUser != null &&
+                              currentUser != product!.userId)
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              child: _buildQuickReviewInput(),
+                            ),
+
+                          const SizedBox(height: 16),
+
+                          // Reviews list or empty state
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 16),
+                              child: Center(child: CircularProgressIndicator()),
+                            )
+                          else if (!snapshot.hasData ||
+                              snapshot.data!.docs.isEmpty)
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade50,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Center(
+                                  child: Text(
+                                    'No reviews yet. Be the first to review!',
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            )
+                          else
+                            // Show only the most recent review as preview
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade50,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: _buildReviewPreview(
+                                    snapshot.data!.docs.first),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 50), // Space for bottom navigation
+                ],
+              ),
             ),
       bottomNavigationBar: product == null
           ? null
           : Container(
-              padding: const EdgeInsets.all(16),
-              color: Colors.white,
-              child: Row(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.shade300,
+                    blurRadius: 5,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text("Quantity:"),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.remove),
-                    onPressed: () {
-                      setState(() {
-                        if (quantity > 1) quantity--;
-                      });
-                    },
+                  // Quantity row
+                  Row(
+                    children: [
+                      const Text(
+                        'Quantity',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade400),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              constraints: const BoxConstraints(),
+                              iconSize: 15,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 10),
+                              icon: const Icon(Icons.remove),
+                              onPressed: () {
+                                setState(() {
+                                  if (quantity > 1) quantity--;
+                                });
+                              },
+                            ),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8),
+                              child: Text(
+                                quantity.toString(),
+                                style: const TextStyle(fontSize: 10),
+                              ),
+                            ),
+                            IconButton(
+                              constraints: const BoxConstraints(),
+                              iconSize: 15,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8),
+                              icon: const Icon(Icons.add),
+                              onPressed: () {
+                                setState(() => quantity++);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  Text(quantity.toString()),
-                  IconButton(
-                    icon: const Icon(Icons.add),
-                    onPressed: () {
-                      setState(() {
-                        quantity++;
-                      });
-                    },
-                  ),
-                  const Spacer(),
-                  ElevatedButton(
-                    onPressed: () {
-                      cart.addToCart(
-                        widget.productId,
-                        product!.productTitle,
-                        product!.price,
-                        [product!.imageUrls.first],
-                        product!.userId,
-                      );
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
+
+                  const SizedBox(height: 2),
+
+                  // Add to Cart button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFFA42D),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 5),
+                        elevation: 0,
+                      ),
+                      onPressed: () {
+                        cart.addToCart(
+                          widget.productId,
+                          product!.productTitle,
+                          product!.price,
+                          [product!.imageUrls.first],
+                          product!.userId,
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
                             content:
-                                Text('${product!.productTitle} added to cart')),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFFFFA42D),
+                                Text('${product!.productTitle} added to cart'),
+                          ),
+                        );
+                      },
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'Add to Cart',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 1),
+                          Text(
+                            '(Subtotal: PHP ${NumberFormat("#,##0").format(product!.price * quantity)})',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: const Text("Add to Cart"),
-                  )
+                  ),
                 ],
               ),
             ),
     );
+  }
+
+  Widget _buildDetailRow(String label, dynamic value) {
+    if (value == null || value.toString().isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value.toString(),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReviewPreview(DocumentSnapshot reviewDoc) {
+    final data = reviewDoc.data() as Map<String, dynamic>?;
+    if (data == null) return const SizedBox.shrink();
+
+    final userName = data['userName'] ?? 'Anonymous';
+    final comment = data['comment'] ?? '';
+    final timestamp = data['timestamp'] as Timestamp?;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const CircleAvatar(
+              radius: 16,
+              backgroundColor: Colors.grey,
+              child: Icon(Icons.person, size: 16, color: Colors.white),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    userName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  if (timestamp != null)
+                    Text(
+                      DateFormat('MMM dd, yyyy').format(
+                        timestamp.toDate().toLocal(),
+                      ),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          comment,
+          style: const TextStyle(fontSize: 14),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickReviewInput() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Write a Review',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _reviewController,
+            maxLines: 3,
+            decoration: InputDecoration(
+              hintText: 'Share your experience with this product...',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.blue),
+              ),
+              contentPadding: const EdgeInsets.all(12),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () {
+                  _reviewController.clear();
+                },
+                child: const Text('Cancel'),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: _isSubmittingReview ? null : _submitQuickReview,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: _isSubmittingReview
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('Post Review'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _submitQuickReview() async {
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please login to submit a review')),
+      );
+      return;
+    }
+
+    final comment = _reviewController.text.trim();
+    if (comment.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a review')),
+      );
+      return;
+    }
+
+    setState(() => _isSubmittingReview = true);
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      final reviewData = {
+        'userId': currentUser!,
+        'userName': user?.displayName ?? 'Anonymous',
+        'comment': comment,
+        'timestamp': FieldValue.serverTimestamp(),
+      };
+
+      await FirebaseFirestore.instance
+          .collection('post')
+          .doc(widget.productId)
+          .collection('reviews')
+          .doc(currentUser!)
+          .set(reviewData);
+
+      _reviewController.clear();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Review posted successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to post review: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isSubmittingReview = false);
+    }
   }
 }

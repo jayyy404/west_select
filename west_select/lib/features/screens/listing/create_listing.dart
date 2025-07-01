@@ -24,6 +24,16 @@ class _CreateListingFormState extends State<CreateListingForm> {
 
   List<String> _uploadedImageUrls = [];
   bool _isUploadingImage = false;
+  String? _selectedCategory;
+
+  final List<String> _categories = [
+    'Merch',
+    'Food',
+    'Clothing',
+    'Footwear',
+    'Gadgets',
+    'School Supplies',
+  ];
 
   void _removeImage(int index) {
     setState(() {
@@ -127,11 +137,12 @@ class _CreateListingFormState extends State<CreateListingForm> {
       if (_titleController.text.isEmpty ||
           _descriptionController.text.isEmpty ||
           _priceController.text.isEmpty ||
-          _uploadedImageUrls.isEmpty) {
+          _uploadedImageUrls.isEmpty ||
+          _selectedCategory == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content:
-                  Text("Please fill all fields and upload at least one image")),
+              content: Text(
+                  "Please fill all fields, select a category, and upload at least one image")),
         );
         return;
       }
@@ -140,6 +151,7 @@ class _CreateListingFormState extends State<CreateListingForm> {
         'post_title': _titleController.text,
         'post_description': _descriptionController.text,
         'price': double.parse(_priceController.text),
+        'category': _selectedCategory,
         'image_url': _uploadedImageUrls.first,
         'image_urls': _uploadedImageUrls,
         'post_users': currentUser.uid,
@@ -161,6 +173,7 @@ class _CreateListingFormState extends State<CreateListingForm> {
         _descriptionController.clear();
         _priceController.clear();
         _uploadedImageUrls.clear();
+        _selectedCategory = null;
       });
     } catch (e) {
       if (kDebugMode) print('Create listing error: $e');
@@ -189,6 +202,31 @@ class _CreateListingFormState extends State<CreateListingForm> {
             controller: _priceController,
             keyboardType: TextInputType.number,
             decoration: const InputDecoration(labelText: "Price (PHP)"),
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            decoration: const InputDecoration(
+              labelText: "Category",
+              border: OutlineInputBorder(),
+            ),
+            value: _selectedCategory,
+            items: _categories.map((String category) {
+              return DropdownMenuItem<String>(
+                value: category,
+                child: Text(category),
+              );
+            }).toList(),
+            onChanged: (String? newValue) {
+              setState(() {
+                _selectedCategory = newValue;
+              });
+            },
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please select a category';
+              }
+              return null;
+            },
           ),
           const SizedBox(height: 16),
           Row(

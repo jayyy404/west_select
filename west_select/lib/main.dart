@@ -1,11 +1,11 @@
 import 'package:cc206_west_select/features/screens/favorite/favorite_model.dart';
 import 'package:cc206_west_select/features/screens/home/home_page.dart';
+import 'package:cc206_west_select/firebase/notification_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cc206_west_select/features/screens/cart/cart_model.dart';
 import 'package:cc206_west_select/features/auth_gate.dart';
-import 'package:cc206_west_select/firebase/notification_service2.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

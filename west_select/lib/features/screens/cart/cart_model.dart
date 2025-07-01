@@ -50,6 +50,14 @@ class CartModel with ChangeNotifier {
     notifyListeners();
   }
 
+  // Remove multiple items from the cart
+  void removeMultipleItems(List<CartItem> itemsToRemove) {
+    for (var item in itemsToRemove) {
+      _items.remove(item);
+    }
+    notifyListeners();
+  }
+
   // Update the quantity of a cart item
   void updateQuantity(CartItem item, int newQuantity) {
     if (newQuantity <= 0) {

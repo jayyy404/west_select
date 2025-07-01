@@ -1,20 +1,21 @@
 import 'package:cc206_west_select/features/navigation/nav_bar.dart';
 import 'package:cc206_west_select/features/set_profile.dart';
+import 'package:cc206_west_select/features/sign_up.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../firebase/auth_service.dart';
-import '../firebase/user_repo.dart';
-import 'sign_up.dart';
+import '../../../firebase/auth_service.dart';
+import '../../../firebase/user_repo.dart';
+
 import 'package:cc206_west_select/firebase/app_user.dart';
 
 class LogInPage extends StatefulWidget {
   const LogInPage({super.key});
 
   @override
-  _LogInPageState createState() => _LogInPageState();
+  LogInPageState createState() => LogInPageState();
 }
 
-class _LogInPageState extends State<LogInPage> {
+class LogInPageState extends State<LogInPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   String? _errorMessage;
@@ -81,15 +82,6 @@ class _LogInPageState extends State<LogInPage> {
       if (user != null) {
         final isFirstTime = await UserRepo().isFirstTimeUser(user.uid);
         if (isFirstTime) {
-          final customUser = AppUser(
-            uid: user.uid,
-            email: user.email ?? '',
-            displayName: user.displayName ?? '',
-            profilePictureUrl: user.photoURL ?? '',
-            orderHistory: [],
-            userListings: [],
-            fcmTokens: [],
-          );
         } else {
           // Get this from FirebaseAuth.currentUser.uid
           final appUser = await UserRepo().getUser(user.uid);

@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class MyProductsList extends StatelessWidget {
-  const MyProductsList({Key? key}) : super(key: key);
+  const MyProductsList({super.key});
 
   Future<void> _deleteListing(BuildContext context, String id) async {
     try {
