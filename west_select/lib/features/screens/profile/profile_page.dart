@@ -133,6 +133,226 @@ class ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  void _showSettingsPage(AppUser appUser) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildSettingsBottomSheet(appUser),
+    );
+  }
+
+  Widget _buildSettingsBottomSheet(AppUser appUser) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.7,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                const SizedBox(width: 10),
+                const Text(
+                  'Settings',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Settings content
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              children: [
+                // Account section
+                _buildSectionHeader('Account'),
+                _buildSettingsItem(
+                  icon: Icons.person,
+                  title: 'Edit profile',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _editDisplayNameAndDescription(appUser);
+                  },
+                ),
+                _buildSettingsItem(
+                  icon: Icons.notifications,
+                  title: 'Notifications',
+                  onTap: () {
+                    // TODO: Implement notifications settings
+                    Navigator.pop(context);
+                  },
+                ),
+                _buildSettingsItem(
+                  icon: Icons.delete,
+                  title: 'Delete account',
+                  textColor: Colors.red,
+                  onTap: () {
+                    // TODO: Implement delete account
+                    Navigator.pop(context);
+                  },
+                ),
+                _buildSettingsItem(
+                  icon: Icons.logout,
+                  title: 'Log out',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _signOut();
+                  },
+                ),
+
+                const SizedBox(height: 20),
+
+                // General section
+                _buildSectionHeader('General'),
+                _buildSettingsItem(
+                  icon: Icons.help,
+                  title: 'Help Centre',
+                  onTap: () {
+                    // TODO: Implement help center
+                    Navigator.pop(context);
+                  },
+                ),
+                _buildSettingsItem(
+                  icon: Icons.history,
+                  title: 'Clear History',
+                  textColor: Colors.blue,
+                  onTap: () {
+                    // TODO: Implement clear history
+                    Navigator.pop(context);
+                  },
+                ),
+
+                const SizedBox(height: 20),
+
+                // About section
+                _buildSectionHeader('About'),
+                _buildSettingsItem(
+                  icon: Icons.description,
+                  title: 'User Agreement',
+                  onTap: () {
+                    // TODO: Implement user agreement
+                    Navigator.pop(context);
+                  },
+                ),
+                _buildSettingsItem(
+                  icon: Icons.privacy_tip,
+                  title: 'Privacy',
+                  onTap: () {
+                    // TODO: Implement privacy
+                    Navigator.pop(context);
+                  },
+                ),
+                _buildSettingsItem(
+                  icon: Icons.gavel,
+                  title: 'Legal',
+                  onTap: () {
+                    // TODO: Implement legal
+                    Navigator.pop(context);
+                  },
+                ),
+
+                const SizedBox(height: 20),
+
+                // Version
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Version',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      Text(
+                        '6.24.0.0',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 50),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Container(
+      padding: const EdgeInsets.only(bottom: 10, top: 10),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: Colors.grey[600],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingsItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    Color? textColor,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 5),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ListTile(
+        leading: Icon(
+          icon,
+          color: textColor ?? Colors.grey[700],
+          size: 24,
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontSize: 16,
+            color: textColor ?? Colors.black87,
+          ),
+        ),
+        trailing: textColor == null
+            ? Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Colors.grey[400],
+              )
+            : null,
+        onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     print('ProfilePage build: isReadOnly = $isReadOnly');
@@ -160,13 +380,9 @@ class ProfilePageState extends State<ProfilePage> {
                 ? null
                 : [
                     IconButton(
-                      icon: const Icon(Icons.edit, color: Color(0xFF1976D2)),
-                      onPressed: () =>
-                          _editDisplayNameAndDescription(updatedAppUser),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.logout, color: Color(0xFFD32F2F)),
-                      onPressed: _signOut,
+                      icon:
+                          const Icon(Icons.settings, color: Color(0xFF1976D2)),
+                      onPressed: () => _showSettingsPage(updatedAppUser),
                     ),
                   ],
           ),

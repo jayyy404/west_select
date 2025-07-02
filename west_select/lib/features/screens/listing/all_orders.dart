@@ -11,6 +11,8 @@ class OrdersList extends StatefulWidget {
 
 class _OrdersListState extends State<OrdersList> {
   Map<String, String> buyerNames = {};
+  Map<String, String> buyerProfileUrls = {};
+  Map<String, List<String>> productImageUrls = {};
 
   Future<void> fetchBuyerNames(List<QueryDocumentSnapshot> orders) async {
     for (var order in orders) {
@@ -21,9 +23,40 @@ class _OrdersListState extends State<OrdersList> {
             .collection('users')
             .doc(buyerId)
             .get();
-        buyerNames[buyerId] = userDoc.exists && userDoc.data() != null
-            ? (userDoc.data()!['displayName'] ?? 'Unknown Buyer')
-            : 'Unknown Buyer';
+        if (userDoc.exists && userDoc.data() != null) {
+          final userData = userDoc.data()!;
+          buyerNames[buyerId] = userData['displayName'] ?? 'Unknown Buyer';
+          buyerProfileUrls[buyerId] = userData['profileImageUrl'] ?? '';
+        } else {
+          buyerNames[buyerId] = 'Unknown Buyer';
+          buyerProfileUrls[buyerId] = '';
+        }
+      }
+    }
+  }
+
+  Future<void> fetchProductImages(List<dynamic> products) async {
+    for (var product in products) {
+      String productId = product['productId'];
+      if (!productImageUrls.containsKey(productId)) {
+        try {
+          final productDoc = await FirebaseFirestore.instance
+              .collection('products')
+              .doc(productId)
+              .get();
+          if (productDoc.exists && productDoc.data() != null) {
+            final productData = productDoc.data()!;
+            List<String> imageUrls = [];
+            if (productData['imageUrls'] != null) {
+              imageUrls = List<String>.from(productData['imageUrls']);
+            }
+            productImageUrls[productId] = imageUrls;
+          } else {
+            productImageUrls[productId] = [];
+          }
+        } catch (e) {
+          productImageUrls[productId] = [];
+        }
       }
     }
   }
@@ -40,10 +73,16 @@ class _OrdersListState extends State<OrdersList> {
       final orderData = orderDoc.data()! as Map<String, dynamic>;
       final List<dynamic> products = orderData['products'];
 
+      // Update order status and reduce product stock
       for (var product in sellerProducts) {
         final productIndex = products
             .indexWhere((prod) => prod['productId'] == product['productId']);
-        if (productIndex != -1) products[productIndex]['status'] = 'completed';
+        if (productIndex != -1) {
+          products[productIndex]['status'] = 'completed';
+
+          // Reduce stock in the products collection
+          await _reduceProductStock(product['productId'], product['quantity']);
+        }
       }
 
       await FirebaseFirestore.instance
@@ -82,6 +121,43 @@ class _OrdersListState extends State<OrdersList> {
     }
   }
 
+  Future<void> _reduceProductStock(String productId, int quantitySold) async {
+    try {
+      final productDoc = await FirebaseFirestore.instance
+          .collection('post')
+          .doc(productId)
+          .get();
+
+      if (!productDoc.exists) return;
+
+      final productData = productDoc.data()! as Map<String, dynamic>;
+      final currentStock = productData['stock'] ?? 0;
+      final currentSold = productData['sold'] ?? 0;
+
+      final newStock =
+          (currentStock - quantitySold).clamp(0, double.infinity).toInt();
+      final newSold = currentSold + quantitySold;
+
+      // Update the product with new stock and sold count
+      final updateData = {
+        'stock': newStock,
+        'sold': newSold,
+      };
+
+      // If stock reaches 0, mark as sold out
+      if (newStock == 0) {
+        updateData['status'] = 'soldout';
+      }
+
+      await FirebaseFirestore.instance
+          .collection('post')
+          .doc(productId)
+          .update(updateData);
+    } catch (e) {
+      print("Error reducing product stock: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
@@ -116,7 +192,13 @@ class _OrdersListState extends State<OrdersList> {
         }).toList();
 
         return FutureBuilder<void>(
-          future: fetchBuyerNames(orders),
+          future: Future.wait([
+            fetchBuyerNames(orders),
+            fetchProductImages(filteredOrders.expand((order) {
+              final data = order.data()! as Map<String, dynamic>;
+              return data['products'] as List<dynamic>;
+            }).toList())
+          ]),
           builder: (context, asyncSnapshot) {
             if (asyncSnapshot.connectionState != ConnectionState.done) {
               return const Center(child: CircularProgressIndicator());

@@ -56,8 +56,8 @@ class MyProductsList extends StatelessWidget {
                 if (data['image_urls'] != null &&
                     (data['image_urls'] as List).isNotEmpty) {
                   image = data['image_urls'].first;
-                } else if (data['image_url'] != null) {
-                  image = data['image_url'];
+                } else if (data['image_urls'] != null) {
+                  image = data['image_urls'];
                 }
 
                 return Card(

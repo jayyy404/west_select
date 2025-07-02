@@ -13,6 +13,8 @@ class OrdersPage extends StatefulWidget {
 class _OrdersPageState extends State<OrdersPage> with TickerProviderStateMixin {
   late TabController _tabController;
   Map<String, String> buyerNames = {};
+  Map<String, String> buyerProfileUrls = {};
+  Map<String, List<String>> productImageUrls = {};
   Map<String, int> tabCounts = {'pending': 0, 'completed': 0, 'reviews': 0};
 
   @override
@@ -97,9 +99,40 @@ class _OrdersPageState extends State<OrdersPage> with TickerProviderStateMixin {
             .collection('users')
             .doc(buyerId)
             .get();
-        buyerNames[buyerId] = userDoc.exists && userDoc.data() != null
-            ? (userDoc.data()!['displayName'] ?? 'Unknown Buyer')
-            : 'Unknown Buyer';
+        if (userDoc.exists && userDoc.data() != null) {
+          final userData = userDoc.data()!;
+          buyerNames[buyerId] = userData['displayName'] ?? 'Unknown Buyer';
+          buyerProfileUrls[buyerId] = userData['profileImageUrl'] ?? '';
+        } else {
+          buyerNames[buyerId] = 'Unknown Buyer';
+          buyerProfileUrls[buyerId] = '';
+        }
+      }
+    }
+  }
+
+  Future<void> fetchProductImages(List<dynamic> products) async {
+    for (var product in products) {
+      String productId = product['productId'];
+      if (!productImageUrls.containsKey(productId)) {
+        try {
+          final productDoc = await FirebaseFirestore.instance
+              .collection('products')
+              .doc(productId)
+              .get();
+          if (productDoc.exists && productDoc.data() != null) {
+            final productData = productDoc.data()!;
+            List<String> imageUrls = [];
+            if (productData['imageUrls'] != null) {
+              imageUrls = List<String>.from(productData['imageUrls']);
+            }
+            productImageUrls[productId] = imageUrls;
+          } else {
+            productImageUrls[productId] = [];
+          }
+        } catch (e) {
+          productImageUrls[productId] = [];
+        }
       }
     }
   }
@@ -107,6 +140,9 @@ class _OrdersPageState extends State<OrdersPage> with TickerProviderStateMixin {
   Future<void> markOrderAsCompleted(
       String orderId, List<dynamic> sellerProducts) async {
     try {
+      print("DEBUG: Marking order $orderId as completed");
+      print("DEBUG: Seller products: $sellerProducts");
+
       final orderDoc = await FirebaseFirestore.instance
           .collection('orders')
           .doc(orderId)
@@ -116,10 +152,19 @@ class _OrdersPageState extends State<OrdersPage> with TickerProviderStateMixin {
       final orderData = orderDoc.data()! as Map<String, dynamic>;
       final List<dynamic> products = orderData['products'];
 
+      // Update order status and reduce product stock
       for (var product in sellerProducts) {
+        print(
+            "DEBUG: Processing product: ${product['productId']}, quantity: ${product['quantity']}");
+
         final productIndex = products
             .indexWhere((prod) => prod['productId'] == product['productId']);
-        if (productIndex != -1) products[productIndex]['status'] = 'completed';
+        if (productIndex != -1) {
+          products[productIndex]['status'] = 'completed';
+
+          // Reduce stock in the products collection
+          await _reduceProductStock(product['productId'], product['quantity']);
+        }
       }
 
       await FirebaseFirestore.instance
@@ -158,6 +203,58 @@ class _OrdersPageState extends State<OrdersPage> with TickerProviderStateMixin {
     }
   }
 
+  Future<void> _reduceProductStock(String productId, int quantitySold) async {
+    try {
+      print("DEBUG: Reducing stock for product $productId by $quantitySold");
+
+      final productDoc = await FirebaseFirestore.instance
+          .collection('post')
+          .doc(productId)
+          .get();
+
+      if (!productDoc.exists) {
+        print("DEBUG: Product $productId not found");
+        return;
+      }
+
+      final productData = productDoc.data()! as Map<String, dynamic>;
+      final currentStock = productData['stock'] ?? 0;
+      final currentSold = productData['sold'] ?? 0;
+
+      print(
+          "DEBUG: Current stock: $currentStock, quantity sold: $quantitySold");
+
+      final newStock =
+          (currentStock - quantitySold).clamp(0, double.infinity).toInt();
+      final newSold = currentSold + quantitySold;
+
+      print("DEBUG: New stock: $newStock, new sold: $newSold");
+
+      // Update the product with new stock and sold count
+      final updateData = {
+        'stock': newStock,
+        'sold': newSold,
+      };
+
+      // If stock reaches 0, mark as sold out
+      if (newStock == 0) {
+        updateData['status'] = 'soldout';
+        print("DEBUG: Product $productId marked as soldout");
+      }
+
+      print("DEBUG: Updating product with data: $updateData");
+
+      await FirebaseFirestore.instance
+          .collection('post')
+          .doc(productId)
+          .update(updateData);
+
+      print("DEBUG: Product $productId stock updated successfully");
+    } catch (e) {
+      print("Error reducing product stock: $e");
+    }
+  }
+
   Widget _buildPendingOrders() {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
@@ -192,7 +289,13 @@ class _OrdersPageState extends State<OrdersPage> with TickerProviderStateMixin {
         }).toList();
 
         return FutureBuilder<void>(
-          future: fetchBuyerNames(orders),
+          future: Future.wait([
+            fetchBuyerNames(orders),
+            fetchProductImages(filteredOrders.expand((order) {
+              final data = order.data()! as Map<String, dynamic>;
+              return data['products'] as List<dynamic>;
+            }).toList())
+          ]),
           builder: (context, asyncSnapshot) {
             if (asyncSnapshot.connectionState != ConnectionState.done) {
               return const Center(child: CircularProgressIndicator());
@@ -264,10 +367,19 @@ class _OrdersPageState extends State<OrdersPage> with TickerProviderStateMixin {
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            const CircleAvatar(
+                            CircleAvatar(
                               radius: 20,
                               backgroundColor: Colors.grey,
-                              child: Icon(Icons.person, color: Colors.white),
+                              backgroundImage:
+                                  buyerProfileUrls[buyerId] != null &&
+                                          buyerProfileUrls[buyerId]!.isNotEmpty
+                                      ? NetworkImage(buyerProfileUrls[buyerId]!)
+                                      : null,
+                              child: buyerProfileUrls[buyerId] == null ||
+                                      buyerProfileUrls[buyerId]!.isEmpty
+                                  ? const Icon(Icons.person,
+                                      color: Colors.white)
+                                  : null,
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -295,7 +407,22 @@ class _OrdersPageState extends State<OrdersPage> with TickerProviderStateMixin {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child:
-                                      const Icon(Icons.shopping_bag, size: 20),
+                                      productImageUrls[product['productId']] !=
+                                                  null &&
+                                              productImageUrls[
+                                                      product['productId']]!
+                                                  .isNotEmpty
+                                          ? ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              child: Image.network(
+                                                productImageUrls[
+                                                    product['productId']]![0],
+                                                fit: BoxFit.cover,
+                                              ),
+                                            )
+                                          : const Icon(Icons.shopping_bag,
+                                              size: 20),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
@@ -433,7 +560,13 @@ class _OrdersPageState extends State<OrdersPage> with TickerProviderStateMixin {
         }).toList();
 
         return FutureBuilder<void>(
-          future: fetchBuyerNames(orders),
+          future: Future.wait([
+            fetchBuyerNames(orders),
+            fetchProductImages(filteredOrders.expand((order) {
+              final data = order.data()! as Map<String, dynamic>;
+              return data['products'] as List<dynamic>;
+            }).toList())
+          ]),
           builder: (context, asyncSnapshot) {
             if (asyncSnapshot.connectionState != ConnectionState.done) {
               return const Center(child: CircularProgressIndicator());
@@ -501,10 +634,19 @@ class _OrdersPageState extends State<OrdersPage> with TickerProviderStateMixin {
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            const CircleAvatar(
+                            CircleAvatar(
                               radius: 20,
                               backgroundColor: Colors.grey,
-                              child: Icon(Icons.person, color: Colors.white),
+                              backgroundImage:
+                                  buyerProfileUrls[buyerId] != null &&
+                                          buyerProfileUrls[buyerId]!.isNotEmpty
+                                      ? NetworkImage(buyerProfileUrls[buyerId]!)
+                                      : null,
+                              child: buyerProfileUrls[buyerId] == null ||
+                                      buyerProfileUrls[buyerId]!.isEmpty
+                                  ? const Icon(Icons.person,
+                                      color: Colors.white)
+                                  : null,
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -532,7 +674,22 @@ class _OrdersPageState extends State<OrdersPage> with TickerProviderStateMixin {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child:
-                                      const Icon(Icons.shopping_bag, size: 20),
+                                      productImageUrls[product['productId']] !=
+                                                  null &&
+                                              productImageUrls[
+                                                      product['productId']]!
+                                                  .isNotEmpty
+                                          ? ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              child: Image.network(
+                                                productImageUrls[
+                                                    product['productId']]![0],
+                                                fit: BoxFit.cover,
+                                              ),
+                                            )
+                                          : const Icon(Icons.shopping_bag,
+                                              size: 20),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
@@ -674,11 +831,11 @@ class _OrdersPageState extends State<OrdersPage> with TickerProviderStateMixin {
                               color: Colors.grey.shade200,
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: data['imageUrl'] != null
+                            child: data['imageUrls'] != null
                                 ? ClipRRect(
                                     borderRadius: BorderRadius.circular(8),
                                     child: Image.network(
-                                      data['imageUrl'],
+                                      data['imageUrls'],
                                       fit: BoxFit.cover,
                                     ),
                                   )
