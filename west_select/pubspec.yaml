@@ -59,6 +59,8 @@ flutter:
      - assets/categories/gadgets.png
      - assets/categories/school_supplies.png
      - assets/shop_icon.png
+     - assets/landing_page.png
+     - assets/mask_landing.png
 
   #   - images/a_dot_ham.jpeg
 flutter_launcher_icons:

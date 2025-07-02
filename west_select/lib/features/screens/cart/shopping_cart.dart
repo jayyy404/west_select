@@ -18,17 +18,60 @@ class ShoppingCartPage extends StatefulWidget {
 class _ShoppingCartPageState extends State<ShoppingCartPage> {
   Map<String, bool> selectedItems = {};
   bool selectAll = false;
+  Map<String, String> _sellerNameCache = {};
 
   Future<String> fetchSellerName(String sellerId) async {
+    // Check if seller name is already cached
+    if (_sellerNameCache.containsKey(sellerId)) {
+      return _sellerNameCache[sellerId]!;
+    }
+
     try {
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(sellerId)
           .get();
-      return doc.data()?['displayName'] ?? 'Unknown Seller';
+      final sellerName = doc.data()?['displayName'] ?? 'Unknown Seller';
+
+      // Cache the fetched seller name
+      _sellerNameCache[sellerId] = sellerName;
+
+      return sellerName;
     } catch (e) {
       debugPrint('Error fetching seller name: $e');
-      return 'Unknown Seller';
+      final fallbackName = 'Unknown Seller';
+      _sellerNameCache[sellerId] = fallbackName;
+      return fallbackName;
+    }
+  }
+
+  Future<void> _preloadSellerNames(List<CartItem> items) async {
+    final uniqueSellerIds = items.map((item) => item.sellerId).toSet();
+    final uncachedSellerIds = uniqueSellerIds
+        .where((id) => !_sellerNameCache.containsKey(id))
+        .toList();
+
+    if (uncachedSellerIds.isEmpty) return;
+
+    try {
+      // Fetch all seller names in parallel
+      final futures = uncachedSellerIds.map((sellerId) async {
+        try {
+          final doc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(sellerId)
+              .get();
+          final name = doc.data()?['displayName'] ?? 'Unknown Seller';
+          _sellerNameCache[sellerId] = name;
+        } catch (e) {
+          _sellerNameCache[sellerId] = 'Unknown Seller';
+        }
+      });
+
+      await Future.wait(futures);
+      if (mounted) setState(() {});
+    } catch (e) {
+      debugPrint('Error preloading seller names: $e');
     }
   }
 
@@ -47,11 +90,77 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
         .fold(0.0, (sum, item) => sum + item.price * item.quantity);
   }
 
+  double calculateTotalForItems(List<CartItem> items) {
+    return items.fold(0.0, (sum, item) => sum + item.price * item.quantity);
+  }
+
+  Future<void> _processOrderInBackground(Map<String, dynamic> orderData,
+      List<CartItem> selectedForCheckout, User user) async {
+    try {
+      final orderRef =
+          await FirebaseFirestore.instance.collection('orders').add(orderData);
+      await orderRef.update({'orderId': orderRef.id});
+
+      final localNotificationService = local_notification.NotificationService();
+      final buyerName = user.displayName ?? 'Unknown Buyer';
+
+      final Map<String, List<CartItem>> itemsBySeller = {};
+      for (var item in selectedForCheckout) {
+        itemsBySeller.putIfAbsent(item.sellerId, () => []).add(item);
+      }
+
+      final notificationFutures = itemsBySeller.entries.map((entry) async {
+        final sellerId = entry.key;
+        final items = entry.value;
+
+        final productNames = items.map((item) => item.title).join(', ');
+        final itemCount = items.length;
+
+        return Future.wait([
+          NotificationService.instance.sendPushNotification(
+            recipientUserId: sellerId,
+            title:
+                'You\'ve got ${itemCount == 1 ? 'a new order' : '$itemCount new orders'}!',
+            body: itemCount == 1
+                ? '${items.first.title} was just purchased.'
+                : '$productNames were just purchased.',
+            data: {
+              'type': 'order',
+              'productId': items.first.id,
+              'productName': productNames,
+              'buyerName': buyerName,
+            },
+          ),
+          localNotificationService.createOrderNotification(
+            sellerId: sellerId,
+            productName:
+                itemCount == 1 ? items.first.title : '$itemCount items',
+            buyerName: buyerName,
+            productId: items.first.id,
+          ),
+        ]);
+      });
+
+      await Future.wait(notificationFutures);
+    } catch (e) {
+      debugPrint('Background order processing error: $e');
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final cart = Provider.of<CartModel>(context, listen: false);
+      _preloadSellerNames(cart.items);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final cart = Provider.of<CartModel>(context);
 
-    // Initialize selectedItems for first-time usage
     for (var item in cart.items) {
       selectedItems.putIfAbsent(item.id, () => false);
     }
@@ -79,7 +188,6 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
           : SafeArea(
               child: Column(
                 children: [
-                  // Product List with Overflow Fix
                   Expanded(
                     child: ListView.builder(
                       itemCount: cart.items.length,
@@ -278,21 +386,18 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                       },
                     ),
                   ),
-
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
                     decoration: const BoxDecoration(
                       color: Colors.white,
                       border: Border(
-                        top: BorderSide(
-                            color: Color(0xFFE0E0E0)), // thin divider
+                        top: BorderSide(color: Color(0xFFE0E0E0)),
                       ),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // ─── “All” circular checkbox ────────────────────────
                         GestureDetector(
                           onTap: () => toggleSelectAll(!selectAll, cart.items),
                           child: Container(
@@ -314,12 +419,8 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                         ),
                         const SizedBox(width: 10),
                         const Text('All', style: TextStyle(fontSize: 15)),
-
                         const Spacer(),
-
                         const Spacer(),
-
-                        // ─── Total price (stacked, centered) ────────────────
                         Column(
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.center,
@@ -331,17 +432,13 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFFE6003D), // vivid pink‑red
+                                color: Color(0xFFE6003D),
                               ),
                             ),
                           ],
                         ),
-
                         const Spacer(),
-
                         const SizedBox(width: 20),
-
-                        // ─── Checkout button (stacked) ───────────────────────
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
@@ -353,7 +450,6 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                             elevation: 0,
                           ),
                           onPressed: () async {
-                            // existing checkout logic (unchanged) ────────────
                             final selectedForCheckout = cart.items
                                 .where((item) => selectedItems[item.id] == true)
                                 .toList();
@@ -385,11 +481,30 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                             );
 
                             try {
+                              cart.removeMultipleItems(selectedForCheckout);
+                              setState(() {
+                                for (var item in selectedForCheckout) {
+                                  selectedItems.remove(item.id);
+                                }
+                                selectAll = false;
+                              });
+
+                              if (Navigator.canPop(context)) {
+                                Navigator.of(context).pop();
+                              }
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content:
+                                        Text('Order placed successfully!')),
+                              );
+
                               final orderData = {
                                 'buyerId': user.uid,
                                 'buyerName': user.displayName ?? 'Anonymous',
                                 'buyerEmail': user.email,
-                                'total_price': calculateTotal(cart.items),
+                                'total_price':
+                                    calculateTotalForItems(selectedForCheckout),
                                 'products': selectedForCheckout.map((item) {
                                   return {
                                     'productId': item.id,
@@ -404,67 +519,9 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                                 'status': 'pending',
                               };
 
-                              final orderRef = await FirebaseFirestore.instance
-                                  .collection('orders')
-                                  .add(orderData);
-                              await orderRef.update({'orderId': orderRef.id});
-
-                              // Send notifications
-                              final localNotificationService =
-                                  local_notification.NotificationService();
-                              final currentUser =
-                                  FirebaseAuth.instance.currentUser;
-                              final buyerName =
-                                  currentUser?.displayName ?? 'Unknown Buyer';
-
-                              for (var item in selectedForCheckout) {
-                                // Send push notification
-                                await NotificationService.instance
-                                    .sendPushNotification(
-                                  recipientUserId: item.sellerId,
-                                  title: 'You\'ve got a new order!',
-                                  body: '${item.title} was just purchased.',
-                                  data: {
-                                    'type': 'order',
-                                    'productId': item.id,
-                                    'productName': item.title,
-                                    'buyerName': buyerName,
-                                  },
-                                );
-
-                                // Send in-app notification
-                                await localNotificationService
-                                    .createOrderNotification(
-                                  sellerId: item.sellerId,
-                                  productName: item.title,
-                                  buyerName: buyerName,
-                                  productId: item.id,
-                                );
-                              }
-
-                              // Remove all selected items at once for faster UI update
-                              cart.removeMultipleItems(selectedForCheckout);
-
-                              setState(() {
-                                // Clear only the checked out items from selectedItems map
-                                for (var item in selectedForCheckout) {
-                                  selectedItems.remove(item.id);
-                                }
-                                selectAll = false;
-                              });
-
-                              // Close loading dialog
-                              if (Navigator.canPop(context)) {
-                                Navigator.of(context).pop();
-                              }
-
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content:
-                                        Text('Order placed successfully!')),
-                              );
+                              _processOrderInBackground(
+                                  orderData, selectedForCheckout, user);
                             } catch (e) {
-                              // Close loading dialog on error
                               if (Navigator.canPop(context)) {
                                 Navigator.of(context).pop();
                               }

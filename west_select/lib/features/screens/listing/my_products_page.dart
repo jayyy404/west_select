@@ -51,9 +51,9 @@ class _MyProductsPageState extends State<MyProductsPage>
 
       if (status == 'delisted') {
         delistCount++;
-      } else if (stock == 0) {
+      } else if (status == 'soldout' || (status == 'listed' && stock == 0)) {
         soldoutCount++;
-      } else {
+      } else if (status == 'listed' && stock > 0) {
         listedCount++;
       }
     }
@@ -97,10 +97,14 @@ class _MyProductsPageState extends State<MyProductsPage>
 
   Future<void> _restockProduct(String productId, int newStock) async {
     try {
+      // Update both stock and status when restocking
       await FirebaseFirestore.instance
           .collection('post')
           .doc(productId)
-          .update({'stock': newStock});
+          .update({
+        'stock': newStock,
+        'status': 'listed', // Change status back to listed when restocked
+      });
 
       _loadTabCounts(); // Refresh counts
 
@@ -148,8 +152,8 @@ class _MyProductsPageState extends State<MyProductsPage>
     String image = '';
     if (data['image_urls'] != null && (data['image_urls'] as List).isNotEmpty) {
       image = data['image_urls'].first;
-    } else if (data['image_url'] != null) {
-      image = data['image_url'];
+    } else if (data['image_urls'] != null) {
+      image = data['image_urls'];
     }
 
     final stock = data['stock'] ?? 0;
@@ -448,9 +452,9 @@ class _MyProductsPageState extends State<MyProductsPage>
 
           switch (type) {
             case 'listed':
-              return status != 'delisted' && stock > 0;
+              return status == 'listed' && stock > 0;
             case 'soldout':
-              return status != 'delisted' && stock == 0;
+              return status == 'soldout' || (status == 'listed' && stock == 0);
             case 'delist':
               return status == 'delisted';
             default:
