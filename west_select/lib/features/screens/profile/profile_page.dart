@@ -70,20 +70,38 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _editProfile(AppUser a) async {
+    final TextEditingController nameController =
+    TextEditingController(text: a.displayName ?? '');
     final TextEditingController descController =
-        TextEditingController(text: a.description ?? '');
+    TextEditingController(text: a.description ?? '');
 
     await showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Edit Profile Description'),
-          content: TextField(
-            controller: descController,
-            maxLines: 3,
-            decoration: const InputDecoration(
-              hintText: 'Write something about yourself...',
-              border: OutlineInputBorder(),
+          title: const Text('Edit Profile'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Name',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    hintText: 'Write something about yourself...',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
             ),
           ),
           actions: [
@@ -93,19 +111,25 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             ElevatedButton(
               onPressed: () async {
+                final newName = nameController.text.trim();
                 final newDesc = descController.text.trim();
-                if (newDesc.isEmpty) {
+
+                if (newName.isEmpty || newDesc.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content: Text('Description cannot be empty')),
+                        content: Text('Name and description cannot be empty')),
                   );
                   return;
                 }
+
                 try {
                   await FirebaseFirestore.instance
                       .collection('users')
                       .doc(a.uid)
-                      .update({'description': newDesc});
+                      .update({
+                    'displayName': newName,
+                    'description': newDesc,
+                  });
 
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -125,6 +149,7 @@ class _ProfilePageState extends State<ProfilePage> {
       },
     );
   }
+
 
   Future<void> _writeReviewImpl(String productId, String sellerId,
       String productTitle, double productPrice, String productImage) async {
