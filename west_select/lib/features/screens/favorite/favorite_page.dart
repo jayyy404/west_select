@@ -1,124 +1,170 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../productdetails/product.dart';
 import 'favorite_model.dart';
 
 class FavoritePage extends StatelessWidget {
-  final String userId;
-
-  const FavoritePage({Key? key, required this.userId}) : super(key: key);
+  const FavoritePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final favoriteModel = Provider.of<FavoriteModel>(context);
+    final favoriteModel = Provider.of<FavoriteModel>(context, listen: false);
+    final String? currUser = FirebaseAuth.instance.currentUser?.uid;
 
-    // Fetch the favorite items from the model
-    final favoriteItems = favoriteModel.favoriteItems;
+    if (currUser == null) {
+      return const Scaffold(
+        body: Center(child: Text("Please log in to view favorites.")),
+      );
+    }
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F7),
-      appBar: AppBar(
-        title: const Text("Wishlist"),
-        backgroundColor: Colors.white,
-      ),
-      body: favoriteItems.isNotEmpty
-          ? Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: GridView.builder(
+    return FutureBuilder(
+      future: favoriteModel.fetchFavorites(currUser),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        return Scaffold(
+          appBar: AppBar(title: const Text("Wishlist")),
+          body: Consumer<FavoriteModel>(
+            builder: (context, model, _) {
+              final items = model.favoriteItems;
+
+              if (items.isEmpty) {
+                return const Center(child: Text("No favorites yet!"));
+              }
+
+              return GridView.builder(
+                padding: const EdgeInsets.all(16),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   mainAxisSpacing: 10,
                   crossAxisSpacing: 10,
-                  childAspectRatio: 3 / 4,
+                  childAspectRatio: 0.75, // Adjusted for better proportions
                 ),
-                itemCount: favoriteItems.length,
+                itemCount: items.length,
                 itemBuilder: (context, index) {
-                  final product = favoriteItems[index];
-                  return Card(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Image.network(
-                          product["imageUrl"]!,
-                          height: 120,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
-                        const SizedBox(height: 8),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      product["title"]!,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.favorite,
-                                      color: Colors.red,
-                                    ),
-                                    onPressed: () {
-                                      favoriteModel.removeFavorite(
-                                          userId, product);
-
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                              '${product["title"]} removed from favorites.'),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 1),
-                              Text(
-                                product["price"]!,
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                              const SizedBox(height: 1),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      product["seller"]!,
-                                      style: const TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 12,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                  final product = items[index];
+                  final imageUrls = product["imageUrls"]?.split(",") ?? [];
+                  return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ProductDetailPage(
+                                productId: product["id"] ?? ""),
                           ),
+                        );
+                      },
+                      child: Card(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Image section with flexible height
+                            Expanded(
+                              flex: 3,
+                              child: Container(
+                                width: double.infinity,
+                                child: imageUrls.isNotEmpty
+                                    ? Image.network(
+                                        imageUrls[0],
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                          return const Center(
+                                            child: Icon(Icons.broken_image,
+                                                size: 40),
+                                          );
+                                        },
+                                      )
+                                    : const Center(
+                                        child: Icon(Icons.image_not_supported,
+                                            size: 40),
+                                      ),
+                              ),
+                            ),
+                            // Content section with flexible height
+                            Expanded(
+                              flex: 2,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            product["title"] ?? "",
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        SizedBox(
+                                          width: 40,
+                                          height: 20,
+                                          child: IconButton(
+                                            padding: EdgeInsets.zero,
+                                            icon: const Icon(Icons.favorite,
+                                                color: Colors.red, size: 20),
+                                            onPressed: () {
+                                              model.removeFavorite(
+                                                  currUser, product);
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                    content: Text(
+                                                        '${product["title"]} removed')),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      "PHP ${product["price"] ?? ""}",
+                                      style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.red,
+                                          fontWeight: FontWeight.bold),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 1),
+                                    Flexible(
+                                      child: Text(
+                                        product["seller"] ?? "",
+                                        style: const TextStyle(
+                                          color: Colors.black54,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  );
+                      ));
                 },
-              ),
-            )
-          : const Center(
-              child: Text(
-                "No favorites yet!",
-                style: TextStyle(fontSize: 18, color: Colors.grey),
-              ),
-            ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

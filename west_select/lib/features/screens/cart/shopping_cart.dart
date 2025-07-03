@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'cart_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cc206_west_select/firebase/notification_service.dart';
+import 'package:cc206_west_select/services/notification_service.dart'
+    as local_notification;
 
 class ShoppingCartPage extends StatefulWidget {
   const ShoppingCartPage({Key? key}) : super(key: key);
@@ -14,17 +18,60 @@ class ShoppingCartPage extends StatefulWidget {
 class _ShoppingCartPageState extends State<ShoppingCartPage> {
   Map<String, bool> selectedItems = {};
   bool selectAll = false;
+  Map<String, String> _sellerNameCache = {};
 
   Future<String> fetchSellerName(String sellerId) async {
+    // Check if seller name is already cached
+    if (_sellerNameCache.containsKey(sellerId)) {
+      return _sellerNameCache[sellerId]!;
+    }
+
     try {
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(sellerId)
           .get();
-      return doc.data()?['displayName'] ?? 'Unknown Seller';
+      final sellerName = doc.data()?['displayName'] ?? 'Unknown Seller';
+
+      // Cache the fetched seller name
+      _sellerNameCache[sellerId] = sellerName;
+
+      return sellerName;
     } catch (e) {
       debugPrint('Error fetching seller name: $e');
-      return 'Unknown Seller';
+      final fallbackName = 'Unknown Seller';
+      _sellerNameCache[sellerId] = fallbackName;
+      return fallbackName;
+    }
+  }
+
+  Future<void> _preloadSellerNames(List<CartItem> items) async {
+    final uniqueSellerIds = items.map((item) => item.sellerId).toSet();
+    final uncachedSellerIds = uniqueSellerIds
+        .where((id) => !_sellerNameCache.containsKey(id))
+        .toList();
+
+    if (uncachedSellerIds.isEmpty) return;
+
+    try {
+      // Fetch all seller names in parallel
+      final futures = uncachedSellerIds.map((sellerId) async {
+        try {
+          final doc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(sellerId)
+              .get();
+          final name = doc.data()?['displayName'] ?? 'Unknown Seller';
+          _sellerNameCache[sellerId] = name;
+        } catch (e) {
+          _sellerNameCache[sellerId] = 'Unknown Seller';
+        }
+      });
+
+      await Future.wait(futures);
+      if (mounted) setState(() {});
+    } catch (e) {
+      debugPrint('Error preloading seller names: $e');
     }
   }
 
@@ -43,11 +90,77 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
         .fold(0.0, (sum, item) => sum + item.price * item.quantity);
   }
 
+  double calculateTotalForItems(List<CartItem> items) {
+    return items.fold(0.0, (sum, item) => sum + item.price * item.quantity);
+  }
+
+  Future<void> _processOrderInBackground(Map<String, dynamic> orderData,
+      List<CartItem> selectedForCheckout, User user) async {
+    try {
+      final orderRef =
+          await FirebaseFirestore.instance.collection('orders').add(orderData);
+      await orderRef.update({'orderId': orderRef.id});
+
+      final localNotificationService = local_notification.NotificationService();
+      final buyerName = user.displayName ?? 'Unknown Buyer';
+
+      final Map<String, List<CartItem>> itemsBySeller = {};
+      for (var item in selectedForCheckout) {
+        itemsBySeller.putIfAbsent(item.sellerId, () => []).add(item);
+      }
+
+      final notificationFutures = itemsBySeller.entries.map((entry) async {
+        final sellerId = entry.key;
+        final items = entry.value;
+
+        final productNames = items.map((item) => item.title).join(', ');
+        final itemCount = items.length;
+
+        return Future.wait([
+          NotificationService.instance.sendPushNotification(
+            recipientUserId: sellerId,
+            title:
+                'You\'ve got ${itemCount == 1 ? 'a new order' : '$itemCount new orders'}!',
+            body: itemCount == 1
+                ? '${items.first.title} was just purchased.'
+                : '$productNames were just purchased.',
+            data: {
+              'type': 'order',
+              'productId': items.first.id,
+              'productName': productNames,
+              'buyerName': buyerName,
+            },
+          ),
+          localNotificationService.createOrderNotification(
+            sellerId: sellerId,
+            productName:
+                itemCount == 1 ? items.first.title : '$itemCount items',
+            buyerName: buyerName,
+            productId: items.first.id,
+          ),
+        ]);
+      });
+
+      await Future.wait(notificationFutures);
+    } catch (e) {
+      debugPrint('Background order processing error: $e');
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final cart = Provider.of<CartModel>(context, listen: false);
+      _preloadSellerNames(cart.items);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final cart = Provider.of<CartModel>(context);
 
-    // Initialize selectedItems for first-time usage
     for (var item in cart.items) {
       selectedItems.putIfAbsent(item.id, () => false);
     }
@@ -75,7 +188,6 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
           : SafeArea(
               child: Column(
                 children: [
-                  // Product List with Overflow Fix
                   Expanded(
                     child: ListView.builder(
                       itemCount: cart.items.length,
@@ -101,7 +213,6 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                                     padding: const EdgeInsets.all(12.0),
                                     child: Row(
                                       children: [
-                                        // Custom Circular Checkbox
                                         GestureDetector(
                                           onTap: () {
                                             setState(() {
@@ -139,7 +250,9 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                                           borderRadius:
                                               BorderRadius.circular(8.0),
                                           child: Image.network(
-                                            item.imageUrl,
+                                            item.imageUrls.isNotEmpty
+                                                ? item.imageUrls.first
+                                                : '',
                                             height: 60,
                                             width: 60,
                                             fit: BoxFit.cover,
@@ -179,7 +292,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                                                 style: const TextStyle(
                                                   fontSize: 14,
                                                   fontWeight: FontWeight.bold,
-                                                  color: Colors.green,
+                                                  color: Colors.red,
                                                 ),
                                                 overflow: TextOverflow.ellipsis,
                                                 maxLines: 1,
@@ -273,72 +386,70 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                       },
                     ),
                   ),
-                  // Bottom Bar with Inline Total
                   Container(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     decoration: const BoxDecoration(
                       color: Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey,
-                          blurRadius: 6,
-                          offset: Offset(0, -3),
-                        ),
-                      ],
+                      border: Border(
+                        top: BorderSide(color: Color(0xFFE0E0E0)),
+                      ),
                     ),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Custom Circular Checkbox for Select All
                         GestureDetector(
-                          onTap: () {
-                            toggleSelectAll(!selectAll, cart.items);
-                          },
+                          onTap: () => toggleSelectAll(!selectAll, cart.items),
                           child: Container(
                             height: 24,
                             width: 24,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: selectAll ? Colors.blue : Colors.grey[300],
+                              border: Border.all(
+                                  color: Colors.grey.shade600, width: 2),
+                              color: selectAll
+                                  ? const Color(0xFFFFA42D)
+                                  : Colors.transparent,
                             ),
                             child: selectAll
-                                ? const Icon(
-                                    Icons.check,
-                                    size: 16,
-                                    color: Colors.white,
-                                  )
+                                ? const Icon(Icons.check,
+                                    size: 16, color: Colors.white)
                                 : null,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          "All",
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.bold),
+                        const SizedBox(width: 10),
+                        const Text('All', style: TextStyle(fontSize: 15)),
+                        const Spacer(),
+                        const Spacer(),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Text('Total', style: TextStyle(fontSize: 14)),
+                            const SizedBox(height: 5),
+                            Text(
+                              'Php ${NumberFormat('#,##0').format(calculateTotal(cart.items))}',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFFE6003D),
+                              ),
+                            ),
+                          ],
                         ),
                         const Spacer(),
-                        // Total Price
-                        Text(
-                          "Total: PHP ${calculateTotal(cart.items).toStringAsFixed(2)}",
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue,
-                          ),
-                        ),
                         const SizedBox(width: 20),
-                        // Checkout Button
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 12),
-                            backgroundColor: Colors.blue,
+                                horizontal: 50, vertical: 10),
+                            backgroundColor: const Color(0xFFFFA42D),
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
+                                borderRadius: BorderRadius.circular(5)),
+                            elevation: 0,
                           ),
                           onPressed: () async {
-                            // Filter selected items for checkout
                             final selectedForCheckout = cart.items
                                 .where((item) => selectedItems[item.id] == true)
                                 .toList();
@@ -346,8 +457,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                             if (selectedForCheckout.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text("No items selected!"),
-                                ),
+                                    content: Text('No items selected!')),
                               );
                               return;
                             }
@@ -356,56 +466,82 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                             if (user == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text("You need to log in first!"),
-                                ),
+                                    content: Text('You need to log in first!')),
                               );
                               return;
                             }
 
-                            // Create order data for selected items
-                            final orderData = {
-                              'buyerId': user.uid,
-                              'buyerName': user.displayName ?? 'Anonymous',
-                              'buyerEmail': user.email,
-                              'total_price': calculateTotal(cart.items),
-                              'products': selectedForCheckout.map((item) {
-                                return {
-                                  'productId': item.id,
-                                  'title': item.title,
-                                  'price': item.price,
-                                  'quantity': item.quantity,
-                                  'imageUrl': item.imageUrl,
-                                  'sellerId': item.sellerId,
-                                };
-                              }).toList(),
-                              'created_at': FieldValue.serverTimestamp(),
-                              'status': 'pending',
-                            };
-
-                            final orderRef = await FirebaseFirestore.instance
-                                .collection('orders')
-                                .add(orderData);
-
-                            await orderRef.update({'orderId': orderRef.id});
-
-                            // Remove selected items from the cart
-                            for (var item in selectedForCheckout) {
-                              cart.removeItem(item);
-                            }
-
-                            setState(() {
-                              selectedItems.clear();
-                              selectAll = false;
-                            });
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("Order placed successfully!"),
+                            // Show loading indicator
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (context) => const Center(
+                                child: CircularProgressIndicator(),
                               ),
                             );
+
+                            try {
+                              cart.removeMultipleItems(selectedForCheckout);
+                              setState(() {
+                                for (var item in selectedForCheckout) {
+                                  selectedItems.remove(item.id);
+                                }
+                                selectAll = false;
+                              });
+
+                              if (Navigator.canPop(context)) {
+                                Navigator.of(context).pop();
+                              }
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content:
+                                        Text('Order placed successfully!')),
+                              );
+
+                              final orderData = {
+                                'buyerId': user.uid,
+                                'buyerName': user.displayName ?? 'Anonymous',
+                                'buyerEmail': user.email,
+                                'total_price':
+                                    calculateTotalForItems(selectedForCheckout),
+                                'products': selectedForCheckout.map((item) {
+                                  return {
+                                    'productId': item.id,
+                                    'title': item.title,
+                                    'price': item.price,
+                                    'quantity': item.quantity,
+                                    'imageUrl': item.imageUrls,
+                                    'sellerId': item.sellerId,
+                                  };
+                                }).toList(),
+                                'created_at': FieldValue.serverTimestamp(),
+                                'status': 'pending',
+                              };
+
+                              _processOrderInBackground(
+                                  orderData, selectedForCheckout, user);
+                            } catch (e) {
+                              if (Navigator.canPop(context)) {
+                                Navigator.of(context).pop();
+                              }
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                    content: Text(
+                                        'Error placing order: ${e.toString()}')),
+                              );
+                            }
                           },
                           child: Text(
-                              "Checkout (${cart.items.where((item) => selectedItems[item.id] == true).length})"),
+                            'Checkout\n(${cart.items.where((i) => selectedItems[i.id] == true).length} item)',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              height: 1.1,
+                            ),
+                          ),
                         ),
                       ],
                     ),

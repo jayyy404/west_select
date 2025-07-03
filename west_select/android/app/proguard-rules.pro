@@ -10,6 +10,7 @@
 
 # Keep other important classes or libraries you use
 -keep class com.facebook.** { *; }
+-keep class com.facebook.** { *; }
 
 # Don't warn about missing classes
 -dontwarn com.google.firebase.**

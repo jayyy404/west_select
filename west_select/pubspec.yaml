@@ -12,8 +12,10 @@ dependencies:
   flutter:
     sdk: flutter
   firebase_auth: ^5.3.1
-  firebase_core: ^3.6.0 
+  firebase_core: ^3.6.0
+  firebase_messaging: ^15.2.7
   google_sign_in: ^6.2.1
+  flutter_local_notifications: ^19.3.0
   flutter_facebook_auth: ^7.1.1
 
   # The following adds the Cupertino Icons font to your application.
@@ -25,6 +27,9 @@ dependencies:
   image_picker: ^1.1.2
   permission_handler: ^11.3.1
   provider: ^6.1.2
+  intl: ^0.20.2
+  http: ^1.4.0
+  http_parser: ^4.0.2
 
 dev_dependencies:
   flutter_test:
@@ -47,6 +52,16 @@ flutter:
      - assets/App.png 
      - assets/google.png
      - assets/screenshot.png
+     - assets/categories/merch.png
+     - assets/categories/food.png
+     - assets/categories/clothes.png
+     - assets/categories/footwear.png
+     - assets/categories/gadgets.png
+     - assets/categories/school_supplies.png
+     - assets/shop_icon.png
+     - assets/landing_page.png
+     - assets/mask_landing.png
+
   #   - images/a_dot_ham.jpeg
 flutter_launcher_icons:
   android: true

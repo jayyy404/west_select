@@ -1,306 +1,239 @@
+import 'package:cc206_west_select/features/screens/productdetails/product_widgets/bottom_bar.dart';
+import 'package:cc206_west_select/features/screens/productdetails/product_widgets/detail_card.dart';
+import 'package:cc206_west_select/features/screens/productdetails/product_widgets/image_gallery.dart';
+import 'package:cc206_west_select/features/screens/productdetails/product_widgets/info_header.dart';
+import 'package:cc206_west_select/features/screens/productdetails/product_widgets/models.dart';
+import 'package:cc206_west_select/features/screens/productdetails/product_widgets/reviews_section.dart';
+import 'package:cc206_west_select/features/screens/productdetails/product_widgets/seller_block.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
-import '../cart/cart_model.dart';
 import '../favorite/favorite_model.dart';
-import 'package:intl/intl.dart';
+import '../cart/shopping_cart.dart';
+import '../message/message_page.dart';
 
 class ProductDetailPage extends StatefulWidget {
-  final String productId; // This is the post_id passed here
-  final String imageUrl;
-  final String productTitle;
-  final String description;
-  final double price;
-  final String sellerName;
-  final String userId; // Seller ID passed here
-
-  const ProductDetailPage({
-    Key? key,
-    required this.productId,
-    required this.imageUrl,
-    required this.productTitle,
-    required this.description,
-    required this.price,
-    required this.sellerName,
-    required this.userId, // Seller ID passed here
-  }) : super(key: key);
+  const ProductDetailPage({super.key, required this.productId});
+  final String productId;
 
   @override
-  _ProductDetailPageState createState() => _ProductDetailPageState();
+  State<ProductDetailPage> createState() => _ProductDetailPageState();
 }
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
-  int quantity = 1;
-  bool isFavorite = false; // To track if the product is favorited
+  final _favBusy = ValueNotifier(false);
+
+  final String? _uid = FirebaseAuth.instance.currentUser?.uid;
+  Product? _product;
+  bool _isFav = false;
+  bool _loading = true;
 
   @override
-  Widget build(BuildContext context) {
-    final cart = Provider.of<CartModel>(context, listen: false);
-    final favoriteModel = Provider.of<FavoriteModel>(context);
-
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          // SliverAppBar for the full-screen image with overlay buttons
-          SliverAppBar(
-            expandedHeight: 350,
-            pinned: true,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // Full-screen image
-                  Image.network(
-                    widget.imageUrl,
-                    fit: BoxFit.cover,
-                  ),
-                  Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black54,
-                          Colors.transparent,
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
-            ),
-            actions: [
-              // Favorite Icon Button
-              IconButton(
-                icon: Icon(
-                  isFavorite ? Icons.favorite : Icons.favorite_border,
-                  color: isFavorite ? Colors.red : Colors.white,
-                ),
-                onPressed: () {
-                  final product = {
-                    "id": widget.productId,
-                    "title": widget.productTitle,
-                    "imageUrl": widget.imageUrl,
-                    "price": widget.price.toString(),
-                    "seller": widget.sellerName,
-                  };
-
-                  if (isFavorite) {
-                    favoriteModel.removeFavorite(widget.userId, product);
-                  } else {
-                    favoriteModel.addFavorite(widget.userId, product);
-                  }
-
-                  setState(() {
-                    isFavorite = !isFavorite;
-                  });
-                },
-              ),
-            ],
-          ),
-
-          // Product details
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Product title
-                      Expanded(
-                        child: Text(
-                          widget.productTitle,
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      // Product price
-                      Text(
-                        'PHP ${NumberFormat('#,##0.00', 'en_US').format(widget.price)}',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Description
-                  const Text(
-                    'Description',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    widget.description,
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Seller's Details
-                  const Text(
-                    'Seller’s Details',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 24,
-                        backgroundColor: Colors.grey[300],
-                        child: const Icon(
-                          Icons.person,
-                          size: 24,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.sellerName,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-
-      // Bottom nav bar
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16.0),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey,
-              blurRadius: 6,
-              offset: Offset(0, -3),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            const Text(
-              'Quantity:',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(width: 8),
-            // Quantity Selector
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(20),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // - Button
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        if (quantity > 1) quantity--;
-                      });
-                    },
-                    child: Container(
-                      height: 20,
-                      width: 20,
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.remove,
-                        size: 14,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    quantity.toString(),
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(width: 8),
-                  // + Button
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        quantity++;
-                      });
-                    },
-                    child: Container(
-                      height: 20,
-                      width: 20,
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.add,
-                        size: 14,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Spacer(),
-            // Add to Cart Button
-            ElevatedButton(
-              onPressed: () {
-                cart.addToCart(
-                  widget.productId, // This is the post_id (productId)
-                  widget.productTitle, // The product title
-                  widget.price, // The price of the product
-                  widget.imageUrl, // The image URL of the product
-                  widget.userId, // The seller ID
-                );
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                      content: Text('${widget.productTitle} added to cart')),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
-              ),
-              child: const Text(
-                'Add to Cart',
-                style: TextStyle(fontSize: 16, color: Colors.white),
-              ),
-            )
-          ],
-        ),
-      ),
-    );
+  void initState() {
+    super.initState();
+    _load();
   }
+
+  Future<void> _load() async {
+    final postSnap = await FirebaseFirestore.instance
+        .collection('post')
+        .doc(widget.productId)
+        .get();
+    if (!postSnap.exists) return;
+    final data = postSnap.data()!;
+    final sellerId = data['post_users'];
+    final sellerSnap = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(sellerId)
+        .get();
+    final sellerName = sellerSnap.data()?['displayName'] ?? 'Unknown';
+
+    _product = Product.fromMap({...data, 'sellerName': sellerName});
+    await _checkFav();
+    if (mounted) setState(() => _loading = false);
+  }
+
+  Future<void> _checkFav() async {
+    if (_uid == null) return;
+    final favSnap = await FirebaseFirestore.instance
+        .collection('favorites')
+        .doc(_uid)
+        .get();
+    final items = favSnap.data()?['items'] ?? [];
+    _isFav = items.any((it) => it['id'] == widget.productId);
+  }
+
+  void _toggleFav() async {
+    if (_uid == null || _product == null) return;
+    final fav = Provider.of<FavoriteModel>(context, listen: false);
+    final map = {
+      'id': widget.productId,
+      'title': _product!.productTitle,
+      'imageUrls': _product!.imageUrls.join(','),
+      'price': _product!.price.toString(),
+      'seller': _product!.sellerName,
+    };
+    _favBusy.value = true;
+    if (_isFav) {
+      await fav.removeFavorite(_uid, map);
+    } else {
+      await fav.addFavorite(_uid, map);
+    }
+    _isFav = !_isFav;
+    _favBusy.value = false;
+  }
+
+  void _msg() {
+    if (_uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please login to send messages')));
+      return;
+    }
+    if (_uid == _product!.userId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You cannot message yourself')));
+      return;
+    }
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (_) => MessagePage(
+                  receiverId: _product!.userId,
+                  userName: _product!.sellerName,
+                  productName: _product!.productTitle,
+                  productPrice: _product!.price,
+                  productImage: _product!.imageUrls.first,
+                )));
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+            backgroundColor: Colors.white,
+            elevation: 0,
+            leading: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.black),
+                onPressed: () => Navigator.pop(context)),
+            actions: [
+              ValueListenableBuilder(
+                  valueListenable: _favBusy,
+                  builder: (_, busy, __) => busy
+                      ? const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : IconButton(
+                          icon: Icon(
+                              _isFav ? Icons.favorite : Icons.favorite_border,
+                              color: _isFav ? Colors.red : Colors.black),
+                          onPressed: _toggleFav)),
+              IconButton(
+                  icon: const Icon(Icons.shopping_bag_outlined,
+                      color: Colors.black),
+                  onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const ShoppingCartPage()))),
+            ]),
+        body: _loading || _product == null
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // gallery
+                    SizedBox(
+                        height: 300,
+                        child: ImageGallery(images: _product!.imageUrls)),
+                    const SizedBox(height: 16),
+                    // info
+                    InfoHeader(
+                        title: _product!.productTitle, price: _product!.price),
+                    const SizedBox(height: 20),
+                    // details
+                    FutureBuilder<DocumentSnapshot>(
+                        future: FirebaseFirestore.instance
+                            .collection('post')
+                            .doc(widget.productId)
+                            .get(),
+                        builder: (_, s) => !s.hasData
+                            ? const SizedBox.shrink()
+                            : DetailCard(
+                                map: s.data!.data() as Map<String, dynamic>)),
+                    const SizedBox(height: 20),
+                    // description
+                    Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Description',
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 8),
+                              Text(_product!.description,
+                                  style: const TextStyle(
+                                      fontSize: 14, height: 1.5))
+                            ])),
+                    const SizedBox(height: 20),
+                    // pickup location
+                    FutureBuilder<DocumentSnapshot>(
+                        future: FirebaseFirestore.instance
+                            .collection('post')
+                            .doc(widget.productId)
+                            .get(),
+                        builder: (_, s) {
+                          if (!s.hasData) return const SizedBox.shrink();
+                          final loc = (s.data!.data()
+                              as Map<String, dynamic>)['location'];
+                          return loc == null || '$loc'.isEmpty
+                              ? const SizedBox.shrink()
+                              : Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16),
+                                  child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('Pickup Location',
+                                            style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold)),
+                                        const SizedBox(height: 8),
+                                        Text('$loc',
+                                            style:
+                                                const TextStyle(fontSize: 14)),
+                                        const SizedBox(height: 20)
+                                      ]));
+                        }),
+                    // seller row
+                    SellerBlock(
+                        sellerId: _product!.userId,
+                        sellerName: _product!.sellerName,
+                        onMsgTap: _msg),
+                    const SizedBox(height: 20),
+                    // reviews
+                    ReviewsSection(
+                      postId: widget.productId,
+                      ownerId: _product!.userId,
+                      productTitle: _product!.productTitle,
+                      productPrice: _product!.price,
+                      productImage: _product!.imageUrls.first,
+                    ),
+                    const SizedBox(height: 50),
+                  ],
+                ),
+              ),
+        bottomNavigationBar: _product == null
+            ? null
+            : BottomBar(
+                productId: widget.productId,
+                title: _product!.productTitle,
+                price: _product!.price,
+                image: _product!.imageUrls.first,
+                ownerId: _product!.userId,
+              ),
+      );
 }

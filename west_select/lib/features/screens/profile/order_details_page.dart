@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   final String orderId;
-  final String collection; // Add collection as a parameter
+  final String collection;
 
   const OrderDetailScreen({
     super.key,
@@ -28,7 +28,9 @@ class OrderDetailScreen extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (snapshot.hasError || !snapshot.hasData || !snapshot.data!.exists) {
+          if (snapshot.hasError ||
+              !snapshot.hasData ||
+              !snapshot.data!.exists) {
             return const Center(child: Text('Order not found.'));
           }
 
@@ -84,14 +86,18 @@ class OrderDetailScreen extends StatelessWidget {
 
         return FutureBuilder<DocumentSnapshot>(
           future: sellerId != null
-              ? FirebaseFirestore.instance.collection('users').doc(sellerId).get()
+              ? FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(sellerId)
+                  .get()
               : null,
           builder: (context, sellerSnapshot) {
             if (sellerSnapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
 
-            final sellerData = sellerSnapshot.data?.data() as Map<String, dynamic>?;
+            final sellerData =
+                sellerSnapshot.data?.data() as Map<String, dynamic>?;
             final sellerName = sellerData?['displayName'] ?? 'Unknown Seller';
 
             return ListTile(

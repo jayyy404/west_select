@@ -7,12 +7,13 @@ plugins {
 
 android {
     namespace = "com.example.cc206_magic_calculator"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    compileSdk = 35
+    ndkVersion = "25.1.8937393"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+        coreLibraryDesugaringEnabled true
     }
 
     kotlinOptions {
@@ -28,6 +29,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        multiDexEnabled true
     }
     tasks.withType(JavaCompile) {
         options.compilerArgs << "-Xlint:deprecation"
@@ -63,14 +65,13 @@ android {
 }
 
 dependencies {
-    implementation platform('com.google.firebase:firebase-bom:33.5.1') // Use the latest version
-    // Add any other Firebase dependencies you need here
+    implementation platform('com.google.firebase:firebase-bom:33.5.1')
     implementation 'com.google.firebase:firebase-auth'
     implementation 'com.google.firebase:firebase-firestore'
     implementation 'com.google.android.gms:play-services-auth:21.2.0'
 
-    // Facebook SDK for login and sharing functionality
-//    implementation 'com.facebook.android:facebook-android-sdk:17.0.0'
+    // ✅ This is the correct way to enable core desugaring support
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
 }
 
 

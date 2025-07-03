@@ -1,52 +1,90 @@
+import 'package:cc206_west_select/features/auth_gate.dart';
+import 'package:cc206_west_select/features/screens/profile/profile_widgets/header.dart';
+import 'package:cc206_west_select/features/screens/profile/profile_widgets/settings_sheet.dart';
+import 'package:cc206_west_select/features/screens/profile/profile_widgets/shopping_sections.dart';
+import 'package:cc206_west_select/firebase/app_user.dart';
+import 'package:cc206_west_select/firebase/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cc206_west_select/firebase/auth_service.dart';
-import 'package:cc206_west_select/features/log_in.dart';
-import 'package:cc206_west_select/firebase/app_user.dart';
-import 'package:cc206_west_select/features/screens/profile/order_details_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ProfilePage extends StatefulWidget {
-  final AppUser appUser;
+  const ProfilePage({super.key, required this.appUser, this.readonly});
 
-  const ProfilePage({super.key, required this.appUser});
+  final AppUser appUser;
+  final bool? readonly;
 
   @override
-  _ProfilePageState createState() => _ProfilePageState();
+  State<ProfilePage> createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  int selectedTabIndex = 0; // Used to track the selected tab (Pending or Completed)
+  late bool isReadOnly;
   Stream<DocumentSnapshot<Map<String, dynamic>>>? _userStream;
-  late final String status;
+
   @override
   void initState() {
     super.initState();
+    final me = FirebaseAuth.instance.currentUser?.uid;
+    isReadOnly = widget.readonly ?? (me == null || me != widget.appUser.uid);
     _userStream = FirebaseFirestore.instance
-        .collection('users') // Firestore collection for users
+        .collection('users')
         .doc(widget.appUser.uid)
         .snapshots();
   }
 
   Future<void> _signOut() async {
     await AuthService().signOut();
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => LogInPage()),
-    );
+    if (mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const AuthGate()),
+            (route) => false,
+      );
+    }
   }
 
-  Future<void> _editDisplayName() async {
-    final TextEditingController editNameController =
-    TextEditingController(text: widget.appUser.displayName ?? '');
+
+  Future<int> _getPendingOrdersCount() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('orders')
+          .where('buyerId', isEqualTo: widget.appUser.uid)
+          .get();
+      return snapshot.docs.length;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  Future<int> _getReviewsCount() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collectionGroup('reviews')
+          .where('userId', isEqualTo: widget.appUser.uid)
+          .get();
+      return snapshot.docs.length;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  void _editProfile(AppUser a) async {
+    final TextEditingController descController =
+        TextEditingController(text: a.description ?? '');
 
     await showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Edit Display Name'),
+          title: const Text('Edit Profile Description'),
           content: TextField(
-            controller: editNameController,
-            decoration: const InputDecoration(labelText: 'Display Name'),
+            controller: descController,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              hintText: 'Write something about yourself...',
+              border: OutlineInputBorder(),
+            ),
           ),
           actions: [
             TextButton(
@@ -55,21 +93,28 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             ElevatedButton(
               onPressed: () async {
-                final newName = editNameController.text.trim();
-                if (newName.isNotEmpty) {
-                  await FirebaseFirestore.instance
-                      .collection('users') // Firestore collection for users
-                      .doc(widget.appUser.uid)
-                      .update({'displayName': newName});
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Name updated successfully')),
-                  );
-                  Navigator.pop(context);
-                } else {
+                final newDesc = descController.text.trim();
+                if (newDesc.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content: Text('Display name cannot be empty')),
+                        content: Text('Description cannot be empty')),
+                  );
+                  return;
+                }
+                try {
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(a.uid)
+                      .update({'description': newDesc});
+
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Profile updated successfully!')),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error updating profile: $e')),
                   );
                 }
               },
@@ -81,239 +126,243 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: _userStream,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
+  Future<void> _writeReviewImpl(String productId, String sellerId,
+      String productTitle, double productPrice, String productImage) async {
+    final TextEditingController reviewController = TextEditingController();
+    final user = FirebaseAuth.instance.currentUser;
 
-        if (snapshot.hasError || !snapshot.hasData || !snapshot.data!.exists) {
-          return const Center(child: Text("Error loading user data"));
-        }
+    if (user == null) return;
 
-        final userData = snapshot.data!.data()!;
-        final updatedAppUser = AppUser.fromFirestore(userData);
+    // Check if user has already reviewed this product
+    final existingReview = await FirebaseFirestore.instance
+        .collection('post')
+        .doc(productId)
+        .collection('reviews')
+        .doc(user.uid)
+        .get();
 
-        return Scaffold(
-          backgroundColor: Colors.white,
-          appBar: AppBar(
-            backgroundColor: Colors.white,
-            elevation: 0,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.edit, color: Color(0xFF1976D2)),
-                onPressed: _editDisplayName,
-              ),
-              IconButton(
-                icon: const Icon(Icons.logout, color: Color(0xFFD32F2F)),
-                onPressed: _signOut,
+    if (existingReview.exists) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You have already reviewed this product')),
+      );
+      return;
+    }
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Write a Review'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Product: $productTitle',
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              TextField(
+                controller: reviewController,
+                maxLines: 5,
+                decoration: const InputDecoration(
+                  hintText: 'Share your experience with this product...',
+                  border: OutlineInputBorder(),
+                ),
               ),
             ],
           ),
-          body: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildProfileHeader(updatedAppUser),
-                const SizedBox(height: 20),
-                _buildTabSelection(),
-                const SizedBox(height: 20),
-                Expanded(child: _buildOrderList(updatedAppUser)),
-              ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
             ),
-          ),
+            ElevatedButton(
+              onPressed: () async {
+                if (reviewController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please write a review')),
+                  );
+                  return;
+                }
+
+                try {
+                  await FirebaseFirestore.instance
+                      .collection('post')
+                      .doc(productId)
+                      .collection('reviews')
+                      .doc(user.uid)
+                      .set({
+                    'userId': user.uid,
+                    'userName': user.displayName ?? 'Anonymous',
+                    'comment': reviewController.text.trim(),
+                    'timestamp': FieldValue.serverTimestamp(),
+                  });
+
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Review submitted successfully!')),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error submitting review: $e')),
+                  );
+                }
+              },
+              child: const Text('Submit Review'),
+            ),
+          ],
         );
       },
     );
   }
 
-  Widget _buildProfileHeader(AppUser appUser) {
-    return Row(
-      children: [
-        CircleAvatar(
-          radius: 40,
-          backgroundImage: appUser.profilePictureUrl != null
-              ? NetworkImage(appUser.profilePictureUrl!)
-              : null,
-          backgroundColor: Colors.grey,
-        ),
-        const SizedBox(width: 20),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                appUser.displayName ?? "User's Name",
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1976D2),
-                ),
-              ),
-              Text(
-                appUser.email,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+  Future<void> _addToCartImpl(String productId, String sellerId,
+      String productTitle, double productPrice, String productImage) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      // Check if product is still available
+      final productDoc = await FirebaseFirestore.instance
+          .collection('post')
+          .doc(productId)
+          .get();
+
+      if (!productDoc.exists) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Product no longer available')),
+        );
+        return;
+      }
+
+      final productData = productDoc.data() as Map<String, dynamic>;
+      final stock = productData['stock'] ?? 0;
+      final status = productData['status'] ?? 'listed';
+
+      if (stock <= 0 || status == 'soldout' || status == 'delisted') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Product is out of stock')),
+        );
+        return;
+      }
+
+      // Add to cart
+      await FirebaseFirestore.instance
+          .collection('carts')
+          .doc(user.uid)
+          .collection('items')
+          .doc(productId)
+          .set({
+        'productId': productId,
+        'title': productTitle,
+        'price': productPrice,
+        'sellerId': sellerId,
+        'imageUrl': productImage,
+        'quantity': 1,
+        'addedAt': FieldValue.serverTimestamp(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Added to cart successfully!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error adding to cart: $e')),
+      );
+    }
+  }
+
+  String _getImageUrl(dynamic imageUrl) {
+    if (imageUrl == null) return '';
+
+    if (imageUrl is String) {
+      return imageUrl;
+    } else if (imageUrl is List && imageUrl.isNotEmpty) {
+      return imageUrl.first.toString();
+    }
+
+    return '';
+  }
+
+  void _writeReview(Map<String, dynamic> product) {
+    _writeReviewImpl(
+      product['productId'] ?? '',
+      product['sellerId'] ?? '',
+      product['title'] ?? '',
+      (product['price'] ?? 0.0).toDouble(),
+      _getImageUrl(product['imageUrl']),
     );
   }
 
-  Widget _buildTabSelection() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: [
-        _buildTabButton("Pending", 0),
-        _buildTabButton("Completed", 1),
-      ],
+  void _addToCart(Map<String, dynamic> product) {
+    _addToCartImpl(
+      product['productId'] ?? '',
+      product['sellerId'] ?? '',
+      product['title'] ?? '',
+      (product['price'] ?? 0.0).toDouble(),
+      _getImageUrl(product['imageUrl']),
     );
   }
 
-  Widget _buildTabButton(String label, int index) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedTabIndex = index;
-        });
-      },
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: selectedTabIndex == index ? Colors.blue : Colors.grey,
-            ),
-          ),
-          if (selectedTabIndex == index)
-            Container(
-              margin: const EdgeInsets.only(top: 4),
-              height: 2,
-              width: 20,
-              color: Colors.blue,
-            ),
-        ],
-      ),
-    );
-  }
+  @override
+  Widget build(BuildContext context) =>
+      StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+        stream: _userStream,
+        builder: (_, snap) {
+          if (!snap.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final user = AppUser.fromFirestore(snap.data!.data()!);
 
-  Widget _buildOrderList(AppUser appUser) {
-    return Column(
-      children: [
-        // Show orders based on selectedTabIndex (Pending or Completed)
-        if (selectedTabIndex == 0) ...[
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('orders')
-                  .where('buyerId', isEqualTo: appUser.uid)
-                  .where('status', isEqualTo: 'pending')
-                  .orderBy('created_at', descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+          return Scaffold(
+            backgroundColor: Colors.white,
+            appBar: AppBar(
+                backgroundColor: Colors.white,
+                elevation: 0,
+                actions: isReadOnly
+                    ? null
+                    : [
+                  IconButton(
+                      icon: const Icon(Icons.settings,
+                          color: Color(0xFF1976D2)),
+                      onPressed: () => showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => SettingsSheet(
+                            appUser: user,
+                            onEditProfile: () => _editProfile(user),
+                            onLogout: _signOut,
+                          )))
+                ]),
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ProfileHeader(appUser: user, isReadOnly: isReadOnly),
+                    const SizedBox(height: 20),
+                    if (!isReadOnly) ...[
+                      FutureBuilder<List<int>>(
+                        future: Future.wait([
+                          _getPendingOrdersCount(),
+                          _getReviewsCount(),
+                        ]),
+                        builder: (context, snapshot) {
+                          final pendingCount = snapshot.data?[0] ?? 0;
+                          final reviewsCount = snapshot.data?[1] ?? 0;
 
-                final orders = snapshot.data!.docs;
-
-                if (orders.isEmpty) {
-                  return const Center(child: Text("No pending orders"));
-                }
-
-                return ListView.builder(
-                  itemCount: orders.length,
-                  itemBuilder: (context, index) {
-                    final order = orders[index];
-                    final data = order.data() as Map<String, dynamic>;
-
-                    return Card(
-                      child: ListTile(
-                        title: Text("Order ID: ${data['orderId']}"),
-                        subtitle: Text(
-                          "Total: PHP ${data['total_price']} - Date: ${data['created_at'].toDate()}",
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => OrderDetailScreen(
-                                orderId: data['orderId'],
-                                collection: 'orders', // Use 'orders' for Pending tab
-                              ),
-                            ),
+                          return ShoppingSections(
+                            userId: user.uid,
+                            pendingCount: pendingCount,
+                            reviewsCount: reviewsCount,
                           );
                         },
-
                       ),
-                    );
-                  },
-                );
-              },
+                    ]
+                  ]),
             ),
-          ),
-        ] else if (selectedTabIndex == 1) ...[
-          // Completed Orders
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('completed_orders')
-                  .where('buyerId', isEqualTo: appUser.uid)
-                  .orderBy('created_at', descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                final orders = snapshot.data!.docs;
-
-                if (orders.isEmpty) {
-                  return const Center(child: Text("No completed orders"));
-                }
-
-                return ListView.builder(
-                  itemCount: orders.length,
-                  itemBuilder: (context, index) {
-                    final order = orders[index];
-                    final data = order.data() as Map<String, dynamic>;
-
-                    return Card(
-                      child: ListTile(
-                        title: Text("Order ID: ${data['orderId']}"),
-                        subtitle: Text(
-                          "Total: PHP ${data['total_price']} - Date: ${data['created_at'].toDate()}",
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => OrderDetailScreen(
-                                orderId: data['orderId'],
-                                collection: 'completed_orders', // Use 'completed_orders' for Completed tab
-                              ),
-                            ),
-                          );
-                        },
-
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
-      ],
-    );
-  }
+          );
+        },
+      );
 }

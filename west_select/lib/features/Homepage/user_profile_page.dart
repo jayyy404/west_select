@@ -1,4 +1,4 @@
-import 'package:cc206_west_select/features/log_in.dart';
+import 'package:cc206_west_select/features/landingpage/log_in.dart';
 import 'package:flutter/material.dart';
 import '../edit_profile.dart';
 import '../../firebase/auth_service.dart';
