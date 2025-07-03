@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:cc206_west_select/features/screens/productdetails/product.dart';
 
 class SellerProfileView extends StatefulWidget {
   final String sellerId;
@@ -52,7 +53,7 @@ class _SellerProfileViewState extends State<SellerProfileView> {
       final querySnapshot = await FirebaseFirestore.instance
           .collection('post')
           .where('post_users', isEqualTo: widget.sellerId)
-          .orderBy('post_date', descending: true)
+          .orderBy('createdAt', descending: true)
           .get();
 
       setState(() {
@@ -281,7 +282,12 @@ class _SellerProfileViewState extends State<SellerProfileView> {
       onTap: () {
         Navigator.pop(context); // Go back to previous page
         // Navigate to product detail
-        Navigator.pushNamed(context, '/product-detail', arguments: productId);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProductDetailPage(productId: productId),
+          ),
+        );
       },
       child: Container(
         decoration: BoxDecoration(
