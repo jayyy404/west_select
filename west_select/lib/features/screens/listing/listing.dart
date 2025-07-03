@@ -7,10 +7,9 @@ class Listing {
   final int numComments;
   final String postUserId;
   final List<String> imageUrls;
-
   final double price;
-
   final String sellerName;
+  final String? category;
 
   Listing({
     required this.productId,
@@ -21,6 +20,7 @@ class Listing {
     required this.imageUrls,
     required this.price,
     required this.sellerName,
+    this.category,
   });
 
   factory Listing.fromFirestore(Map<String, dynamic> doc) {
@@ -35,6 +35,7 @@ class Listing {
       imageUrls: List<String>.from(doc['image_urls'] ?? []),
       price: (doc['price'] ?? 0).toDouble(),
       sellerName: doc['sellerName'] ?? '',
+      category: doc['category'] as String?,
     );
   }
 
@@ -48,6 +49,7 @@ class Listing {
       'image_urls': imageUrls,
       'price': price,
       'sellerName': sellerName,
+      'category': category,
     };
   }
 }

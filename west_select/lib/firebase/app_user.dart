@@ -6,8 +6,8 @@ class AppUser {
   final String? displayName;
   final String? description;
   final String? profilePictureUrl;
-  final List<UserOrder> orderHistory; // List of orders
-  final List<UserListing> userListings; // List of listings
+  final List<UserOrder> orderHistory;
+  final List<UserListing> userListings;
   final List<String> fcmTokens;
 
   AppUser({
@@ -33,8 +33,8 @@ class AppUser {
             .toList() ??
         [];
     var fcmTokens = (data['fcmTokens'] as List<dynamic>?)
-        ?.map((token) => token.toString())
-        .toList() ??
+            ?.map((token) => token.toString())
+            .toList() ??
         [];
 
     return AppUser(

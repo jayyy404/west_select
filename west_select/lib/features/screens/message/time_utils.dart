@@ -18,7 +18,7 @@ class TimeUtils {
 
     if (diff.inMinutes < 1) return 'now';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m';
-    if (diff.inHours < 24) return DateFormat('HH:mm').format(dateTime);
-    return DateFormat('MM/dd HH:mm').format(dateTime);
+    if (diff.inHours < 24) return DateFormat('h:mm a').format(dateTime);
+    return DateFormat('MM/dd h:mm a').format(dateTime);
   }
 }
