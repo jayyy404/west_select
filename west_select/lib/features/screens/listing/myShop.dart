@@ -1,4 +1,4 @@
-import 'package:cc206_west_select/features/screens/listing/orders_page.dart';
+import 'package:cc206_west_select/features/screens/listing/orders/orders_page.dart';
 import 'package:cc206_west_select/features/screens/listing/my_products_page.dart';
 import 'package:cc206_west_select/features/screens/listing/create_listing_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -49,17 +49,17 @@ class _InventoryPageState extends State<InventoryPage> {
       }
     }
 
-    // Get reviews count
-    final productsSnapshot = await FirebaseFirestore.instance
-        .collection('products')
-        .where('sellerId', isEqualTo: currentUserId)
+    // Get reviews count - count reviews for seller's products
+    final sellerProductsSnapshot = await FirebaseFirestore.instance
+        .collection('post')
+        .where('post_users', isEqualTo: currentUserId)
         .get();
 
     int reviewsCount = 0;
-    for (var doc in productsSnapshot.docs) {
-      final data = doc.data();
-      final reviews = data['reviews'] as List<dynamic>? ?? [];
-      reviewsCount += reviews.length;
+    for (var productDoc in sellerProductsSnapshot.docs) {
+      final reviewsSnapshot =
+          await productDoc.reference.collection('reviews').get();
+      reviewsCount += reviewsSnapshot.docs.length;
     }
 
     return {

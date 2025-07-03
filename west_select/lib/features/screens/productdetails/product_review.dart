@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; // For date formatting
 
@@ -13,11 +12,6 @@ class ProductReviews extends StatefulWidget {
 }
 
 class _ProductReviewsState extends State<ProductReviews> {
-  final TextEditingController _controller = TextEditingController();
-  final user = FirebaseAuth.instance.currentUser;
-  String? editingReviewId;
-  bool _isSubmitting = false;
-
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -25,73 +19,6 @@ class _ProductReviewsState extends State<ProductReviews> {
         backgroundColor: Colors.red,
       ),
     );
-  }
-
-  Future<void> _submitReview() async {
-    if (user == null) {
-      _showError('You must be logged in to submit a review');
-      return;
-    }
-
-    final comment = _controller.text.trim();
-    if (comment.isEmpty) {
-      _showError('Review cannot be empty');
-      return;
-    }
-
-    setState(() => _isSubmitting = true);
-
-    try {
-      final reviewData = {
-        'userId': user!.uid,
-        'userName': user!.displayName ?? 'Anonymous',
-        'comment': comment,
-        'timestamp': FieldValue.serverTimestamp(),
-      };
-
-      final reviewRef = FirebaseFirestore.instance
-          .collection('post')
-          .doc(widget.productId)
-          .collection('reviews')
-          .doc(user!.uid);
-
-      await reviewRef.set(reviewData);
-
-      _controller.clear();
-      setState(() => editingReviewId = null);
-    } catch (e) {
-      _showError('Failed to submit review: ${e.toString()}');
-    } finally {
-      setState(() => _isSubmitting = false);
-    }
-  }
-
-  Future<void> _deleteReview() async {
-    if (user == null) return;
-
-    try {
-      await FirebaseFirestore.instance
-          .collection('post')
-          .doc(widget.productId)
-          .collection('reviews')
-          .doc(user!.uid)
-          .delete();
-
-      _controller.clear();
-      setState(() => editingReviewId = null);
-    } catch (e) {
-      _showError('Failed to delete review: ${e.toString()}');
-    }
-  }
-
-  void _startEditing(String currentComment) {
-    _controller.text = currentComment;
-    setState(() => editingReviewId = user!.uid);
-  }
-
-  void _cancelEditing() {
-    _controller.clear();
-    setState(() => editingReviewId = null);
   }
 
   @override
@@ -107,7 +34,6 @@ class _ProductReviewsState extends State<ProductReviews> {
           ),
           const SizedBox(height: 8),
           _buildReviewsList(),
-          if (user != null) _buildReviewInput(),
         ],
       ),
     );
@@ -135,84 +61,21 @@ class _ProductReviewsState extends State<ProductReviews> {
 
         return Column(
           children: snapshot.data!.docs.map((review) {
-            return _ReviewTile(
-              review: review,
-              currentUserId: user?.uid,
-              onEdit: _startEditing,
-              onDelete: _deleteReview,
-            );
+            return _ReviewTile(review: review);
           }).toList(),
         );
       },
-    );
-  }
-
-  Widget _buildReviewInput() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            editingReviewId == null ? 'Write a Review:' : 'Edit Your Review:',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _controller,
-                  minLines: 1,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    hintText: 'Type your review here...',
-                    border: const OutlineInputBorder(),
-                    suffixIcon: editingReviewId != null
-                        ? IconButton(
-                            icon: const Icon(Icons.cancel),
-                            onPressed: _cancelEditing,
-                          )
-                        : null,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              _isSubmitting
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : IconButton(
-                      icon: const Icon(Icons.send, color: Colors.blue),
-                      onPressed: _submitReview,
-                    ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }
 
 class _ReviewTile extends StatelessWidget {
   final DocumentSnapshot review;
-  final String? currentUserId;
-  final Function(String) onEdit;
-  final VoidCallback onDelete;
 
-  const _ReviewTile({
-    required this.review,
-    required this.currentUserId,
-    required this.onEdit,
-    required this.onDelete,
-  });
+  const _ReviewTile({required this.review});
 
   @override
   Widget build(BuildContext context) {
-    final isCurrentUser = review.id == currentUserId;
     final timestamp = review['timestamp'] as Timestamp?;
 
     return Card(
@@ -235,21 +98,6 @@ class _ReviewTile extends StatelessWidget {
             ]
           ],
         ),
-        trailing: isCurrentUser
-            ? Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.orange),
-                    onPressed: () => onEdit(review['comment']),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: onDelete,
-                  ),
-                ],
-              )
-            : null,
       ),
     );
   }

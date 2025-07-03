@@ -17,6 +17,15 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _currentIndex = 0;
 
+  // Keep reference to HomePage
+  late HomePage _homePage;
+
+  @override
+  void initState() {
+    super.initState();
+    _homePage = const HomePage();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -52,19 +61,29 @@ class _MainPageState extends State<MainPage> {
   Widget _getCurrentPage() {
     switch (_currentIndex) {
       case 0:
-        return HomePage();
+        return _homePage;
       case 1:
         return FavoritePage();
       case 2:
         return MessagePage();
       case 3:
+        return MessagePage();
+      case 4:
         return ProfilePage(appUser: widget.appUser!);
       default:
-        return HomePage();
+        return _homePage;
     }
   }
 
   void _onTabTapped(int index) {
+    // If clicking on home button (index 0) and we're already on home page, clear filters
+    if (index == 0 && _currentIndex == 0) {
+      // We need to recreate the home page to trigger a refresh
+      setState(() {
+        _homePage = const HomePage();
+      });
+    }
+
     setState(() {
       _currentIndex = index;
     });

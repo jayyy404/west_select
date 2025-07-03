@@ -13,6 +13,7 @@ class MessagePage extends StatefulWidget {
   final String? productName;
   final double? productPrice;
   final String? productImage;
+  final bool fromPendingOrders;
 
   const MessagePage({
     super.key,
@@ -21,6 +22,7 @@ class MessagePage extends StatefulWidget {
     this.productName,
     this.productPrice,
     this.productImage,
+    this.fromPendingOrders = false,
   });
 
   @override
@@ -37,6 +39,10 @@ class _MessagePageState extends State<MessagePage>
   String? _selectedName;
   bool _openedFromProduct = false;
 
+  String? _selectedProductName;
+  double? _selectedProductPrice;
+  String? _selectedProductImage;
+
   late TabController _tab;
   int _tabIndex = 0;
 
@@ -45,6 +51,12 @@ class _MessagePageState extends State<MessagePage>
     super.initState();
     _tab = TabController(length: 2, vsync: this);
     _tab.addListener(() => setState(() => _tabIndex = _tab.index));
+
+    // Force Buy tab (index 0) when coming from pending orders
+    if (widget.fromPendingOrders) {
+      _tabIndex = 0;
+      _tab.index = 0;
+    }
 
     // external open
     if (widget.receiverId != null && widget.userName != null) {
@@ -68,6 +80,9 @@ class _MessagePageState extends State<MessagePage>
           _selectedId = null;
           _selectedName = null;
           _openedFromProduct = false;
+          _selectedProductName = null;
+          _selectedProductPrice = null;
+          _selectedProductImage = null;
         });
       });
     }
@@ -185,12 +200,25 @@ class _MessagePageState extends State<MessagePage>
                         title: Text(name,
                             style: const TextStyle(
                                 fontWeight: FontWeight.w600, fontSize: 16)),
-                        subtitle: Text(
-                          last,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style:
-                              TextStyle(color: Colors.grey[600], fontSize: 14),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (data['productName'] != null)
+                              Text(
+                                'Product: ${data['productName']}',
+                                style: TextStyle(
+                                    color: Colors.blue[600],
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500),
+                              ),
+                            Text(
+                              last,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  color: Colors.grey[600], fontSize: 14),
+                            ),
+                          ],
                         ),
                         trailing: ts != null
                             ? Text(
@@ -203,6 +231,14 @@ class _MessagePageState extends State<MessagePage>
                           _selectedId = other;
                           _selectedName = name;
                           _openedFromProduct = false;
+
+                          // Store the conversation's product information
+                          _selectedProductName = data['productName'] as String?;
+                          _selectedProductPrice = (data['productPrice'] is int)
+                              ? (data['productPrice'] as int).toDouble()
+                              : data['productPrice'] as double?;
+                          _selectedProductImage =
+                              data['productImage'] as String?;
                         }),
                       ),
                     );
@@ -237,14 +273,22 @@ class _MessagePageState extends State<MessagePage>
       );
 
   Widget _chatView() {
+    final productName =
+        _openedFromProduct ? widget.productName : _selectedProductName;
+    final productPrice =
+        _openedFromProduct ? widget.productPrice : _selectedProductPrice;
+    final productImage =
+        _openedFromProduct ? widget.productImage : _selectedProductImage;
+
     return FutureBuilder<String>(
       future: MessagesService.resolveCurrentConversation(
         otherId: _selectedId,
         fromProductPage: _openedFromProduct,
-        productName: widget.productName,
-        productPrice: widget.productPrice,
-        productImage: widget.productImage,
+        productName: productName,
+        productPrice: productPrice,
+        productImage: productImage,
         activeTabIndex: _tabIndex,
+        fromPendingOrders: widget.fromPendingOrders,
       ),
       builder: (_, idSnap) {
         if (!idSnap.hasData) {
@@ -261,9 +305,9 @@ class _MessagePageState extends State<MessagePage>
           children: [
             ChatHeader(
               conversationId: convoId,
-              explicitProductName: widget.productName,
-              explicitProductPrice: widget.productPrice,
-              explicitProductImage: widget.productImage,
+              explicitProductName: productName,
+              explicitProductPrice: productPrice,
+              explicitProductImage: productImage,
               peerName: _selectedName,
               explicitIsBuying: true,
             ),
@@ -343,13 +387,20 @@ class _MessagePageState extends State<MessagePage>
       );
 
   void _handleSend(String convoId) async {
+    final productName =
+        _openedFromProduct ? widget.productName : _selectedProductName;
+    final productPrice =
+        _openedFromProduct ? widget.productPrice : _selectedProductPrice;
+    final productImage =
+        _openedFromProduct ? widget.productImage : _selectedProductImage;
+
     await MessagesService.sendMessage(
       convoId: convoId,
       text: _msgCtrl.text.trim(),
       sellerId: _selectedId,
-      productName: widget.productName,
-      productPrice: widget.productPrice,
-      productImage: widget.productImage,
+      productName: productName,
+      productPrice: productPrice,
+      productImage: productImage,
     );
     _msgCtrl.clear();
     SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -373,7 +424,13 @@ class _MessagePageState extends State<MessagePage>
         leading: inChat
             ? IconButton(
                 icon: const Icon(Icons.arrow_back, color: Colors.black),
-                onPressed: () => setState(() => _selectedId = null),
+                onPressed: () => setState(() {
+                  _selectedId = null;
+                  _selectedName = null;
+                  _selectedProductName = null;
+                  _selectedProductPrice = null;
+                  _selectedProductImage = null;
+                }),
               )
             : null,
         title: Text(

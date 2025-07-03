@@ -26,6 +26,7 @@ class MessagesService {
     double? productPrice,
     String? productImage,
     required int activeTabIndex,
+    bool fromPendingOrders = false,
   }) async {
     final me = _auth.currentUser?.uid;
     if (me == null || otherId == null) return '';
@@ -54,20 +55,62 @@ class MessagesService {
       return makeConversationId(me, otherId);
     }
 
-    // Multiple matches? decide by tab (0 = Buy, 1 = Sell)
+    // Special case: When coming from pending orders, prioritize buyer conversations
+    if (fromPendingOrders) {
+      // Look for conversations where current user is the buyer
+      for (final doc in userConvos) {
+        final data = doc.data();
+        if (data['transactionType'] == 'buy' && data['buyerId'] == me) {
+          return doc.id;
+        }
+      }
+      // If no buyer conversation found, create a new general conversation
+      return makeConversationId(me, otherId);
+    }
+
+    // If we have a specific product context, try to find the matching conversation
+    if (productName != null) {
+      final productConvos = userConvos.where((doc) {
+        final data = doc.data();
+        return data['productName'] == productName;
+      }).toList();
+
+      if (productConvos.isNotEmpty) {
+        // Find the conversation that matches our role (buyer/seller)
+        for (final doc in productConvos) {
+          final data = doc.data();
+          if (activeTabIndex == 0) {
+            // Buy view – conversation where current user is the buyer
+            if (data['transactionType'] == 'buy' && data['buyerId'] == me) {
+              return doc.id;
+            }
+          } else {
+            // Sell view - conversation where current user is the seller
+            if (data['transactionType'] == 'buy' && data['sellerId'] == me) {
+              return doc.id;
+            }
+          }
+        }
+        // If no role-specific match, return first product conversation
+        return productConvos.first.id;
+      }
+    }
+
+    // No specific product context, so filter by tab (0 = Buy, 1 = Sell)
     if (userConvos.length > 1) {
       for (final doc in userConvos) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data();
         if (activeTabIndex == 0) {
-          // Buy view – ma una chat ang current user
+          // Buy view – conversation where current user is the buyer
           if (data['transactionType'] == 'buy' && data['buyerId'] == me) {
             return doc.id;
           }
         } else {
-          // Sell view - ma una chat ang gabakal sa user
+          // Sell view - conversation where current user is the seller
           if (data['transactionType'] == 'buy' && data['sellerId'] == me) {
             return doc.id;
           }
+          // Also include general conversations (no transaction type) in sell view
           if (!data.containsKey('transactionType')) return doc.id;
         }
       }

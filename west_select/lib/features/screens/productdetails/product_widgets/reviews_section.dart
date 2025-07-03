@@ -2,7 +2,6 @@ import 'package:cc206_west_select/features/screens/productdetails/product_review
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class ReviewsSection extends StatefulWidget {
   const ReviewsSection({
@@ -25,38 +24,6 @@ class ReviewsSection extends StatefulWidget {
 }
 
 class _ReviewsSectionState extends State<ReviewsSection> {
-  final _ctrl = TextEditingController();
-  bool _busy = false;
-  String? _uid = FirebaseAuth.instance.currentUser?.uid;
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _send() async {
-    if (_uid == null || _ctrl.text.trim().isEmpty) return;
-    setState(() => _busy = true);
-    try {
-      await FirebaseFirestore.instance
-          .collection('post')
-          .doc(widget.postId)
-          .collection('reviews')
-          .doc(_uid)
-          .set({
-        'userId': _uid,
-        'userName':
-            FirebaseAuth.instance.currentUser?.displayName ?? 'Anonymous',
-        'comment': _ctrl.text.trim(),
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-      _ctrl.clear();
-    } finally {
-      setState(() => _busy = false);
-    }
-  }
-
   Widget _preview(DocumentSnapshot doc) {
     final d = doc.data() as Map<String, dynamic>;
     return Column(
@@ -139,59 +106,6 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                 ),
               ),
               const SizedBox(height: 12),
-
-              // quick review box
-              if (_uid != null && _uid != widget.ownerId)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(8)),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Write a Review',
-                            style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 12),
-                        TextField(
-                            controller: _ctrl,
-                            maxLines: 3,
-                            decoration: InputDecoration(
-                              hintText:
-                                  'Share your experience with this product...',
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8)),
-                            )),
-                        const SizedBox(height: 12),
-                        Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              TextButton(
-                                  onPressed: () => _ctrl.clear(),
-                                  child: const Text('Cancel')),
-                              const SizedBox(width: 8),
-                              ElevatedButton(
-                                  onPressed: _busy ? null : _send,
-                                  style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.blue,
-                                      foregroundColor: Colors.white),
-                                  child: _busy
-                                      ? const SizedBox(
-                                          width: 16,
-                                          height: 16,
-                                          child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: Colors.white))
-                                      : const Text('Post Review'))
-                            ])
-                      ],
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 16),
 
               // content
               if (snap.connectionState == ConnectionState.waiting)
