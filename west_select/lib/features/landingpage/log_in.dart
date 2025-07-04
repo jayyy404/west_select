@@ -150,7 +150,7 @@ class LogInPageState extends State<LogInPage> {
                       ),
                     ),
                   // Continue with Google Button
-                  Container(
+                  SizedBox(
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton(

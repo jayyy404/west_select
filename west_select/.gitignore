@@ -41,3 +41,20 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase configuration files with API keys
+google-services.json
+app/google-services.json
+app/src/google-services.json
+**/google-services.json
+
+# Debug signing configuration
+debug.keystore
+
+# Generated files
+app/debug/
+app/release/
+
+# Generated Google Services files
+app/src/debug/res/values/google_maps_api.xml
+app/src/release/res/values/google_maps_api.xml

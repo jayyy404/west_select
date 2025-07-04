@@ -2,22 +2,22 @@
   "project_info": {
     "project_number": "75086307194",
     "project_id": "west-select",
-    "storage_bucket": "west-select.appspot.com"
+    "storage_bucket": "west-select.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:75086307194:android:1e732c89644b4faf5140c3",
+        "mobilesdk_app_id": "1:75086307194:android:436f05c6a56a5a4e5140c3",
         "android_client_info": {
-          "package_name": "com.example.cc206_magic_calculator"
+          "package_name": "com.example.west_select"
         }
       },
       "oauth_client": [
         {
-          "client_id": "75086307194-lj9okorn0htk50ln6c4pejjgjejh2p50.apps.googleusercontent.com",
+          "client_id": "75086307194-fk03ob99nvo3up62065ugns8r7drf3vd.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.cc206_magic_calculator",
+            "package_name": "com.example.west_select",
             "certificate_hash": "2126cefb8c1d02f848d4e92c8723fd99f88e39b7"
           }
         },
