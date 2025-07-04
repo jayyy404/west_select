@@ -513,12 +513,12 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                                     'quantity': item.quantity,
                                     'imageUrl': item.imageUrls,
                                     'sellerId': item.sellerId,
+                                    'size': item.size,
                                   };
                                 }).toList(),
                                 'created_at': FieldValue.serverTimestamp(),
                                 'status': 'pending',
                               };
-
                               _processOrderInBackground(
                                   orderData, selectedForCheckout, user);
                             } catch (e) {

@@ -28,6 +28,8 @@ class _CreateListingPageState extends State<CreateListingPage> {
 
   String? _selectedCategory;
   String? _selectedCondition;
+  // Replace single size selection with a list
+  List<String> _selectedSizes = [];
 
   List<String> _uploadedImageUrls = [];
   bool _isUploadingImage = false;
@@ -43,6 +45,22 @@ class _CreateListingPageState extends State<CreateListingPage> {
   ];
 
   final List<String> _conditions = ['New', 'Rarely used', 'Used'];
+
+  final List<String> _clothingSizes = ['S', 'M', 'L', 'XL', 'XXL'];
+  final List<String> _footwearSizes = [
+    '35',
+    '36',
+    '37',
+    '38',
+    '39',
+    '40',
+    '41',
+    '42',
+    '43',
+    '44',
+    '45',
+    '46'
+  ];
 
   @override
   void dispose() {
@@ -151,6 +169,11 @@ class _CreateListingPageState extends State<CreateListingPage> {
                       selected: _selectedCategory == category,
                       onSelected: (selected) {
                         setState(() {
+                          if (_selectedCategory != category) {
+                            // Reset sizes when changing category
+                            _selectedSizes = [];
+                            _sizeController.clear();
+                          }
                           _selectedCategory = selected ? category : null;
                         });
                         Navigator.pop(context);
@@ -216,6 +239,91 @@ class _CreateListingPageState extends State<CreateListingPage> {
     );
   }
 
+  void _showSizeDialog() {
+    if (_selectedCategory == null) {
+      _showErrorDialog("Please select a category first.");
+      return;
+    }
+
+    List<String> sizeOptions = [];
+    String dialogTitle = "Select Size";
+
+    // Create a temporary copy of selected sizes for the dialog
+    List<String> tempSelectedSizes = List.from(_selectedSizes);
+
+    if (_selectedCategory == 'Clothing') {
+      sizeOptions = _clothingSizes;
+      dialogTitle = "Select Clothing Sizes";
+    } else if (_selectedCategory == 'Footwear') {
+      sizeOptions = _footwearSizes;
+      dialogTitle = "Select Footwear Sizes";
+    } else {
+      // For other categories, use the regular size input field
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(dialogTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Select all available sizes:',
+                  style: TextStyle(fontSize: 14, color: Colors.grey)),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: sizeOptions
+                    .map(
+                      (size) => FilterChip(
+                        label: Text(size),
+                        selected: tempSelectedSizes.contains(size),
+                        onSelected: (selected) {
+                          setState(() {
+                            if (selected) {
+                              tempSelectedSizes.add(size);
+                            } else {
+                              tempSelectedSizes.remove(size);
+                            }
+                          });
+                        },
+                        selectedColor: Colors.blue.shade100,
+                        checkmarkColor: Colors.blue,
+                      ),
+                    )
+                    .toList(),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                // Update both the global state and the text controller
+                this.setState(() {
+                  _selectedSizes = tempSelectedSizes;
+                  if (_selectedSizes.isNotEmpty) {
+                    _sizeController.text = _selectedSizes.join(', ');
+                  } else {
+                    _sizeController.clear();
+                  }
+                });
+                Navigator.pop(context);
+              },
+              child: const Text('Apply'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   bool _validateForm() {
     if (_titleController.text.trim().isEmpty) {
       _showErrorDialog("Please enter a product title.");
@@ -250,6 +358,14 @@ class _CreateListingPageState extends State<CreateListingPage> {
     if (_selectedCategory == null) {
       _showErrorDialog("Please select a category.");
       return false;
+    }
+
+    if (_selectedCategory == 'Clothing' || _selectedCategory == 'Footwear') {
+      if (_selectedSizes.isEmpty) {
+        _showErrorDialog(
+            "Please select at least one size for this ${_selectedCategory?.toLowerCase()}.");
+        return false;
+      }
     }
 
     final stockText = _stockController.text.trim();
@@ -309,9 +425,12 @@ class _CreateListingPageState extends State<CreateListingPage> {
         'color': _colorController.text.trim().isNotEmpty
             ? _colorController.text.trim()
             : null,
-        'size': _sizeController.text.trim().isNotEmpty
-            ? _sizeController.text.trim()
-            : null,
+        'size':
+            _selectedCategory == 'Clothing' || _selectedCategory == 'Footwear'
+                ? _selectedSizes // Store as array for clothing/footwear
+                : (_sizeController.text.trim().isNotEmpty
+                    ? _sizeController.text.trim()
+                    : null),
         'image_url': _uploadedImageUrls.first,
         'image_urls': _uploadedImageUrls,
         'post_users': currentUser.uid,
@@ -565,13 +684,26 @@ class _CreateListingPageState extends State<CreateListingPage> {
             ),
             const SizedBox(height: 16),
 
-            // Size (Optional)
-            _buildTextField(
-              controller: _sizeController,
-              label: "Size",
-              required: false,
-            ),
-            const SizedBox(height: 24),
+            // Size field - conditional based on category
+            if (_selectedCategory == 'Clothing' ||
+                _selectedCategory == 'Footwear')
+              _buildSelectableField(
+                label: _selectedCategory == 'Clothing'
+                    ? "Clothing Size"
+                    : "Footwear Size",
+                value: _selectedSizes.isNotEmpty
+                    ? _selectedSizes.join(", ")
+                    : null,
+                required: true,
+                onTap: _showSizeDialog,
+              )
+            else
+              _buildTextField(
+                controller: _sizeController,
+                label: "Size",
+                required: false,
+              ),
+            const SizedBox(height: 16),
 
             // Inventory Section
             const Text(
@@ -619,7 +751,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
 
   Widget _buildSelectableField({
     required String label,
-    required String? value,
+    required dynamic value,
     required bool required,
     required VoidCallback onTap,
   }) {
@@ -640,10 +772,19 @@ class _CreateListingPageState extends State<CreateListingPage> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                value ?? label + (required ? " *" : ""),
+                // For clothing and footwear sizes, show the selected sizes
+                (label.contains("Size") && _selectedSizes.isNotEmpty)
+                    ? _selectedSizes.join(", ")
+                    : (value != null
+                        ? value.toString()
+                        : label + (required ? " *" : "")),
                 style: TextStyle(
                   fontSize: 16,
-                  color: value != null ? Colors.black : Colors.grey.shade600,
+                  color:
+                      (label.contains("Size") && _selectedSizes.isNotEmpty) ||
+                              value != null
+                          ? Colors.black
+                          : Colors.grey.shade600,
                 ),
               ),
             ),

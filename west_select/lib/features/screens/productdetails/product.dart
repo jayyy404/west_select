@@ -28,6 +28,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   Product? _product;
   bool _isFav = false;
   bool _loading = true;
+  String? _selectedSize;
+  bool _requiresSizeSelection = false;
 
   @override
   void initState() {
@@ -42,6 +44,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         .get();
     if (!postSnap.exists) return;
     final data = postSnap.data()!;
+
+    // Check if this product requires size selection
+    final category = data['category'];
+    _requiresSizeSelection = category == 'Clothing' || category == 'Footwear';
+
     final sellerId = data['post_users'];
     final sellerSnap = await FirebaseFirestore.instance
         .collection('users')
@@ -107,6 +114,22 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 )));
   }
 
+  // Check if the user can proceed with cart/purchase actions
+  bool get canAddToCart {
+    if (!_requiresSizeSelection) return true;
+    return _selectedSize != null;
+  }
+
+  // Show a message when size selection is required
+  void _showSizeRequiredMessage() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Please select a size before adding to cart'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: Colors.white,
@@ -160,7 +183,26 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         builder: (_, s) => !s.hasData
                             ? const SizedBox.shrink()
                             : DetailCard(
-                                map: s.data!.data() as Map<String, dynamic>)),
+                                map: s.data!.data() as Map<String, dynamic>,
+                                onSizeSelected: (size) {
+                                  setState(() {
+                                    _selectedSize = size;
+                                  });
+                                },
+                              )),
+                    // Show size selection requirement message when needed
+                    if (_requiresSizeSelection && _selectedSize == null)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        child: Text(
+                          '⚠️ Please select a size to add to cart',
+                          style: TextStyle(
+                            color: Colors.orange.shade800,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: 20),
                     // description
                     Padding(
@@ -234,6 +276,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 price: _product!.price,
                 image: _product!.imageUrls.first,
                 ownerId: _product!.userId,
+                selectedSize: _selectedSize,
+                requiresSizeSelection: _requiresSizeSelection,
+                canAddToCart: canAddToCart,
+                onSizeRequiredMessage: _showSizeRequiredMessage,
               ),
       );
 }

@@ -43,15 +43,27 @@ class OrderService {
         await FirebaseFirestore.instance.collection('users').doc(uid).get();
     return {
       'name': snap.data()?['displayName'] ?? 'Unknown Buyer',
-      'avatar': snap.data()?['profileImageUrl'] ?? ''
+      'avatar': snap.data()?['profileImageUrl'] ??
+          snap.data()?['profilePictureUrl'] ??
+          ''
     };
   }
 
   static Future<List<String>> fetchProductImgs(String pid) async {
     final doc =
-        await FirebaseFirestore.instance.collection('products').doc(pid).get();
+        await FirebaseFirestore.instance.collection('post').doc(pid).get();
     if (!doc.exists) return [];
-    return List<String>.from(doc['imageUrls'] ?? const []);
+
+    final data = doc.data()!;
+    final imageUrl = data['image_url'];
+
+    if (imageUrl is List) {
+      return List<String>.from(imageUrl);
+    } else if (imageUrl is String && imageUrl.isNotEmpty) {
+      return [imageUrl];
+    }
+
+    return [];
   }
 
   static Future<void> completeOrder(

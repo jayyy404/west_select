@@ -11,6 +11,10 @@ class BottomBar extends StatefulWidget {
     required this.price,
     required this.image,
     required this.ownerId,
+    this.selectedSize,
+    this.requiresSizeSelection = false,
+    this.canAddToCart = true,
+    this.onSizeRequiredMessage,
   });
 
   final String productId;
@@ -18,6 +22,10 @@ class BottomBar extends StatefulWidget {
   final double price;
   final String image;
   final String ownerId;
+  final String? selectedSize;
+  final bool requiresSizeSelection;
+  final bool canAddToCart;
+  final VoidCallback? onSizeRequiredMessage;
 
   @override
   State<BottomBar> createState() => _BottomBarState();
@@ -26,17 +34,42 @@ class BottomBar extends StatefulWidget {
 class _BottomBarState extends State<BottomBar> {
   int qty = 1;
 
+  void handleAddToCart() {
+    if (widget.requiresSizeSelection && widget.selectedSize == null) {
+      if (widget.onSizeRequiredMessage != null) {
+        widget.onSizeRequiredMessage!();
+      }
+      return;
+    }
+
+    final cart = Provider.of<CartModel>(context, listen: false);
+    cart.addItem(
+      productId: widget.productId,
+      title: widget.title,
+      price: widget.price,
+      image: widget.image,
+      quantity: qty,
+      ownerId: widget.ownerId,
+      size: widget.selectedSize,
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${widget.title} added to cart!'),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final cart = Provider.of<CartModel>(context, listen: false);
-
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
           color: Colors.white,
           boxShadow: [BoxShadow(color: Colors.grey.shade300, blurRadius: 5)]),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        // qty
         Row(children: [
           const Text('Quantity',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
@@ -55,7 +88,7 @@ class _BottomBarState extends State<BottomBar> {
                       })),
               Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Text('$qty', style: const TextStyle(fontSize: 10))),
+                  child: Text('$qty', style: const TextStyle(fontSize: 14))),
               IconButton(
                   iconSize: 15,
                   padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -64,27 +97,23 @@ class _BottomBarState extends State<BottomBar> {
             ]),
           )
         ]),
-        const SizedBox(height: 2),
-        // add to cart
+        const SizedBox(height: 16),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
+            onPressed: widget.canAddToCart ? handleAddToCart : null,
             style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFFA42D),
-                padding: const EdgeInsets.symmetric(vertical: 5)),
-            onPressed: () {
-              cart.addToCart(widget.productId, widget.title, widget.price,
-                  [widget.image], widget.ownerId);
-              ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('${widget.title} added to cart')));
-            },
+              backgroundColor: const Color(0xFFFFA42D),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              disabledBackgroundColor: Colors.grey.shade300,
+            ),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               const Text('Add to Cart',
                   style: TextStyle(
                       fontSize: 16,
                       color: Colors.white,
                       fontWeight: FontWeight.bold)),
-              const SizedBox(height: 1),
+              const SizedBox(height: 4),
               Text(
                   '(Subtotal: PHP ${NumberFormat("#,##0").format(widget.price * qty)})',
                   style: const TextStyle(

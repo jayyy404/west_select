@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 class InfoHeader extends StatelessWidget {
-  const InfoHeader({
-    super.key,
-    required this.title,
-    required this.price,
-  });
+  const InfoHeader({super.key, required this.title, required this.price});
 
   final String title;
   final double price;
@@ -14,17 +9,29 @@ class InfoHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style:
-                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
+            // Title on the left
+            Expanded(
+              flex: 2,
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            // Price on the right
             Text(
-              'PHP ${NumberFormat('#,##0', 'en_US').format(price)}',
+              '₱${price.toStringAsFixed(2)}',
               style: const TextStyle(
-                  fontSize: 18, color: Colors.red, fontWeight: FontWeight.bold),
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
+              ),
             ),
           ],
         ),

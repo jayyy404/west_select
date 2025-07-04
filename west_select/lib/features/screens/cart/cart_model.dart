@@ -7,6 +7,7 @@ class CartItem {
   final List<String> imageUrls;
   final String sellerId;
   late int quantity;
+  String? size;
 
   CartItem({
     required this.id,
@@ -15,6 +16,7 @@ class CartItem {
     required this.imageUrls,
     required this.sellerId,
     this.quantity = 1,
+    this.size,
   });
 }
 
@@ -22,6 +24,37 @@ class CartModel with ChangeNotifier {
   List<CartItem> _items = [];
 
   List<CartItem> get items => _items;
+
+  void addItem({
+    required String productId,
+    required String title,
+    required double price,
+    required String image,
+    required int quantity,
+    required String ownerId,
+    String? size,
+  }) {
+    final existingItemIndex = _items.indexWhere(
+        (item) => item.id == productId && (size == null || item.size == size));
+
+    if (existingItemIndex >= 0) {
+      _items[existingItemIndex].quantity += quantity;
+    } else {
+      // Create new item
+      final newItem = CartItem(
+        id: productId,
+        title: title,
+        price: price,
+        imageUrls: [image],
+        sellerId: ownerId,
+        quantity: quantity,
+        size: size,
+      );
+      _items.add(newItem);
+    }
+
+    notifyListeners();
+  }
 
   // Add an item to the cart
   void addToCart(String productId, String title, double price,
