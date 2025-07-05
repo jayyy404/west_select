@@ -1,4 +1,3 @@
-import 'package:cc206_west_select/features/landingpage/log_in.dart';
 import 'package:cc206_west_select/features/screens/profile/profile_widgets/header.dart';
 import 'package:cc206_west_select/features/screens/profile/profile_widgets/settings_sheet.dart';
 import 'package:cc206_west_select/features/screens/profile/profile_widgets/shopping_sections.dart';
@@ -7,6 +6,7 @@ import 'package:cc206_west_select/firebase/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cc206_west_select/features/auth_gate.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key, required this.appUser, this.readonly});
@@ -36,8 +36,11 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _signOut() async {
     await AuthService().signOut();
     if (mounted) {
-      Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (_) => LogInPage()));
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const AuthGate()),
+            (route) => false,
+      );
     }
   }
 
