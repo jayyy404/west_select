@@ -44,6 +44,58 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  void _confirmAndDeleteUser() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Delete Account"),
+        content: const Text(
+          "Are you sure you want to permanently delete your account?\nThis action cannot be undone.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
+
+      try {
+        await _deleteUser(); // your existing logic
+      } catch (e) {
+        Navigator.of(context).pop(); // close loader
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to delete account: $e")),
+        );
+      }
+    }
+  }
+
+
+  Future<void> _deleteUser() async {
+    await AuthService().deleteUser();
+    if (mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const AuthGate()),
+            (route) => false,
+      );
+    }
+  }
+
   Future<int> _getPendingOrdersCount() async {
     try {
       final snapshot = await FirebaseFirestore.instance
@@ -356,6 +408,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 builder: (_) => SettingsSheet(
                                       appUser: user,
                                       onEditProfile: () => _editProfile(user),
+                                      onDeleteAccount: () => _confirmAndDeleteUser(),
                                       onLogout: _signOut,
                                     )))
                       ]),

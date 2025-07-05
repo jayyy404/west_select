@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cc206_west_select/features/screens/favorite/favorite_model.dart'
     as fav;
@@ -129,7 +131,67 @@ class AuthService {
     await GoogleSignIn().signOut();
   }
 
-  // Get current user
+  Future<void> deleteUser() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final uid = user.uid;
+    final firestore = FirebaseFirestore.instance;
+
+    try {
+      // 1. Delete conversations where the user is a participant
+      final conversations = await firestore
+          .collection('conversations')
+          .where('participants', arrayContains: uid)
+          .get();
+      for (var doc in conversations.docs) {
+        await doc.reference.delete();
+      }
+
+      // 2. Delete favorites document
+      await firestore.collection('favorites').doc(uid).delete();
+
+      // 3. Delete notifications where userId == uid
+      final notifications = await firestore
+          .collection('notifications')
+          .where('userId', isEqualTo: uid)
+          .get();
+      for (var doc in notifications.docs) {
+        await doc.reference.delete();
+      }
+
+      // 4. Delete orders where buyerId == uid
+      final orders = await firestore
+          .collection('orders')
+          .where('buyerId', isEqualTo: uid)
+          .get();
+      for (var doc in orders.docs) {
+        await doc.reference.delete();
+      }
+
+      // 5. Delete posts where post_users contains uid
+      final posts = await firestore
+          .collection('post')
+          .where('post_users', arrayContains: uid)
+          .get();
+      for (var doc in posts.docs) {
+        await doc.reference.delete();
+      }
+
+      // 6. Delete the user document
+      await firestore.collection('users').doc(uid).delete();
+
+      // 7. Delete the Firebase Auth user
+      await user.delete();
+
+      debugPrint('User account and associated data deleted successfully.');
+    } catch (e) {
+      debugPrint('Error deleting user: $e');
+    }
+  }
+
+
+      // Get current user
   User? getCurrentUser() {
     return _auth.currentUser;
   }

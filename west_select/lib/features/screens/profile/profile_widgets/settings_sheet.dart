@@ -6,12 +6,14 @@ class SettingsSheet extends StatelessWidget {
     super.key,
     required this.appUser,
     required this.onEditProfile,
+    required this.onDeleteAccount,
     required this.onLogout,
   });
 
   final AppUser appUser;
   final VoidCallback onEditProfile;
   final VoidCallback onLogout;
+  final VoidCallback onDeleteAccount;
 
   Widget _section(String t) => Padding(
       padding: const EdgeInsets.only(bottom: 10, top: 10),
@@ -72,7 +74,8 @@ class SettingsSheet extends StatelessWidget {
                 _item(context,
                     icon: Icons.delete,
                     title: 'Delete account',
-                    textColor: Colors.red),
+                    textColor: Colors.red,
+                onTap: onDeleteAccount),
                 _item(context,
                     icon: Icons.logout, title: 'Log out', onTap: onLogout),
                 const SizedBox(height: 20),
