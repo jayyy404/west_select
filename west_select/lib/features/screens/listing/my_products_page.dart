@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cc206_west_select/features/screens/listing/create_listing_page.dart';
+import 'package:cc206_west_select/features/screens/listing/edit_product_details.dart';
 
 class MyProductsPage extends StatefulWidget {
   const MyProductsPage({super.key});
@@ -233,11 +234,16 @@ class _MyProductsPageState extends State<MyProductsPage>
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () {
-                      // TODO: Implement edit functionality
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Edit feature coming soon!')),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EditListingPage(
+                            productId: productId,
+                            productData: data,
+                          ),
+                        ),
                       );
+
                     },
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Colors.grey),
