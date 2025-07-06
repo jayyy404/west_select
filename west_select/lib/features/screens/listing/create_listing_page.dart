@@ -518,9 +518,12 @@ class _CreateListingPageState extends State<CreateListingPage> {
               ),
               child: _uploadedImageUrls.isEmpty
                   ? InkWell(
-                      onTap: _isUploadingImage ? null : uploadImageToCloudinary,
+                  onTap: _isUploadingImage ? null : uploadImageToCloudinary,
+                  child: Center(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown, // 👈 This scales child down if needed
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
                             Icons.add_photo_alternate,
@@ -531,8 +534,9 @@ class _CreateListingPageState extends State<CreateListingPage> {
                           const Text(
                             "Add images",
                             style: TextStyle(
-                                color: Colors.blue,
-                                fontWeight: FontWeight.w500),
+                              color: Colors.blue,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                           const Text(
                             "Must add at least 1",
@@ -545,7 +549,9 @@ class _CreateListingPageState extends State<CreateListingPage> {
                             ),
                         ],
                       ),
-                    )
+                    ),
+                  )
+              )
                   : SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.all(8),

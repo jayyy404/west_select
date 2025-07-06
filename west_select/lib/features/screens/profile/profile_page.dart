@@ -135,6 +135,14 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                const Text(
+                  'Edit Profile',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
                 TextField(
                   controller: nameController,
                   decoration: const InputDecoration(
@@ -412,33 +420,39 @@ class _ProfilePageState extends State<ProfilePage> {
                                       onLogout: _signOut,
                                     )))
                       ]),
-            body: Padding(
-              padding: const EdgeInsets.all(16),
+            body: SingleChildScrollView(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom, // This accounts for keyboard
+              ),
               child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ProfileHeader(appUser: user, isReadOnly: isReadOnly),
-                    const SizedBox(height: 20),
-                    if (!isReadOnly) ...[
-                      FutureBuilder<List<int>>(
-                        future: Future.wait([
-                          _getPendingOrdersCount(),
-                          _getReviewsCount(),
-                        ]),
-                        builder: (context, snapshot) {
-                          final pendingCount = snapshot.data?[0] ?? 0;
-                          final reviewsCount = snapshot.data?[1] ?? 0;
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ProfileHeader(appUser: user, isReadOnly: isReadOnly),
+                  const SizedBox(height: 20),
+                  if (!isReadOnly)
+                    FutureBuilder<List<int>>(
+                      future: Future.wait([
+                        _getPendingOrdersCount(),
+                        _getReviewsCount(),
+                      ]),
+                      builder: (context, snapshot) {
+                        final pendingCount = snapshot.data?[0] ?? 0;
+                        final reviewsCount = snapshot.data?[1] ?? 0;
 
-                          return ShoppingSections(
-                            userId: user.uid,
-                            pendingCount: pendingCount,
-                            reviewsCount: reviewsCount,
-                          );
-                        },
-                      ),
-                    ]
-                  ]),
+                        return ShoppingSections(
+                          userId: user.uid,
+                          pendingCount: pendingCount,
+                          reviewsCount: reviewsCount,
+                        );
+                      },
+                    ),
+                ],
+              ),
             ),
+
           );
         },
       );
