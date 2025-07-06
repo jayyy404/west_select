@@ -31,8 +31,8 @@ class InfoHeader extends StatelessWidget {
           // Price on the right
           Text(
             '₱${price.toStringAsFixed(2)}',
-            style: const TextStyle(
-              fontSize: 24,
+            style: TextStyle(
+              fontSize: screenHeight * 0.02,
               fontWeight: FontWeight.bold,
               color: Colors.green,
             ),
