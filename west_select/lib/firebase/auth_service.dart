@@ -16,57 +16,6 @@ class AuthService {
     return userMethods.contains('google.com');
   }
 
-  // Sign in with Email and Password and register if new
-  Future<User?> loginUserWithEmailAndPassword(
-      String email, String password) async {
-    try {
-      if (!_isValidEmail(email)) {
-        throw FirebaseAuthException(
-          code: 'invalid-email-format',
-          message: 'Please enter a valid email address.',
-        );
-      }
-
-      final userMethods = await _auth.fetchSignInMethodsForEmail(email);
-
-      if (userMethods.contains('google.com')) {
-        throw FirebaseAuthException(
-            code: 'google-account-detected',
-            message:
-                'This email is associated with a Google account. Please sign in with Google.');
-      }
-
-      final UserCredential userCredential =
-          await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      return userCredential.user;
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'user-not-found') {
-        // Register a new user if not found
-        return await createUserWithEmailAndPassword(email, password);
-      } else if (e.code == 'wrong-password') {
-        throw FirebaseAuthException(
-            code: 'wrong-password', message: 'Wrong password.');
-      }
-      throw e;
-    }
-  }
-
-  // Create new user with email and password
-  Future<User?> createUserWithEmailAndPassword(
-      String email, String password) async {
-    try {
-      final UserCredential userCredential = await _auth
-          .createUserWithEmailAndPassword(email: email, password: password);
-      return userCredential.user;
-    } on FirebaseAuthException catch (e) {
-      throw e;
-    }
-  }
-
   // Sign in with Google and link with email/password if needed
   Future<User?> signInWithGoogle(String? email, String password) async {
     try {
@@ -190,8 +139,7 @@ class AuthService {
     }
   }
 
-
-      // Get current user
+  // Get current user
   User? getCurrentUser() {
     return _auth.currentUser;
   }

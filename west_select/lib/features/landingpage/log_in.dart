@@ -1,6 +1,6 @@
 import 'package:cc206_west_select/features/navigation/nav_bar.dart';
 import 'package:cc206_west_select/features/set_profile.dart';
-import 'package:cc206_west_select/features/sign_up.dart';
+
 import 'package:flutter/material.dart';
 import '../../../firebase/auth_service.dart';
 import '../../../firebase/user_repo.dart';
@@ -185,40 +185,7 @@ class LogInPageState extends State<LogInPage> {
                     ),
                   ),
                   const SizedBox(height: 30),
-                  // Sign up link
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        "Don't have an account?",
-                        style: TextStyle(
-                          fontFamily: "Raleway",
-                          color: Colors.white70,
-                          fontSize: 14,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => SignUpPage()),
-                          );
-                        },
-                        child: const Text(
-                          'Sign up',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontFamily: "Raleway",
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            decoration: TextDecoration.underline,
-                            decorationColor: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+
                   const Spacer(flex: 1),
                 ],
               ),

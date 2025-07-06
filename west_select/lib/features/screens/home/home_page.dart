@@ -268,22 +268,31 @@ class _HomePageState extends State<HomePage> {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.blue.shade200),
               ),
-              child: Row(
-                children: [
-                  Icon(Icons.filter_list,
-                      color: Colors.blue.shade600, size: 20),
-                  const SizedBox(width: 8),
-                  Text('Showing: $_selectedCategory Products',
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    Icon(Icons.filter_list,
+                        color: Colors.blue.shade600, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      _selectedCategory == 'School Supplies'
+                          ? 'Showing: $_selectedCategory'
+                          : 'Showing: $_selectedCategory Products',
                       style: TextStyle(
-                          fontFamily: 'Open Sans',
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue.shade800)),
-                  const Spacer(),
-                  TextButton(
+                        fontFamily: 'Open Sans',
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue.shade800,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    TextButton(
                       onPressed: _clearCategoryFilter,
-                      child: const Text('View All')),
-                ],
+                      child: const Text('View All'),
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -377,7 +386,7 @@ class _HomePageState extends State<HomePage> {
                       final bTime = bData?['createdAt'] as Timestamp?;
 
                       if (aTime == null || bTime == null) return 0;
-                      return bTime.compareTo(aTime); // Descending order
+                      return bTime.compareTo(aTime);
                     });
 
                     debugPrint('Filtered to ${listings.length} listings');
