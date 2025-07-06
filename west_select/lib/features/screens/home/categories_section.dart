@@ -16,25 +16,29 @@ class CategoriesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
+    // final screenHeight = MediaQuery.of(context).size.height;
+    final isSmallScreen = screenWidth < 350;
 
-    return Container(
+    return Padding(
       padding: EdgeInsets.all(screenWidth * 0.03),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Text('Explore all categories',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF201D1B))),
+            child: Text(
+              'Explore all categories',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF201D1B),
+              ),
+            ),
           ),
           const SizedBox(height: 12),
           SizedBox(
-            height: 75,
+            height: 85, // Slightly more to accommodate text
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: categories.length,
@@ -44,8 +48,8 @@ class CategoriesSection extends StatelessWidget {
                 final img = categoryImages[name]!;
                 final isChosen = selected == name;
 
-                return SizedBox(
-                  width: 76,
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
                   child: GestureDetector(
                     onTap: () => onSelect(name),
                     child: Column(
@@ -64,21 +68,32 @@ class CategoriesSection extends StatelessWidget {
                                 : null,
                           ),
                           child: ClipOval(
-                            child: Image.asset(img,
-                                width: 48, height: 48, fit: BoxFit.cover),
+                            child: Image.asset(
+                              img,
+                              width: 48,
+                              height: 48,
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(name,
-                            style: TextStyle(
-                                fontSize: screenHeight * 0.02,
-                                fontFamily: 'Open Sans',
-                                fontWeight: FontWeight.bold,
-                                color: isChosen
-                                    ? Colors.blue
-                                    : const Color(0xFF201D1B)),
+                        SizedBox(
+                          width: 60, // Restrict text container
+                          child: Text(
+                            name,
+                            textAlign: TextAlign.center,
                             maxLines: 1,
-                            overflow: TextOverflow.ellipsis),
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: isSmallScreen ? 11 : 12,
+                              fontFamily: 'Open Sans',
+                              fontWeight: FontWeight.bold,
+                              color: isChosen
+                                  ? Colors.blue
+                                  : const Color(0xFF201D1B),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
