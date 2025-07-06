@@ -1,3 +1,4 @@
+import 'package:cc206_west_select/features/landingpage/log_in.dart';
 import 'package:cc206_west_select/features/screens/profile/profile_widgets/header.dart';
 import 'package:cc206_west_select/features/screens/profile/profile_widgets/settings_sheet.dart';
 import 'package:cc206_west_select/features/screens/profile/profile_widgets/shopping_sections.dart';
@@ -38,7 +39,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (mounted) {
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const AuthGate()),
+        MaterialPageRoute(builder: (_) => const LogInPage()),
             (route) => false,
       );
     }
@@ -87,6 +88,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _deleteUser() async {
     await AuthService().deleteUser();
+    await AuthService().signOut();
     if (mounted) {
       Navigator.pushAndRemoveUntil(
         context,
@@ -389,71 +391,84 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: _userStream,
-        builder: (_, snap) {
-          if (!snap.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final user = AppUser.fromFirestore(snap.data!.data()!);
+  Widget build(BuildContext context) {
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: _userStream,
+      builder: (_, snap) {
+        if (!snap.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-          return Scaffold(
+        final doc = snap.data!;
+        if (!doc.exists || doc.data() == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => const LogInPage()),
+                  (route) => false,
+            );
+          });
+          return const SizedBox(); // Prevent build error while navigating
+        }
+        final user = AppUser.fromFirestore(doc.data()!);
+        return Scaffold(
+          backgroundColor: Colors.white,
+          appBar: AppBar(
             backgroundColor: Colors.white,
-            appBar: AppBar(
-                backgroundColor: Colors.white,
-                elevation: 0,
-                actions: isReadOnly
-                    ? null
-                    : [
-                        IconButton(
-                            icon: const Icon(Icons.settings,
-                                color: Color(0xFF1976D2)),
-                            onPressed: () => showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (_) => SettingsSheet(
-                                      appUser: user,
-                                      onEditProfile: () => _editProfile(user),
-                                      onDeleteAccount: () => _confirmAndDeleteUser(),
-                                      onLogout: _signOut,
-                                    )))
-                      ]),
-            body: SingleChildScrollView(
-              padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 16,
-                bottom: MediaQuery.of(context).viewInsets.bottom, // This accounts for keyboard
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ProfileHeader(appUser: user, isReadOnly: isReadOnly),
-                  const SizedBox(height: 20),
-                  if (!isReadOnly)
-                    FutureBuilder<List<int>>(
-                      future: Future.wait([
-                        _getPendingOrdersCount(),
-                        _getReviewsCount(),
-                      ]),
-                      builder: (context, snapshot) {
-                        final pendingCount = snapshot.data?[0] ?? 0;
-                        final reviewsCount = snapshot.data?[1] ?? 0;
-
-                        return ShoppingSections(
-                          userId: user.uid,
-                          pendingCount: pendingCount,
-                          reviewsCount: reviewsCount,
-                        );
-                      },
-                    ),
-                ],
-              ),
+            elevation: 0,
+            actions: isReadOnly
+                ? null
+                : [
+              IconButton(
+                icon: const Icon(Icons.settings, color: Color(0xFF1976D2)),
+                onPressed: () => showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => SettingsSheet(
+                    appUser: user,
+                    onEditProfile: () => _editProfile(user),
+                    onDeleteAccount: () => _confirmAndDeleteUser(),
+                    onLogout: _signOut,
+                  ),
+                ),
+              )
+            ],
+          ),
+          body: SingleChildScrollView(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 16,
+              bottom: MediaQuery.of(context).viewInsets.bottom,
             ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ProfileHeader(appUser: user, isReadOnly: isReadOnly),
+                const SizedBox(height: 20),
+                if (!isReadOnly)
+                  FutureBuilder<List<int>>(
+                    future: Future.wait([
+                      _getPendingOrdersCount(),
+                      _getReviewsCount(),
+                    ]),
+                    builder: (context, snapshot) {
+                      final pendingCount = snapshot.data?[0] ?? 0;
+                      final reviewsCount = snapshot.data?[1] ?? 0;
 
-          );
-        },
-      );
+                      return ShoppingSections(
+                        userId: user.uid,
+                        pendingCount: pendingCount,
+                        reviewsCount: reviewsCount,
+                      );
+                    },
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
