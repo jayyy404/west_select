@@ -31,7 +31,7 @@ class FavoritePage extends StatelessWidget {
         final screenWidth = MediaQuery.of(context).size.width;
 
         return Scaffold(
-          appBar: AppBar(title: const Text("Wishlist")),
+          appBar: AppBar(title: Text("Wishlist",style: TextStyle(fontSize: screenHeight * 0.02),), ),
           body: Consumer<FavoriteModel>(
             builder: (context, model, _) {
               final items = model.favoriteItems;
@@ -69,7 +69,7 @@ class FavoritePage extends StatelessWidget {
                             // Image section with flexible height
                             Expanded(
                               flex: 3,
-                              child: Container(
+                              child: SizedBox(
                                 width: double.infinity,
                                 child: imageUrls.isNotEmpty
                                     ? Image.network(
@@ -135,8 +135,8 @@ class FavoritePage extends StatelessWidget {
                                     const SizedBox(height: 4),
                                     Text(
                                       "PHP ${product["price"] ?? ""}",
-                                      style: const TextStyle(
-                                          fontSize: 12,
+                                      style: TextStyle(
+                                          fontSize: screenHeight * 0.014,
                                           color: Colors.red,
                                           fontWeight: FontWeight.bold),
                                       maxLines: 1,
@@ -144,11 +144,10 @@ class FavoritePage extends StatelessWidget {
                                     ),
                                     const SizedBox(height: 1),
                                     Flexible(
-                                      child: Text(
-                                        product["seller"] ?? "",
-                                        style: const TextStyle(
+                                      child: Text("Seller: ${product["seller"] ?? ""}",
+                                        style: TextStyle(
                                           color: Colors.black54,
-                                          fontSize: 11,
+                                          fontSize: screenHeight * 0.014,
                                           fontWeight: FontWeight.w500,
                                         ),
                                         maxLines: 1,

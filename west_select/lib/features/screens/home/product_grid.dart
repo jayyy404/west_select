@@ -23,6 +23,7 @@ class ProductGrid extends StatelessWidget {
     }
 
     final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
 
     int crossAxisCount = 2;
     double aspectRatio = 0.8; // phone default (taller cards)
@@ -107,19 +108,19 @@ class ProductGrid extends StatelessWidget {
                               children: [
                                 Text(
                                   listing.postTitle,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 14,
+                                    fontSize: screenHeight * 0.014,
                                     fontFamily: 'Open Sans',
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(height: 2),
+                                SizedBox(height: screenHeight * 0.002),
                                 Text(
                                   'Seller: ${sellerName ?? 'Unknown'}',
-                                  style: const TextStyle(
-                                    fontSize: 12,
+                                  style: TextStyle(
+                                    fontSize: screenHeight * 0.012,
                                     fontWeight: FontWeight.bold,
                                     fontFamily: 'Open Sans',
                                     color: Colors.black54,
@@ -131,9 +132,9 @@ class ProductGrid extends StatelessWidget {
                             ),
                             Text(
                               'PHP ${NumberFormat('#,##0.00', 'en_US').format(listing.price)}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.green,
-                                fontSize: 13,
+                                fontSize: screenHeight * 0.012,
                                 fontWeight: FontWeight.bold,
                               ),
                               maxLines: 1,

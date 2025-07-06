@@ -50,6 +50,9 @@ class _HomePageState extends State<HomePage> {
     'Gadgets': 'assets/categories/gadgets.png',
     'School Supplies': 'assets/categories/school_supplies.png',
   };
+  get screenHeight => MediaQuery.of(context).size.height;
+
+  get screenWidth => MediaQuery.of(context).size.width;
 
   // Method to clear all filters - can be called from outside
   void clearAllFilters() {
@@ -444,17 +447,17 @@ class _HomePageState extends State<HomePage> {
           ),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 5),
+              padding: EdgeInsets.symmetric(horizontal: (10 + (screenWidth * 0.03)).toDouble()),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 2),
-                  const Text("This Week's Listing",
+                  Text("This Week's Listing",
                       style: TextStyle(
                           fontFamily: 'Open Sans',
-                          fontSize: 18,
+                          fontSize: screenHeight * 0.02,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF201D1B))),
+                          color: const Color(0xFF201D1B))),
                   const SizedBox(height: 8),
                   Expanded(
                     child: StreamBuilder<QuerySnapshot>(
