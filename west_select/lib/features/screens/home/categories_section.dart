@@ -16,8 +16,11 @@ class CategoriesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: EdgeInsets.all(screenWidth * 0.03),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -35,7 +38,7 @@ class CategoriesSection extends StatelessWidget {
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: categories.length,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
               itemBuilder: (_, i) {
                 final name = categories[i];
                 final img = categoryImages[name]!;
@@ -68,7 +71,7 @@ class CategoriesSection extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(name,
                             style: TextStyle(
-                                fontSize: 11,
+                                fontSize: screenHeight * 0.02,
                                 fontFamily: 'Open Sans',
                                 fontWeight: FontWeight.bold,
                                 color: isChosen

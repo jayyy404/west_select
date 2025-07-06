@@ -17,6 +17,9 @@ class ShoppingSections extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -81,11 +84,14 @@ class ShoppingSections extends StatelessWidget {
     int? count,
     required VoidCallback onTap,
   }) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(screenWidth * 0.03),
         decoration: BoxDecoration(
           color: Colors.grey[50],
           borderRadius: BorderRadius.circular(12),
@@ -114,10 +120,10 @@ class ShoppingSections extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: TextStyle(
+                          fontSize: screenHeight * 0.02,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF201D1B),
+                          color: const Color(0xFF201D1B),
                         ),
                       ),
                       if (count != null && count > 0) ...[

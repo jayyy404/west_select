@@ -72,52 +72,60 @@ class _BottomBarState extends State<BottomBar> {
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Row(children: [
           const Text('Quantity',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           const Spacer(),
           Container(
+            height: 38,
             decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade400),
-                borderRadius: BorderRadius.circular(6)),
+              border: Border.all(color: Colors.grey.shade400),
+              borderRadius: BorderRadius.circular(4),
+            ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               IconButton(
-                  iconSize: 15,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  icon: const Icon(Icons.remove),
-                  onPressed: () => setState(() {
-                        if (qty > 1) qty--;
-                      })),
+                iconSize: 14,
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                icon: const Icon(Icons.remove, size: 14),
+                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                onPressed: () => setState(() {
+                  if (qty > 1) qty--;
+                }),
+              ),
               Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Text('$qty', style: const TextStyle(fontSize: 14))),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text('$qty', style: const TextStyle(fontSize: 15)),
+              ),
               IconButton(
-                  iconSize: 15,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  icon: const Icon(Icons.add),
-                  onPressed: () => setState(() => qty++)),
+                iconSize: 16,
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                icon: const Icon(Icons.add, size: 14),
+                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                onPressed: () => setState(() => qty++),
+              ),
             ]),
           )
         ]),
-        const SizedBox(height: 16),
+        const SizedBox(height: 10),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
             onPressed: widget.canAddToCart ? handleAddToCart : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFFA42D),
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              minimumSize: const Size(0, 36),
               disabledBackgroundColor: Colors.grey.shade300,
             ),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               const Text('Add to Cart',
                   style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 15,
                       color: Colors.white,
                       fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               Text(
                   '(Subtotal: PHP ${NumberFormat("#,##0").format(widget.price * qty)})',
                   style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: 13,
                       color: Colors.white,
                       fontWeight: FontWeight.w400))
             ]),

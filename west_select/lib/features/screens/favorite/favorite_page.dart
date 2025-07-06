@@ -27,6 +27,9 @@ class FavoritePage extends StatelessWidget {
           );
         }
 
+        final screenHeight = MediaQuery.of(context).size.height;
+        final screenWidth = MediaQuery.of(context).size.width;
+
         return Scaffold(
           appBar: AppBar(title: const Text("Wishlist")),
           body: Consumer<FavoriteModel>(
@@ -38,7 +41,7 @@ class FavoritePage extends StatelessWidget {
               }
 
               return GridView.builder(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(screenWidth * 0.03),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   mainAxisSpacing: 10,
@@ -90,7 +93,7 @@ class FavoritePage extends StatelessWidget {
                             Expanded(
                               flex: 2,
                               child: Padding(
-                                padding: const EdgeInsets.all(8.0),
+                                padding: EdgeInsets.all(screenWidth * 0.03),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisSize: MainAxisSize.min,
@@ -100,9 +103,9 @@ class FavoritePage extends StatelessWidget {
                                         Expanded(
                                           child: Text(
                                             product["title"] ?? "",
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontWeight: FontWeight.bold,
-                                              fontSize: 12,
+                                              fontSize: screenHeight * 0.02,
                                             ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,

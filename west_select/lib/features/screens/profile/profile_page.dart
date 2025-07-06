@@ -40,7 +40,7 @@ class _ProfilePageState extends State<ProfilePage> {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const LogInPage()),
-            (route) => false,
+        (route) => false,
       );
     }
   }
@@ -85,7 +85,6 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-
   Future<void> _deleteUser() async {
     await AuthService().deleteUser();
     await AuthService().signOut();
@@ -93,7 +92,7 @@ class _ProfilePageState extends State<ProfilePage> {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const AuthGate()),
-            (route) => false,
+        (route) => false,
       );
     }
   }
@@ -124,9 +123,9 @@ class _ProfilePageState extends State<ProfilePage> {
 
   void _editProfile(AppUser a) async {
     final TextEditingController nameController =
-    TextEditingController(text: a.displayName ?? '');
+        TextEditingController(text: a.displayName ?? '');
     final TextEditingController descController =
-    TextEditingController(text: a.description ?? '');
+        TextEditingController(text: a.description ?? '');
 
     await showDialog(
       context: context,
@@ -210,7 +209,6 @@ class _ProfilePageState extends State<ProfilePage> {
       },
     );
   }
-
 
   Future<void> _writeReviewImpl(String productId, String sellerId,
       String productTitle, double productPrice, String productImage) async {
@@ -392,6 +390,9 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: _userStream,
       builder: (_, snap) {
@@ -405,7 +406,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(builder: (_) => const LogInPage()),
-                  (route) => false,
+              (route) => false,
             );
           });
           return const SizedBox(); // Prevent build error while navigating
@@ -419,21 +420,22 @@ class _ProfilePageState extends State<ProfilePage> {
             actions: isReadOnly
                 ? null
                 : [
-              IconButton(
-                icon: const Icon(Icons.settings, color: Color(0xFF1976D2)),
-                onPressed: () => showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (_) => SettingsSheet(
-                    appUser: user,
-                    onEditProfile: () => _editProfile(user),
-                    onDeleteAccount: () => _confirmAndDeleteUser(),
-                    onLogout: _signOut,
-                  ),
-                ),
-              )
-            ],
+                    IconButton(
+                      icon:
+                          const Icon(Icons.settings, color: Color(0xFF1976D2)),
+                      onPressed: () => showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => SettingsSheet(
+                          appUser: user,
+                          onEditProfile: () => _editProfile(user),
+                          onDeleteAccount: () => _confirmAndDeleteUser(),
+                          onLogout: _signOut,
+                        ),
+                      ),
+                    )
+                  ],
           ),
           body: SingleChildScrollView(
             padding: EdgeInsets.only(

@@ -133,6 +133,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F7),
       appBar: AppBar(
@@ -308,6 +311,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   Widget _buildNotificationCard(NotificationModel notification) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -328,7 +333,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         onTap: () => _handleNotificationTap(notification),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(screenWidth * 0.03),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -360,7 +365,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           child: Text(
                             notification.title,
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: screenHeight * 0.02,
                               fontWeight: notification.isRead
                                   ? FontWeight.w600
                                   : FontWeight.bold,

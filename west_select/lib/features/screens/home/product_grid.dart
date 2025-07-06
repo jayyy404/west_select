@@ -22,103 +22,133 @@ class ProductGrid extends StatelessWidget {
       return const Center(child: Text('No products found'));
     }
 
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    int crossAxisCount = 2;
+    double aspectRatio = 0.8; // phone default (taller cards)
+
+    if (screenWidth >= 900) {
+      crossAxisCount = 4;
+      aspectRatio = 0.85; // give tall enough cards on very wide screens
+    } else if (screenWidth >= 600) {
+      crossAxisCount = 3;
+      aspectRatio = 0.8; // tablet / small‑desktop
+    }
+
     return GridView.builder(
       padding: const EdgeInsets.only(bottom: 10),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.8,
-        crossAxisSpacing: 6,
-        mainAxisSpacing: 6,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        childAspectRatio: aspectRatio,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
       ),
       itemCount: listings.length,
       itemBuilder: (_, i) {
         final listing = listings[i];
-        return FutureBuilder<DocumentSnapshot>(
-            future: firestore.collection('users').doc(listing.postUserId).get(),
-            builder: (_, snap) {
-              if (!snap.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              final sellerName = AppUser.fromFirestore(
-                      snap.data!.data() as Map<String, dynamic>)
-                  .displayName;
 
-              return GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) =>
-                            ProductDetailPage(productId: listing.productId)),
-                  );
-                },
-                child: Card(
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                          flex: 3,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(8)),
-                              image: DecorationImage(
-                                image: NetworkImage(listing.imageUrls.isNotEmpty
-                                    ? listing.imageUrls[0]
-                                    : 'https://via.placeholder.com/150'),
-                                fit: BoxFit.cover,
-                              ),
+        return FutureBuilder<DocumentSnapshot>(
+          future: firestore.collection('users').doc(listing.postUserId).get(),
+          builder: (_, snap) {
+            if (!snap.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final sellerName =
+                AppUser.fromFirestore(snap.data!.data() as Map<String, dynamic>)
+                    .displayName;
+
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        ProductDetailPage(productId: listing.productId),
+                  ),
+                );
+              },
+              child: Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(8),
+                          ),
+                          image: DecorationImage(
+                            image: NetworkImage(
+                              listing.imageUrls.isNotEmpty
+                                  ? listing.imageUrls[0]
+                                  : 'https://via.placeholder.com/150',
                             ),
-                          )),
-                      Expanded(
-                        flex: 2,
-                        child: Padding(
-                          padding: const EdgeInsets.all(6),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(listing.postTitle,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  listing.postTitle,
                                   style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 11,
-                                      fontFamily: 'Open Sans'),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis),
-                              const SizedBox(height: .5),
-                              Text('Seller: ${sellerName ?? 'Unknown'}',
-                                  style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      height: 2,
-                                      fontFamily: 'Open Sans',
-                                      color: Colors.black54),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis),
-                              const SizedBox(height: 2),
-                              Flexible(
-                                child: Text(
-                                  'PHP ${NumberFormat('#,##0.00', 'en_US').format(listing.price)}',
-                                  style: const TextStyle(
-                                      color: Colors.green,
-                                      fontSize: 11,
-                                      height: 2,
-                                      fontWeight: FontWeight.bold),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    fontFamily: 'Open Sans',
+                                  ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Seller: ${sellerName ?? 'Unknown'}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Open Sans',
+                                    color: Colors.black54,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                            Text(
+                              'PHP ${NumberFormat('#,##0.00', 'en_US').format(listing.price)}',
+                              style: const TextStyle(
+                                color: Colors.green,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
                               ),
-                            ],
-                          ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
-                      )
-                    ],
-                  ),
+                      ),
+                    ),
+                  ],
                 ),
-              );
-            });
+              ),
+            );
+          },
+        );
       },
     );
   }

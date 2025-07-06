@@ -27,11 +27,15 @@ class OrderCard extends StatelessWidget {
   final VoidCallback? onComplete;
 
   @override
-  Widget build(BuildContext context) => Card(
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    return Card(
         margin: const EdgeInsets.only(bottom: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(screenWidth * 0.03),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -134,8 +138,8 @@ class OrderCard extends StatelessWidget {
               ],
             ],
           ),
-        ),
-      );
+        ));
+  }
 
   Widget _productRow(Map<String, dynamic> p) => Padding(
         padding: const EdgeInsets.only(bottom: 8),

@@ -131,155 +131,158 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-            backgroundColor: Colors.white,
-            elevation: 0,
-            leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.black),
-                onPressed: () => Navigator.pop(context)),
-            actions: [
-              ValueListenableBuilder(
-                  valueListenable: _favBusy,
-                  builder: (_, busy, __) => busy
-                      ? const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: CircularProgressIndicator(strokeWidth: 2))
-                      : IconButton(
-                          icon: Icon(
-                              _isFav ? Icons.favorite : Icons.favorite_border,
-                              color: _isFav ? Colors.red : Colors.black),
-                          onPressed: _toggleFav)),
-              IconButton(
-                  icon: const Icon(Icons.shopping_bag_outlined,
-                      color: Colors.black),
-                  onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const ShoppingCartPage()))),
-            ]),
-        body: _loading || _product == null
-            ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // gallery
-                    SizedBox(
-                        height: 300,
-                        child: ImageGallery(images: _product!.imageUrls)),
-                    const SizedBox(height: 16),
-                    // info
-                    InfoHeader(
-                        title: _product!.productTitle, price: _product!.price),
-                    const SizedBox(height: 20),
-                    // details
-                    FutureBuilder<DocumentSnapshot>(
-                        future: FirebaseFirestore.instance
-                            .collection('post')
-                            .doc(widget.productId)
-                            .get(),
-                        builder: (_, s) => !s.hasData
-                            ? const SizedBox.shrink()
-                            : DetailCard(
-                                map: s.data!.data() as Map<String, dynamic>,
-                                onSizeSelected: (size) {
-                                  setState(() {
-                                    _selectedSize = size;
-                                  });
-                                },
-                              )),
-                    // Show size selection requirement message when needed
-                    if (_requiresSizeSelection && _selectedSize == null)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        child: Text(
-                          '⚠️ Please select a size to add to cart',
-                          style: TextStyle(
-                            color: Colors.orange.shade800,
-                            fontWeight: FontWeight.bold,
-                          ),
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.black),
+              onPressed: () => Navigator.pop(context)),
+          actions: [
+            ValueListenableBuilder(
+                valueListenable: _favBusy,
+                builder: (_, busy, __) => busy
+                    ? const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : IconButton(
+                        icon: Icon(
+                            _isFav ? Icons.favorite : Icons.favorite_border,
+                            color: _isFav ? Colors.red : Colors.black),
+                        onPressed: _toggleFav)),
+            IconButton(
+                icon: const Icon(Icons.shopping_bag_outlined,
+                    color: Colors.black),
+                onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const ShoppingCartPage()))),
+          ]),
+      body: _loading || _product == null
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // gallery
+                  SizedBox(
+                      height: 300,
+                      child: ImageGallery(images: _product!.imageUrls)),
+                  const SizedBox(height: 16),
+                  // info
+                  InfoHeader(
+                      title: _product!.productTitle, price: _product!.price),
+                  const SizedBox(height: 20),
+                  // details
+                  FutureBuilder<DocumentSnapshot>(
+                      future: FirebaseFirestore.instance
+                          .collection('post')
+                          .doc(widget.productId)
+                          .get(),
+                      builder: (_, s) => !s.hasData
+                          ? const SizedBox.shrink()
+                          : DetailCard(
+                              map: s.data!.data() as Map<String, dynamic>,
+                              onSizeSelected: (size) {
+                                setState(() {
+                                  _selectedSize = size;
+                                });
+                              },
+                            )),
+                  // Show size selection requirement message when needed
+                  if (_requiresSizeSelection && _selectedSize == null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      child: Text(
+                        '⚠️ Please select a size to add to cart',
+                        style: TextStyle(
+                          color: Colors.orange.shade800,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    const SizedBox(height: 20),
-                    // description
-                    Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Description',
-                                  style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 8),
-                              Text(_product!.description,
-                                  style: const TextStyle(
-                                      fontSize: 14, height: 1.5))
-                            ])),
-                    const SizedBox(height: 20),
-                    // pickup location
-                    FutureBuilder<DocumentSnapshot>(
-                        future: FirebaseFirestore.instance
-                            .collection('post')
-                            .doc(widget.productId)
-                            .get(),
-                        builder: (_, s) {
-                          if (!s.hasData) return const SizedBox.shrink();
-                          final loc = (s.data!.data()
-                              as Map<String, dynamic>)['location'];
-                          return loc == null || '$loc'.isEmpty
-                              ? const SizedBox.shrink()
-                              : Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16),
-                                  child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Text('Pickup Location',
-                                            style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold)),
-                                        const SizedBox(height: 8),
-                                        Text('$loc',
-                                            style:
-                                                const TextStyle(fontSize: 14)),
-                                        const SizedBox(height: 20)
-                                      ]));
-                        }),
-                    // seller row
-                    SellerBlock(
-                        sellerId: _product!.userId,
-                        sellerName: _product!.sellerName,
-                        onMsgTap: _msg),
-                    const SizedBox(height: 20),
-                    // reviews
-                    ReviewsSection(
-                      postId: widget.productId,
-                      ownerId: _product!.userId,
-                      productTitle: _product!.productTitle,
-                      productPrice: _product!.price,
-                      productImage: _product!.imageUrls.first,
                     ),
-                    const SizedBox(height: 50),
-                  ],
-                ),
+                  const SizedBox(height: 20),
+                  // description
+                  Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Description',
+                                style: TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 8),
+                            Text(_product!.description,
+                                style: TextStyle(
+                                    fontSize: screenHeight * 0.02, height: 1.5))
+                          ])),
+                  const SizedBox(height: 20),
+                  // pickup location
+                  FutureBuilder<DocumentSnapshot>(
+                      future: FirebaseFirestore.instance
+                          .collection('post')
+                          .doc(widget.productId)
+                          .get(),
+                      builder: (_, s) {
+                        if (!s.hasData) return const SizedBox.shrink();
+                        final loc = (s.data!.data()
+                            as Map<String, dynamic>)['location'];
+                        return loc == null || '$loc'.isEmpty
+                            ? const SizedBox.shrink()
+                            : Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('Pickup Location',
+                                          style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold)),
+                                      const SizedBox(height: 8),
+                                      Text('$loc',
+                                          style: const TextStyle(fontSize: 14)),
+                                      const SizedBox(height: 20)
+                                    ]));
+                      }),
+                  // seller row
+                  SellerBlock(
+                      sellerId: _product!.userId,
+                      sellerName: _product!.sellerName,
+                      onMsgTap: _msg),
+                  const SizedBox(height: 20),
+                  // reviews
+                  ReviewsSection(
+                    postId: widget.productId,
+                    ownerId: _product!.userId,
+                    productTitle: _product!.productTitle,
+                    productPrice: _product!.price,
+                    productImage: _product!.imageUrls.first,
+                  ),
+                  const SizedBox(height: 50),
+                ],
               ),
-        bottomNavigationBar: _product == null
-            ? null
-            : BottomBar(
-                productId: widget.productId,
-                title: _product!.productTitle,
-                price: _product!.price,
-                image: _product!.imageUrls.first,
-                ownerId: _product!.userId,
-                selectedSize: _selectedSize,
-                requiresSizeSelection: _requiresSizeSelection,
-                canAddToCart: canAddToCart,
-                onSizeRequiredMessage: _showSizeRequiredMessage,
-              ),
-      );
+            ),
+      bottomNavigationBar: _product == null
+          ? null
+          : BottomBar(
+              productId: widget.productId,
+              title: _product!.productTitle,
+              price: _product!.price,
+              image: _product!.imageUrls.first,
+              ownerId: _product!.userId,
+              selectedSize: _selectedSize,
+              requiresSizeSelection: _requiresSizeSelection,
+              canAddToCart: canAddToCart,
+              onSizeRequiredMessage: _showSizeRequiredMessage,
+            ),
+    );
+  }
 }

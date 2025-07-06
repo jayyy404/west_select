@@ -466,6 +466,9 @@ class _CreateListingPageState extends State<CreateListingPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
@@ -498,7 +501,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(screenWidth * 0.03),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -518,40 +521,41 @@ class _CreateListingPageState extends State<CreateListingPage> {
               ),
               child: _uploadedImageUrls.isEmpty
                   ? InkWell(
-                  onTap: _isUploadingImage ? null : uploadImageToCloudinary,
-                  child: Center(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown, // 👈 This scales child down if needed
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.add_photo_alternate,
-                            size: 40,
-                            color: Colors.blue.shade300,
+                      onTap: _isUploadingImage ? null : uploadImageToCloudinary,
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit
+                              .scaleDown, // 👈 This scales child down if needed
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.add_photo_alternate,
+                                size: 40,
+                                color: Colors.blue.shade300,
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                "Add images",
+                                style: TextStyle(
+                                  color: Colors.blue,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const Text(
+                                "Must add at least 1",
+                                style:
+                                    TextStyle(color: Colors.grey, fontSize: 12),
+                              ),
+                              if (_isUploadingImage)
+                                const Padding(
+                                  padding: EdgeInsets.only(top: 8),
+                                  child: CircularProgressIndicator(),
+                                ),
+                            ],
                           ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            "Add images",
-                            style: TextStyle(
-                              color: Colors.blue,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const Text(
-                            "Must add at least 1",
-                            style: TextStyle(color: Colors.grey, fontSize: 12),
-                          ),
-                          if (_isUploadingImage)
-                            const Padding(
-                              padding: EdgeInsets.only(top: 8),
-                              child: CircularProgressIndicator(),
-                            ),
-                        ],
-                      ),
-                    ),
-                  )
-              )
+                        ),
+                      ))
                   : SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.all(8),
@@ -740,6 +744,9 @@ class _CreateListingPageState extends State<CreateListingPage> {
     String? prefix,
     int maxLines = 1,
   }) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
@@ -752,6 +759,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
           color: required ? Colors.black : Colors.grey,
         ),
       ),
+      style: TextStyle(fontSize: screenHeight * 0.02),
     );
   }
 
