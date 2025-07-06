@@ -121,7 +121,7 @@ class AuthService {
       // 5. Delete posts where post_users contains uid
       final posts = await firestore
           .collection('post')
-          .where('post_users', arrayContains: uid)
+          .where('post_users', isEqualTo: uid)
           .get();
       for (var doc in posts.docs) {
         await doc.reference.delete();
