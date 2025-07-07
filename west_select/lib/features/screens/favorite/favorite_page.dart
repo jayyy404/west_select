@@ -30,6 +30,17 @@ class FavoritePage extends StatelessWidget {
         final screenHeight = MediaQuery.of(context).size.height;
         final screenWidth = MediaQuery.of(context).size.width;
 
+        int crossAxisCount = 2;
+        double aspectRatio = 0.75; // phone default (taller cards)
+
+        if (screenWidth >= 900) {
+          crossAxisCount = 4;
+          aspectRatio = 0.65; // give tall enough cards on very wide screens
+        } else if (screenWidth >= 600) {
+          crossAxisCount = 3;
+          aspectRatio = 0.7; // tablet / small‑desktop
+        }
+
         return Scaffold(
           appBar: AppBar(title: Text("Wishlist",style: TextStyle(fontSize: screenHeight * 0.02),), ),
           body: Consumer<FavoriteModel>(
@@ -42,11 +53,11 @@ class FavoritePage extends StatelessWidget {
 
               return GridView.builder(
                 padding: EdgeInsets.all(screenWidth * 0.03),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
                   mainAxisSpacing: 10,
                   crossAxisSpacing: 10,
-                  childAspectRatio: 0.75, // Adjusted for better proportions
+                  childAspectRatio: aspectRatio, // Adjusted for better proportions
                 ),
                 itemCount: items.length,
                 itemBuilder: (context, index) {
@@ -147,7 +158,7 @@ class FavoritePage extends StatelessWidget {
                                       child: Text("Seller: ${product["seller"] ?? ""}",
                                         style: TextStyle(
                                           color: Colors.black54,
-                                          fontSize: screenHeight * 0.014,
+                                          fontSize: screenHeight * 0.012,
                                           fontWeight: FontWeight.w500,
                                         ),
                                         maxLines: 1,

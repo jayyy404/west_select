@@ -110,7 +110,7 @@ class ProductGrid extends StatelessWidget {
                                   listing.postTitle,
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: screenHeight * 0.014,
+                                    fontSize: screenHeight * 0.016,
                                     fontFamily: 'Open Sans',
                                   ),
                                   maxLines: 1,
@@ -128,18 +128,20 @@ class ProductGrid extends StatelessWidget {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
+                                SizedBox(height: screenHeight * 0.01),
+                                Text(
+                                  'PHP ${NumberFormat('#,##0.00', 'en_US').format(listing.price)}',
+                                  style: TextStyle(
+                                    color: Colors.green,
+                                    fontSize: screenHeight * 0.015,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ],
                             ),
-                            Text(
-                              'PHP ${NumberFormat('#,##0.00', 'en_US').format(listing.price)}',
-                              style: TextStyle(
-                                color: Colors.green,
-                                fontSize: screenHeight * 0.012,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+
                           ],
                         ),
                       ),
