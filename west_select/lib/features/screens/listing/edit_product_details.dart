@@ -1,18 +1,14 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
+import 'cloudinary_service.dart';
 
 class EditListingPage extends StatefulWidget {
   final String productId;
   final Map<String, dynamic> productData;
 
-  const EditListingPage(
-      {super.key, required this.productId, required this.productData});
+  const EditListingPage({super.key, required this.productId, required this.productData});
 
   @override
   State<EditListingPage> createState() => _EditListingPageState();
@@ -29,7 +25,7 @@ class _EditListingPageState extends State<EditListingPage> {
 
   String? _selectedCategory;
   String? _selectedCondition;
-  List<String> _uploadedImageUrls = [];
+  List<UploadedImage> _uploadedImages = [];
   bool _isSubmitting = false;
   bool _isUploadingImage = false;
 
@@ -39,21 +35,23 @@ class _EditListingPageState extends State<EditListingPage> {
     final data = widget.productData;
 
     _titleController = TextEditingController(text: data['post_title']);
-    _descriptionController =
-        TextEditingController(text: data['post_description']);
+    _descriptionController = TextEditingController(text: data['post_description']);
     _priceController = TextEditingController(text: data['price'].toString());
     _locationController = TextEditingController(text: data['location']);
     _stockController = TextEditingController(text: data['stock'].toString());
     _colorController = TextEditingController(text: data['color'] ?? '');
-    _sizeController = TextEditingController(text: data['size'] ?? '');
+    _sizeController = TextEditingController(text: data['size']?.toString() ?? '');
 
     _selectedCategory = data['category'];
     _selectedCondition = data['condition'];
-    _uploadedImageUrls = List<String>.from(data['image_urls'] ?? []);
+
+    // Load existing images into _uploadedImages
+    final existingImages = List<Map<String, dynamic>>.from(data['image_data'] ?? []);
+    _uploadedImages = existingImages.map((e) => UploadedImage(url: e['url'], publicId: e['public_id'])).toList();
   }
 
   Future<void> uploadImageToCloudinary() async {
-    if (_uploadedImageUrls.length >= 3) {
+    if (_uploadedImages.length >= 3) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Maximum 3 images allowed")),
       );
@@ -65,66 +63,69 @@ class _EditListingPageState extends State<EditListingPage> {
     try {
       final picker = ImagePicker();
       final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
-      if (pickedFile == null) {
-        if (mounted) setState(() => _isUploadingImage = false);
-        return;
-      }
+      if (pickedFile == null) return;
 
       File file = File(pickedFile.path);
-      if (!file.existsSync()) {
-        if (mounted) setState(() => _isUploadingImage = false);
-        return;
-      }
+      final uploaded = await CloudinaryService.uploadImage(file);
 
-      String fileExtension = pickedFile.path.split('.').last.toLowerCase();
-
-      const cloudName = 'drlvci7kt';
-      const uploadPreset = 'cndztdyy';
-      final url =
-          Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
-
-      var request = http.MultipartRequest('POST', url)
-        ..files.add(await http.MultipartFile.fromPath(
-          'file',
-          file.path,
-          contentType: MediaType('image', fileExtension),
-        ))
-        ..fields['upload_preset'] = uploadPreset;
-
-      final response = await request.send();
-
-      if (response.statusCode == 200) {
-        final responseData = await response.stream.bytesToString();
-        final jsonResponse = jsonDecode(responseData);
-        String imageUrl = jsonResponse['secure_url'];
-        if (mounted) {
-          setState(() => _uploadedImageUrls.add(imageUrl));
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text(
-                    "Image ${_uploadedImageUrls.length} uploaded successfully!")),
-          );
-        }
+      if (uploaded != null && uploaded.url.isNotEmpty) {
+        setState(() => _uploadedImages.add(uploaded));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Image ${_uploadedImages.length} uploaded!")),
+        );
       } else {
         throw Exception("Upload to Cloudinary failed");
       }
     } catch (e) {
-      if (kDebugMode) print("Upload error: $e");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed to upload image: $e")),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to upload image: $e")),
+      );
     } finally {
-      if (mounted) setState(() => _isUploadingImage = false);
+      setState(() => _isUploadingImage = false);
     }
   }
 
-  void _removeImage(int index) {
-    setState(() {
-      _uploadedImageUrls.removeAt(index);
-    });
+  void _removeImage(int index) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove Image'),
+        content: const Text('Are you sure you want to remove this image?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Remove')),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    final uploadedImage = _uploadedImages[index];
+    String? publicId = uploadedImage.publicId;
+
+    if (publicId == null || publicId.isEmpty) {
+      publicId = CloudinaryService.extractPublicIdFromUrl(uploadedImage.url);
+    }
+
+    if (publicId == null || publicId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Cannot remove image: missing public_id.")),
+      );
+      return;
+    }
+
+    final success = await CloudinaryService.deleteImage(publicId);
+
+    if (success) {
+      setState(() => _uploadedImages.removeAt(index));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Image removed successfully.")),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Failed to delete image from Cloudinary.")),
+      );
+    }
   }
 
   Future<void> _updateListing() async {
@@ -138,15 +139,11 @@ class _EditListingPageState extends State<EditListingPage> {
         'category': _selectedCategory,
         'stock': int.parse(_stockController.text.trim()),
         'condition': _selectedCondition,
-        'color': _colorController.text.trim().isNotEmpty
-            ? _colorController.text.trim()
-            : null,
-        'size': _sizeController.text.trim().isNotEmpty
-            ? _sizeController.text.trim()
-            : null,
-        'image_url':
-            _uploadedImageUrls.isNotEmpty ? _uploadedImageUrls.first : null,
-        'image_urls': _uploadedImageUrls,
+        'color': _colorController.text.trim().isNotEmpty ? _colorController.text.trim() : null,
+        'size': _sizeController.text.trim().isNotEmpty ? _sizeController.text.trim() : null,
+        'image_url': _uploadedImages.isNotEmpty ? _uploadedImages.first.url : null,
+        'image_urls': _uploadedImages.map((e) => e.url).toList(),
+        'image_data': _uploadedImages.map((e) => {'url': e.url, 'public_id': e.publicId}).toList(),
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
@@ -199,10 +196,7 @@ class _EditListingPageState extends State<EditListingPage> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text("Edit listing",
-            style: TextStyle(
-                color: Colors.black,
-                fontSize: 18,
-                fontWeight: FontWeight.bold)),
+            style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
         centerTitle: true,
         actions: [
           TextButton(
@@ -222,8 +216,7 @@ class _EditListingPageState extends State<EditListingPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Media",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text("Media", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Container(
               width: double.infinity,
@@ -232,97 +225,87 @@ class _EditListingPageState extends State<EditListingPage> {
                 border: Border.all(color: Colors.blue),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: _uploadedImageUrls.isEmpty
-                  ? _isUploadingImage
-                      ? const Center(child: CircularProgressIndicator())
-                      : InkWell(
-                          onTap: uploadImageToCloudinary,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.add_photo_alternate,
-                                  size: 40, color: Colors.blue.shade300),
-                              const SizedBox(height: 8),
-                              const Text("Add images",
-                                  style: TextStyle(
-                                      color: Colors.blue,
-                                      fontWeight: FontWeight.w500)),
-                              const Text("Must add at least 1",
-                                  style: TextStyle(
-                                      color: Colors.grey, fontSize: 12)),
-                            ],
-                          ),
-                        )
+              child: _uploadedImages.isEmpty
+                  ? InkWell(
+                onTap: _isUploadingImage ? null : uploadImageToCloudinary,
+                child: Center(
+                  child: _isUploadingImage
+                      ? const CircularProgressIndicator()
+                      : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add_photo_alternate, size: 40, color: Colors.blue.shade300),
+                      const SizedBox(height: 8),
+                      const Text("Add images", style: TextStyle(color: Colors.blue, fontWeight: FontWeight.w500)),
+                      const Text("Must add at least 1", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    ],
+                  ),
+                ),
+              )
                   : SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.all(8),
-                      child: Row(
-                        children: [
-                          ..._uploadedImageUrls.asMap().entries.map((entry) {
-                            int index = entry.key;
-                            String url = entry.value;
-                            return Container(
-                              width: 100,
-                              height: 100,
-                              margin: const EdgeInsets.only(right: 8),
-                              child: Stack(
-                                children: [
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(8),
-                                      image: DecorationImage(
-                                        image: NetworkImage(url),
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: 4,
-                                    right: 4,
-                                    child: GestureDetector(
-                                      onTap: () => _removeImage(index),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(4),
-                                        decoration: const BoxDecoration(
-                                          color: Colors.red,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(Icons.close,
-                                            color: Colors.white, size: 16),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                          if (_uploadedImageUrls.length < 3)
-                            InkWell(
-                              onTap: uploadImageToCloudinary,
-                              child: Container(
-                                width: 100,
-                                height: 100,
-                                decoration: BoxDecoration(
-                                  border:
-                                      Border.all(color: Colors.grey.shade300),
-                                  borderRadius: BorderRadius.circular(8),
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.all(8),
+                child: Row(
+                  children: [
+                    ..._uploadedImages.asMap().entries.map((entry) {
+                      int index = entry.key;
+                      String url = entry.value.url;
+                      return Container(
+                        width: 100,
+                        height: 100,
+                        margin: const EdgeInsets.only(right: 8),
+                        child: Stack(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                image: DecorationImage(
+                                  image: NetworkImage(url),
+                                  fit: BoxFit.cover,
                                 ),
-                                child: const Icon(Icons.add,
-                                    size: 40, color: Colors.grey),
                               ),
                             ),
-                        ],
+                            Positioned(
+                              top: 4,
+                              right: 4,
+                              child: GestureDetector(
+                                onTap: () => _removeImage(index),
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                                  child: const Icon(Icons.close, color: Colors.white, size: 16),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                    if (_uploadedImages.length < 3)
+                      InkWell(
+                        onTap: _isUploadingImage ? null : uploadImageToCloudinary,
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: _isUploadingImage
+                              ? const Center(child: CircularProgressIndicator())
+                              : const Icon(Icons.add, size: 40, color: Colors.grey),
+                        ),
                       ),
-                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 24),
             _buildTextField(_titleController, "Product Title", true),
             const SizedBox(height: 16),
-            _buildTextField(_descriptionController, "Add description", true,
-                maxLines: 3),
+            _buildTextField(_descriptionController, "Add description", true, maxLines: 3),
             const SizedBox(height: 16),
-            _buildTextField(_priceController, "Price", true,
-                keyboardType: TextInputType.number, prefix: "PHP "),
+            _buildTextField(_priceController, "Price", true, keyboardType: TextInputType.number, prefix: "PHP "),
             const SizedBox(height: 16),
             _buildTextField(_locationController, "Address", true),
             const SizedBox(height: 24),
@@ -330,19 +313,16 @@ class _EditListingPageState extends State<EditListingPage> {
             const SizedBox(height: 16),
             _buildTextField(_sizeController, "Size", false),
             const SizedBox(height: 24),
-            _buildTextField(_stockController, "Stock", true,
-                keyboardType: TextInputType.number),
+            _buildTextField(_stockController, "Stock", true, keyboardType: TextInputType.number),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTextField(
-      TextEditingController controller, String label, bool required,
+  Widget _buildTextField(TextEditingController controller, String label, bool required,
       {TextInputType? keyboardType, String? prefix, int maxLines = 1}) {
     final screenHeight = MediaQuery.of(context).size.height;
-    final screenWidth = MediaQuery.of(context).size.width;
 
     return TextField(
       controller: controller,
