@@ -31,6 +31,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
   List<String> _selectedSizes = [];
 
   List<UploadedImage> _uploadedImages = [];
+  List<File> _pendingImages = [];
   bool _isUploadingImage = false;
   bool _isSubmitting = false;
 
@@ -120,40 +121,57 @@ class _CreateListingPageState extends State<CreateListingPage> {
   }
 
 // Upload image
-  Future<void> uploadImageToCloudinary() async {
-    if (_uploadedImages.length >= 3) {
+//   Future<void> uploadImageToCloudinary() async {
+//     if (_uploadedImages.length >= 3) {
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         const SnackBar(content: Text("Maximum 3 images allowed")),
+//       );
+//       return;
+//     }
+//
+//     setState(() => _isUploadingImage = true);
+//
+//     try {
+//       final picker = ImagePicker();
+//       final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+//       if (pickedFile == null) return;
+//
+//       File file = File(pickedFile.path);
+//       final uploaded = await CloudinaryService.uploadImage(file);
+//
+//       if (uploaded != null && uploaded.url.isNotEmpty) {
+//         setState(() => _uploadedImages.add(uploaded));
+//         ScaffoldMessenger.of(context).showSnackBar(
+//           SnackBar(content: Text("Image ${_uploadedImages.length} uploaded!")),
+//         );
+//       } else {
+//         throw Exception("Upload to Cloudinary failed");
+//       }
+//     } catch (e) {
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         SnackBar(content: Text("Failed to upload image: $e")),
+//       );
+//     } finally {
+//       setState(() => _isUploadingImage = false);
+//     }
+//   }
+  Future<void> pickImage() async {
+    if ((_uploadedImages.length + _pendingImages.length) >= 3) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Maximum 3 images allowed")),
       );
       return;
     }
 
-    setState(() => _isUploadingImage = true);
-
-    try {
-      final picker = ImagePicker();
-      final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-      if (pickedFile == null) return;
-
-      File file = File(pickedFile.path);
-      final uploaded = await CloudinaryService.uploadImage(file);
-
-      if (uploaded != null && uploaded.url.isNotEmpty) {
-        setState(() => _uploadedImages.add(uploaded));
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Image ${_uploadedImages.length} uploaded!")),
-        );
-      } else {
-        throw Exception("Upload to Cloudinary failed");
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to upload image: $e")),
-      );
-    } finally {
-      setState(() => _isUploadingImage = false);
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _pendingImages.add(File(pickedFile.path));
+      });
     }
   }
+
 
   void _showCategoryDialog() {
     showDialog(
@@ -413,10 +431,20 @@ class _CreateListingPageState extends State<CreateListingPage> {
   // On submit listing
   Future<void> _createListing() async {
     if (!_validateForm()) return;
-
     setState(() => _isSubmitting = true);
 
     try {
+      // Upload pending images
+      for (final file in _pendingImages) {
+        final uploaded = await CloudinaryService.uploadImage(file);
+        if (uploaded != null && uploaded.url.isNotEmpty) {
+          _uploadedImages.add(uploaded);
+        } else {
+          throw Exception("Failed to upload one or more images.");
+        }
+      }
+      _pendingImages.clear();
+
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null) throw Exception("User not logged in");
 
@@ -517,7 +545,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
               ),
               child: _uploadedImages.isEmpty
                   ? InkWell(
-                onTap: _isUploadingImage ? null : uploadImageToCloudinary,
+                onTap: _isUploadingImage ? null : pickImage,
                 child: Center(
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
@@ -556,62 +584,47 @@ class _CreateListingPageState extends State<CreateListingPage> {
                 padding: const EdgeInsets.all(8),
                 child: Row(
                   children: [
-                    ..._uploadedImages.asMap().entries.map((entry) {
+                    ..._uploadedImages.map((e) => e.url).toList()
+                        .followedBy(_pendingImages.map((file) => file.path))
+                        .toList()
+                        .asMap()
+                        .entries
+                        .map((entry) {
                       int index = entry.key;
-                      String url = entry.value.url;
-                      return Container(
-                        width: 100,
-                        height: 100,
-                        margin: const EdgeInsets.only(right: 8),
-                        child: Stack(
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(8),
-                                image: DecorationImage(
-                                  image: NetworkImage(url),
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              top: 4,
-                              right: 4,
-                              child: GestureDetector(
-                                onTap: () => _removeImage(index),
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.red,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.close,
-                                    color: Colors.white,
-                                    size: 16,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                    if (_uploadedImages.length < 3)
-                      InkWell(
-                        onTap: _isUploadingImage ? null : uploadImageToCloudinary,
-                        child: Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade300),
+                      String urlOrPath = entry.value;
+                      bool isLocalFile = index >= _uploadedImages.length;
+                      return Stack(
+                        children: [
+                          ClipRRect(
                             borderRadius: BorderRadius.circular(8),
+                            child: Image(
+                              image: isLocalFile ? FileImage(File(urlOrPath)) : NetworkImage(urlOrPath) as ImageProvider,
+                              fit: BoxFit.cover,
+                            ),
                           ),
-                          child: _isUploadingImage
-                              ? const Center(child: CircularProgressIndicator())
-                              : const Icon(Icons.add, size: 40, color: Colors.grey),
-                        ),
-                      ),
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  if (isLocalFile) {
+                                    _pendingImages.removeAt(index - _uploadedImages.length);
+                                  } else {
+                                    _removeImage(index);
+                                  }
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                                child: const Icon(Icons.close, color: Colors.white, size: 16),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList()
                   ],
                 ),
               ),

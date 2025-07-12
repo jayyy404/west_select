@@ -26,6 +26,7 @@ class _EditListingPageState extends State<EditListingPage> {
   String? _selectedCategory;
   String? _selectedCondition;
   List<UploadedImage> _uploadedImages = [];
+  List<File> _pendingImages = [];
   bool _isSubmitting = false;
   bool _isUploadingImage = false;
 
@@ -50,38 +51,54 @@ class _EditListingPageState extends State<EditListingPage> {
     _uploadedImages = existingImages.map((e) => UploadedImage(url: e['url'], publicId: e['public_id'])).toList();
   }
 
-  Future<void> uploadImageToCloudinary() async {
-    if (_uploadedImages.length >= 3) {
+  // Future<void> uploadImageToCloudinary() async {
+  //   if (_uploadedImages.length >= 3) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       const SnackBar(content: Text("Maximum 3 images allowed")),
+  //     );
+  //     return;
+  //   }
+  //
+  //   setState(() => _isUploadingImage = true);
+  //
+  //   try {
+  //     final picker = ImagePicker();
+  //     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+  //     if (pickedFile == null) return;
+  //
+  //     File file = File(pickedFile.path);
+  //     final uploaded = await CloudinaryService.uploadImage(file);
+  //
+  //     if (uploaded != null && uploaded.url.isNotEmpty) {
+  //       setState(() => _uploadedImages.add(uploaded));
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: Text("Image ${_uploadedImages.length} uploaded!")),
+  //       );
+  //     } else {
+  //       throw Exception("Upload to Cloudinary failed");
+  //     }
+  //   } catch (e) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text("Failed to upload image: $e")),
+  //     );
+  //   } finally {
+  //     setState(() => _isUploadingImage = false);
+  //   }
+  // }
+  Future<void> pickImage() async {
+    if ((_uploadedImages.length + _pendingImages.length) >= 3) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Maximum 3 images allowed")),
       );
       return;
     }
 
-    setState(() => _isUploadingImage = true);
-
-    try {
-      final picker = ImagePicker();
-      final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-      if (pickedFile == null) return;
-
-      File file = File(pickedFile.path);
-      final uploaded = await CloudinaryService.uploadImage(file);
-
-      if (uploaded != null && uploaded.url.isNotEmpty) {
-        setState(() => _uploadedImages.add(uploaded));
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Image ${_uploadedImages.length} uploaded!")),
-        );
-      } else {
-        throw Exception("Upload to Cloudinary failed");
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to upload image: $e")),
-      );
-    } finally {
-      setState(() => _isUploadingImage = false);
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _pendingImages.add(File(pickedFile.path));
+      });
     }
   }
 
@@ -131,6 +148,17 @@ class _EditListingPageState extends State<EditListingPage> {
   Future<void> _updateListing() async {
     setState(() => _isSubmitting = true);
     try {
+      // Upload pending images
+      for (final file in _pendingImages) {
+        final uploaded = await CloudinaryService.uploadImage(file);
+        if (uploaded != null && uploaded.url.isNotEmpty) {
+          _uploadedImages.add(uploaded);
+        } else {
+          throw Exception("Failed to upload one or more images.");
+        }
+      }
+      _pendingImages.clear();
+
       final updatedData = {
         'post_title': _titleController.text.trim(),
         'post_description': _descriptionController.text.trim(),
@@ -227,7 +255,7 @@ class _EditListingPageState extends State<EditListingPage> {
               ),
               child: _uploadedImages.isEmpty
                   ? InkWell(
-                onTap: _isUploadingImage ? null : uploadImageToCloudinary,
+                onTap: _isUploadingImage ? null : pickImage,
                 child: Center(
                   child: _isUploadingImage
                       ? const CircularProgressIndicator()
@@ -247,29 +275,39 @@ class _EditListingPageState extends State<EditListingPage> {
                 padding: const EdgeInsets.all(8),
                 child: Row(
                   children: [
-                    ..._uploadedImages.asMap().entries.map((entry) {
+                    ..._uploadedImages.map((e) => e.url).toList()
+                        .followedBy(_pendingImages.map((file) => file.path))
+                        .toList()
+                        .asMap()
+                        .entries
+                        .map((entry) {
                       int index = entry.key;
-                      String url = entry.value.url;
+                      String urlOrPath = entry.value;
+                      bool isLocalFile = index >= _uploadedImages.length;
                       return Container(
-                        width: 100,
-                        height: 100,
-                        margin: const EdgeInsets.only(right: 8),
+                        // same container
                         child: Stack(
                           children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(8),
-                                image: DecorationImage(
-                                  image: NetworkImage(url),
-                                  fit: BoxFit.cover,
-                                ),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image(
+                                image: isLocalFile ? FileImage(File(urlOrPath)) : NetworkImage(urlOrPath) as ImageProvider,
+                                fit: BoxFit.cover,
                               ),
                             ),
                             Positioned(
                               top: 4,
                               right: 4,
                               child: GestureDetector(
-                                onTap: () => _removeImage(index),
+                                onTap: () {
+                                  setState(() {
+                                    if (isLocalFile) {
+                                      _pendingImages.removeAt(index - _uploadedImages.length);
+                                    } else {
+                                      _removeImage(index);
+                                    }
+                                  });
+                                },
                                 child: Container(
                                   padding: const EdgeInsets.all(4),
                                   decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
@@ -283,7 +321,7 @@ class _EditListingPageState extends State<EditListingPage> {
                     }).toList(),
                     if (_uploadedImages.length < 3)
                       InkWell(
-                        onTap: _isUploadingImage ? null : uploadImageToCloudinary,
+                        onTap: _isUploadingImage ? null : pickImage,
                         child: Container(
                           width: 100,
                           height: 100,
