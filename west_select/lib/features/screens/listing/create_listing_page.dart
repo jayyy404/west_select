@@ -543,7 +543,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
                 border: Border.all(color: Colors.blue, style: BorderStyle.solid),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: _uploadedImages.isEmpty
+              child: (_uploadedImages.isEmpty && _pendingImages.isEmpty)
                   ? InkWell(
                 onTap: _isUploadingImage ? null : pickImage,
                 child: Center(
@@ -593,38 +593,67 @@ class _CreateListingPageState extends State<CreateListingPage> {
                       int index = entry.key;
                       String urlOrPath = entry.value;
                       bool isLocalFile = index >= _uploadedImages.length;
-                      return Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image(
-                              image: isLocalFile ? FileImage(File(urlOrPath)) : NetworkImage(urlOrPath) as ImageProvider,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          Positioned(
-                            top: 4,
-                            right: 4,
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  if (isLocalFile) {
-                                    _pendingImages.removeAt(index - _uploadedImages.length);
-                                  } else {
-                                    _removeImage(index);
-                                  }
-                                });
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                                child: const Icon(Icons.close, color: Colors.white, size: 16),
+
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Stack(
+                          children: [
+                            SizedBox(
+                              width: 100,
+                              height: 100,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image(
+                                  image: isLocalFile
+                                      ? FileImage(File(urlOrPath))
+                                      : NetworkImage(urlOrPath) as ImageProvider,
+                                  fit: BoxFit.cover,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                            Positioned(
+                              top: 4,
+                              right: 4,
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    if (isLocalFile) {
+                                      _pendingImages.removeAt(index - _uploadedImages.length);
+                                    } else {
+                                      _removeImage(index);
+                                    }
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.close, color: Colors.white, size: 16),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       );
-                    }).toList()
+                    }).toList(),
+                    if ((_uploadedImages.length + _pendingImages.length) < 3)
+                      GestureDetector(
+                        onTap: _isUploadingImage ? null : pickImage,
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            border: Border.all(color: Colors.grey.shade400),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: _isUploadingImage
+                              ? const Center(child: CircularProgressIndicator())
+                              : const Icon(Icons.add, size: 40, color: Colors.grey),
+                        ),
+                      ),
                   ],
                 ),
               ),

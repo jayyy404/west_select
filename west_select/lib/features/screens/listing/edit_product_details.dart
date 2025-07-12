@@ -21,7 +21,7 @@ class _EditListingPageState extends State<EditListingPage> {
   late TextEditingController _locationController;
   late TextEditingController _stockController;
   late TextEditingController _colorController;
-  late TextEditingController _sizeController;
+  TextEditingController _sizeController = TextEditingController();
 
   String? _selectedCategory;
   String? _selectedCondition;
@@ -29,6 +29,33 @@ class _EditListingPageState extends State<EditListingPage> {
   List<File> _pendingImages = [];
   bool _isSubmitting = false;
   bool _isUploadingImage = false;
+  late List<String> _selectedSizes = [];
+  final List<String> _categories = [
+    'School Supplies',
+    'Footwear',
+    'Merch',
+    'Gadgets',
+    'Clothing',
+    'Food'
+  ];
+
+  final List<String> _conditions = ['New', 'Rarely used', 'Used'];
+
+  final List<String> _clothingSizes = ['S', 'M', 'L', 'XL', 'XXL'];
+  final List<String> _footwearSizes = [
+    '35',
+    '36',
+    '37',
+    '38',
+    '39',
+    '40',
+    '41',
+    '42',
+    '43',
+    '44',
+    '45',
+    '46'
+  ];
 
   @override
   void initState() {
@@ -41,7 +68,15 @@ class _EditListingPageState extends State<EditListingPage> {
     _locationController = TextEditingController(text: data['location']);
     _stockController = TextEditingController(text: data['stock'].toString());
     _colorController = TextEditingController(text: data['color'] ?? '');
-    _sizeController = TextEditingController(text: data['size']?.toString() ?? '');
+    final sizeData = data['size'];
+    if (sizeData != null) {
+      if (sizeData is List) {
+        _selectedSizes = List<String>.from(sizeData);
+        _sizeController.text = _selectedSizes.join(", ");
+      } else if (sizeData is String) {
+        _sizeController.text = sizeData;
+      }
+    }
 
     _selectedCategory = data['category'];
     _selectedCondition = data['condition'];
@@ -197,6 +232,181 @@ class _EditListingPageState extends State<EditListingPage> {
       ),
     );
   }
+  void _showCategoryDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Categories'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Pick only 1 category.',
+                style: TextStyle(fontSize: 14, color: Colors.grey)),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _categories
+                  .map(
+                    (category) => FilterChip(
+                  label: Text(category),
+                  selected: _selectedCategory == category,
+                  onSelected: (selected) {
+                    setState(() {
+                      if (_selectedCategory != category) {
+                        // Reset sizes when changing category
+                        _selectedSizes = [];
+                        _sizeController.clear();
+                      }
+                      _selectedCategory = selected ? category : null;
+                    });
+                    Navigator.pop(context);
+                  },
+                  selectedColor: Colors.blue.shade100,
+                  checkmarkColor: Colors.blue,
+                ),
+              )
+                  .toList(),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showConditionDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Condition'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Pick only 1 condition.',
+                style: TextStyle(fontSize: 14, color: Colors.grey)),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _conditions
+                  .map(
+                    (condition) => FilterChip(
+                  label: Text(condition),
+                  selected: _selectedCondition == condition,
+                  onSelected: (selected) {
+                    setState(() {
+                      _selectedCondition = selected ? condition : null;
+                    });
+                    Navigator.pop(context);
+                  },
+                  selectedColor: Colors.blue.shade100,
+                  checkmarkColor: Colors.blue,
+                ),
+              )
+                  .toList(),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSizeDialog() {
+    if (_selectedCategory == null) {
+      _showErrorDialog("Please select a category first.");
+      return;
+    }
+
+    List<String> sizeOptions = [];
+    String dialogTitle = "Select Size";
+
+    // Create a temporary copy of selected sizes for the dialog
+    List<String> tempSelectedSizes = List.from(_selectedSizes);
+
+    if (_selectedCategory == 'Clothing') {
+      sizeOptions = _clothingSizes;
+      dialogTitle = "Select Clothing Sizes";
+    } else if (_selectedCategory == 'Footwear') {
+      sizeOptions = _footwearSizes;
+      dialogTitle = "Select Footwear Sizes";
+    } else {
+      // For other categories, use the regular size input field
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(dialogTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Select all available sizes:',
+                  style: TextStyle(fontSize: 14, color: Colors.grey)),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: sizeOptions
+                    .map(
+                      (size) => FilterChip(
+                    label: Text(size),
+                    selected: tempSelectedSizes.contains(size),
+                    onSelected: (selected) {
+                      setState(() {
+                        if (selected) {
+                          tempSelectedSizes.add(size);
+                        } else {
+                          tempSelectedSizes.remove(size);
+                        }
+                      });
+                    },
+                    selectedColor: Colors.blue.shade100,
+                    checkmarkColor: Colors.blue,
+                  ),
+                )
+                    .toList(),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                // Update both the global state and the text controller
+                this.setState(() {
+                  _selectedSizes = tempSelectedSizes;
+                  if (_selectedSizes.isNotEmpty) {
+                    _sizeController.text = _selectedSizes.join(', ');
+                  } else {
+                    _sizeController.clear();
+                  }
+                });
+                Navigator.pop(context);
+              },
+              child: const Text('Apply'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Future<void> _updateListing() async {
     if (!_validateForm()) return;
@@ -222,7 +432,9 @@ class _EditListingPageState extends State<EditListingPage> {
         'stock': int.parse(_stockController.text.trim()),
         'condition': _selectedCondition,
         'color': _colorController.text.trim().isNotEmpty ? _colorController.text.trim() : null,
-        'size': _sizeController.text.trim().isNotEmpty ? _sizeController.text.trim() : null,
+        'size': (_selectedCategory == 'Clothing' || _selectedCategory == 'Footwear')
+            ? _selectedSizes
+            : (_sizeController.text.trim().isNotEmpty ? _sizeController.text.trim() : null),
         'image_url': _uploadedImages.isNotEmpty ? _uploadedImages.first.url : null,
         'image_urls': _uploadedImages.map((e) => e.url).toList(),
         'image_data': _uploadedImages.map((e) => {'url': e.url, 'public_id': e.publicId}).toList(),
@@ -307,7 +519,7 @@ class _EditListingPageState extends State<EditListingPage> {
                 border: Border.all(color: Colors.blue),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: _uploadedImages.isEmpty
+              child: (_uploadedImages.isEmpty && _pendingImages.isEmpty)
                   ? InkWell(
                 onTap: _isUploadingImage ? null : pickImage,
                 child: Center(
@@ -338,15 +550,22 @@ class _EditListingPageState extends State<EditListingPage> {
                       int index = entry.key;
                       String urlOrPath = entry.value;
                       bool isLocalFile = index >= _uploadedImages.length;
-                      return Container(
-                        // same container
+
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
                         child: Stack(
                           children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image(
-                                image: isLocalFile ? FileImage(File(urlOrPath)) : NetworkImage(urlOrPath) as ImageProvider,
-                                fit: BoxFit.cover,
+                            SizedBox(
+                              width: 100,
+                              height: 100,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image(
+                                  image: isLocalFile
+                                      ? FileImage(File(urlOrPath))
+                                      : NetworkImage(urlOrPath) as ImageProvider,
+                                  fit: BoxFit.cover,
+                                ),
                               ),
                             ),
                             Positioned(
@@ -364,7 +583,10 @@ class _EditListingPageState extends State<EditListingPage> {
                                 },
                                 child: Container(
                                   padding: const EdgeInsets.all(4),
-                                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
                                   child: const Icon(Icons.close, color: Colors.white, size: 16),
                                 ),
                               ),
@@ -373,14 +595,15 @@ class _EditListingPageState extends State<EditListingPage> {
                         ),
                       );
                     }).toList(),
-                    if (_uploadedImages.length < 3)
-                      InkWell(
+                    if ((_uploadedImages.length + _pendingImages.length) < 3)
+                      GestureDetector(
                         onTap: _isUploadingImage ? null : pickImage,
                         child: Container(
                           width: 100,
                           height: 100,
                           decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade300),
+                            color: Colors.grey.shade100,
+                            border: Border.all(color: Colors.grey.shade400),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: _isUploadingImage
@@ -397,13 +620,39 @@ class _EditListingPageState extends State<EditListingPage> {
             const SizedBox(height: 16),
             _buildTextField(_descriptionController, "Add description", true, maxLines: 3),
             const SizedBox(height: 16),
+            // Category (Required)
+            _buildSelectableField(
+              label: "Category",
+              value: _selectedCategory,
+              required: true,
+              onTap: _showCategoryDialog,
+            ),
+            const SizedBox(height: 16),
+
+// Condition (Optional)
+            _buildSelectableField(
+              label: "Condition",
+              value: _selectedCondition,
+              required: false,
+              onTap: _showConditionDialog,
+            ),
+            const SizedBox(height: 16),
+            const SizedBox(height: 16),
             _buildTextField(_priceController, "Price", true, keyboardType: TextInputType.number, prefix: "PHP "),
             const SizedBox(height: 16),
             _buildTextField(_locationController, "Address", true),
             const SizedBox(height: 24),
             _buildTextField(_colorController, "Color", false),
             const SizedBox(height: 16),
-            _buildTextField(_sizeController, "Size", false),
+            if (_selectedCategory == 'Clothing' || _selectedCategory == 'Footwear')
+              _buildSelectableField(
+                label: _selectedCategory == 'Clothing' ? "Clothing Size" : "Footwear Size",
+                value: _selectedSizes.isNotEmpty ? _selectedSizes.join(", ") : null,
+                required: true,
+                onTap: _showSizeDialog,
+              )
+            else
+              _buildTextField(_sizeController, "Size", false),
             const SizedBox(height: 24),
             _buildTextField(_stockController, "Stock", true, keyboardType: TextInputType.number),
           ],
@@ -429,6 +678,54 @@ class _EditListingPageState extends State<EditListingPage> {
         ),
       ),
       style: TextStyle(fontSize: screenHeight * 0.02),
+    );
+  }
+  Widget _buildSelectableField({
+    required String label,
+    required dynamic value,
+    required bool required,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade400),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              required ? Icons.add_circle_outline : Icons.add_circle_outline,
+              color: Colors.grey.shade600,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                // For clothing and footwear sizes, show the selected sizes
+                (label.contains("Size") && _selectedSizes.isNotEmpty)
+                    ? _selectedSizes.join(", ")
+                    : (value != null
+                    ? value.toString()
+                    : label + (required ? " *" : "")),
+                style: TextStyle(
+                  fontSize: 16,
+                  color:
+                  (label.contains("Size") && _selectedSizes.isNotEmpty) ||
+                      value != null
+                      ? Colors.black
+                      : Colors.grey.shade600,
+                ),
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: Colors.grey.shade600,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
