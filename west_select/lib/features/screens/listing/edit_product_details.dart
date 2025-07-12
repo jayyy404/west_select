@@ -145,7 +145,61 @@ class _EditListingPageState extends State<EditListingPage> {
     }
   }
 
+  bool _validateForm() {
+    if (_titleController.text.trim().isEmpty) {
+      _showErrorDialog("Please enter a product title.");
+      return false;
+    }
+
+    if (_descriptionController.text.trim().isEmpty) {
+      _showErrorDialog("Please enter a product description.");
+      return false;
+    }
+
+    final priceText = _priceController.text.trim();
+    if (priceText.isEmpty || double.tryParse(priceText) == null) {
+      _showErrorDialog("Please enter a valid numeric price.");
+      return false;
+    }
+
+    if (_locationController.text.trim().isEmpty) {
+      _showErrorDialog("Please enter a location.");
+      return false;
+    }
+
+    final stockText = _stockController.text.trim();
+    if (stockText.isEmpty || int.tryParse(stockText) == null) {
+      _showErrorDialog("Please enter a valid stock quantity.");
+      return false;
+    }
+
+    // check images
+    if (_uploadedImages.isEmpty && _pendingImages.isEmpty) {
+      _showErrorDialog("Please upload at least one image.");
+      return false;
+    }
+
+    return true;
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Invalid Input"),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _updateListing() async {
+    if (!_validateForm()) return;
     setState(() => _isSubmitting = true);
     try {
       // Upload pending images

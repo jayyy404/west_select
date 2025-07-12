@@ -404,7 +404,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
       return false;
     }
 
-    if (_uploadedImages.isEmpty) {
+    if (_uploadedImages.isEmpty && _pendingImages.isEmpty) {
       _showErrorDialog("Please upload at least one image.");
       return false;
     }
