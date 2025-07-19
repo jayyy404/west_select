@@ -6,12 +6,25 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cc206_west_select/features/screens/cart/cart_model.dart';
 import 'package:cc206_west_select/features/auth_gate.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  try {
+    await dotenv.load(fileName: ".env");
+    print("Loaded .env successfully");
+  } catch (e) {
+    print("Error loading .env: $e");
+  }
+
+  print("Initializing Firebase...");
   await Firebase.initializeApp();
+  print("Firebase initialized.");
+
+  print("Initializing notifications...");
   await NotificationService.instance.initialize();
+  print("Notifications initialized.");
 
   runApp(
     MultiProvider(

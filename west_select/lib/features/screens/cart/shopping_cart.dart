@@ -428,7 +428,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                             const Text('Total', style: TextStyle(fontSize: 14)),
                             const SizedBox(height: 5),
                             Text(
-                              'Php ${NumberFormat('#,##0').format(calculateTotal(cart.items))}',
+                              '₱ ${NumberFormat('#,##0').format(calculateTotal(cart.items))}',
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
@@ -442,7 +442,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 50, vertical: 10),
+                                horizontal: 40, vertical: 10),
                             backgroundColor: const Color(0xFFFFA42D),
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
