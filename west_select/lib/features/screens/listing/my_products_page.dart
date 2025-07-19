@@ -77,7 +77,7 @@ class _MyProductsPageState extends State<MyProductsPage>
           .doc(productId)
           .update({'status': newStatus});
 
-      _loadTabCounts(); // Refresh counts
+      _loadTabCounts();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -107,7 +107,7 @@ class _MyProductsPageState extends State<MyProductsPage>
         'status': 'listed', // Change status back to listed when restocked
       });
 
-      _loadTabCounts(); // Refresh counts
+      _loadTabCounts();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -131,7 +131,7 @@ class _MyProductsPageState extends State<MyProductsPage>
           .doc(productId)
           .delete();
 
-      _loadTabCounts(); // Refresh counts
+      _loadTabCounts();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -162,125 +162,135 @@ class _MyProductsPageState extends State<MyProductsPage>
     final sold = data['sold'] ?? 0;
     final likes = data['likes'] ?? 0;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return Stack(
+      children: [
+        Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    color: Colors.grey.shade200,
-                  ),
-                  child: image.isNotEmpty
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            image,
-                            fit: BoxFit.cover,
-                          ),
-                        )
-                      : const Icon(Icons.image, size: 40, color: Colors.grey),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        data['post_title'] ?? 'Product',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Php ${price.toString()}',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                _buildInfoItem(Icons.inventory, 'Stock: $stock'),
-                const SizedBox(width: 16),
-                _buildInfoItem(Icons.favorite, 'Like: $likes'),
-                const SizedBox(width: 16),
-                _buildInfoItem(Icons.shopping_cart, 'Sold: $sold'),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => EditListingPage(
-                            productId: productId,
-                            productData: data,
-                          ),
-                        ),
-                      );
-
-                    },
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.grey),
-                      shape: RoundedRectangleBorder(
+                Row(
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
+                        color: Colors.grey.shade200,
+                      ),
+                      child: image.isNotEmpty
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(
+                                image,
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : const Icon(Icons.image,
+                              size: 40, color: Colors.grey),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            data['post_title'] ?? 'Product',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Php ${price.toString()}',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    child: const Text(
-                      'Edit Details',
-                      style: TextStyle(color: Colors.black),
-                    ),
-                  ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                if (type == 'delist') ...[
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => _showDeleteConfirmDialog(productId),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    _buildInfoItem(Icons.inventory, 'Stock: $stock'),
+                    const SizedBox(width: 16),
+                    _buildInfoItem(Icons.favorite, 'Like: $likes'),
+                    const SizedBox(width: 16),
+                    _buildInfoItem(Icons.shopping_cart, 'Sold: $sold'),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => EditListingPage(
+                                productId: productId,
+                                productData: data,
+                              ),
+                            ),
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.grey),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          'Edit Details',
+                          style: TextStyle(color: Colors.black, fontSize: 12),
                         ),
                       ),
-                      child: const Icon(Icons.delete, color: Colors.white),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                Expanded(
-                  child: _buildActionButton(data, productId, type),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildActionButton(data, productId, type),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
-      ),
+        if (type == 'delist')
+          Positioned(
+            top: 20,
+            right: 20,
+            child: GestureDetector(
+              onTap: () => _showDeleteConfirmDialog(productId),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.all(4),
+                child: const Icon(
+                  Icons.delete,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -334,7 +344,8 @@ class _MyProductsPageState extends State<MyProductsPage>
               borderRadius: BorderRadius.circular(8),
             ),
           ),
-          child: const Text('Publish', style: TextStyle(color: Colors.white)),
+          child: const Text('Publish',
+              style: TextStyle(color: Colors.white, fontSize: 13)),
         );
       default:
         return const SizedBox.shrink();
@@ -394,7 +405,7 @@ class _MyProductsPageState extends State<MyProductsPage>
               Navigator.pop(context);
             },
             child: const Text('Publish'),
-          ),
+          )
         ],
       ),
     );

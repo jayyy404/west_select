@@ -107,10 +107,25 @@ class OrderCard extends StatelessWidget {
               ),
               _buildSizeSummary(),
               const SizedBox(height: 8),
-              Text(
-                'Total Price: ₱${products.fold<num>(0, (s, p) => s + (p['price'] * p['quantity']))}',
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              Row(
+                children: [
+                  const Text(
+                    'Total Price: ',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  Text(
+                    '₱${products.fold<num>(0, (s, p) => s + (p['price'] * p['quantity']))}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red,
+                    ),
+                  ),
+                ],
               ),
               if (onComplete != null) ...[
                 const SizedBox(height: 16),
@@ -120,7 +135,7 @@ class OrderCard extends StatelessWidget {
                       child: OutlinedButton(
                         onPressed: () =>
                             _sendMessage(context, buyerId, buyerName),
-                        child: const Text('Send a message'),
+                        child: const Text('Message'),
                       ),
                     ),
                     const SizedBox(width: 12),
