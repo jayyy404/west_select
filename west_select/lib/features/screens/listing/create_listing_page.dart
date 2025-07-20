@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:cc206_west_select/features/screens/listing/cloudinary_service.dart';
+import 'package:cc206_west_select/services/cloudinary_service.dart';
 
 class CreateListingPage extends StatefulWidget {
   const CreateListingPage({super.key});
