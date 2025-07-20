@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cc206_west_select/features/auth_gate.dart';
+import 'package:flutter/services.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key, required this.appUser, this.readonly});
@@ -147,6 +148,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 const SizedBox(height: 16),
                 TextField(
                   controller: nameController,
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(16),
+                  ],
                   decoration: const InputDecoration(
                     labelText: 'Name',
                     border: OutlineInputBorder(),
