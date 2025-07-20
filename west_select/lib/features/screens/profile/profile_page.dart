@@ -66,6 +66,7 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
 
+    if (!mounted) return;
     if (confirmed == true) {
       // Show loading indicator
       showDialog(
