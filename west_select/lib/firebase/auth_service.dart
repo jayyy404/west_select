@@ -1,11 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cc206_west_select/features/screens/favorite/favorite_model.dart'
     as fav;
+import 'package:cc206_west_select/services/cloudinary_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -80,7 +80,28 @@ class AuthService {
     await GoogleSignIn().signOut();
   }
 
+  Future<void> reauthenticateWithGoogle() async {
+    final googleUser = await GoogleSignIn().signIn();
+    if (googleUser == null) {
+      // User cancelled sign-in
+      throw Exception('Sign-in aborted by user');
+    }
+
+    final googleAuth = await googleUser.authentication;
+    final credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) throw Exception('No current user');
+
+    await user.reauthenticateWithCredential(credential);
+  }
+
+
   Future<void> deleteUser() async {
+    await reauthenticateWithGoogle();
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -118,12 +139,20 @@ class AuthService {
         await doc.reference.delete();
       }
 
-      // 5. Delete posts where post_users contains uid
+      // Delete posts & collect Cloudinary IDs
       final posts = await firestore
           .collection('post')
           .where('post_users', isEqualTo: uid)
           .get();
       for (var doc in posts.docs) {
+        final data = doc.data();
+        final imageData = data['image_data'] as List<dynamic>?;
+        if (imageData != null) {
+          for (var image in imageData) {
+            final publicId = image['public_id'];
+            await CloudinaryService.deleteImage(publicId);
+          }
+        }
         await doc.reference.delete();
       }
 
