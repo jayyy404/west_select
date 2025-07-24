@@ -53,7 +53,7 @@ class CategoriesSection extends StatelessWidget {
                   child: GestureDetector(
                     onTap: () => onSelect(name),
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisAlignment: screenWidth > 600 ? MainAxisAlignment.spaceEvenly : MainAxisAlignment.center,
                       children: [
                         Container(
                           width: screenHeight * 0.05,
