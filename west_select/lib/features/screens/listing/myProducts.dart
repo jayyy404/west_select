@@ -2,13 +2,22 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:cc206_west_select/services/cloudinary_service.dart';
 
 class MyProductsList extends StatelessWidget {
   const MyProductsList({super.key});
 
   Future<void> _deleteListing(BuildContext context, String id) async {
     try {
-      await FirebaseFirestore.instance.collection('post').doc(id).delete();
+      final post = await FirebaseFirestore.instance.collection('post').doc(id).get();
+      final imageData = post.data()?['image_data'] as List<dynamic>?;
+      if (imageData != null) {
+        for (var image in imageData) {
+          final publicId = image['public_id'];
+          await CloudinaryService.deleteImage(publicId);
+        }
+      }
+      post.reference.delete();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Listing deleted successfully')),
       );

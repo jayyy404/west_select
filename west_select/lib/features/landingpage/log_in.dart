@@ -1,10 +1,11 @@
 import 'package:cc206_west_select/features/navigation/nav_bar.dart';
 import 'package:cc206_west_select/features/set_profile.dart';
+import 'package:flutter/gestures.dart';
 
 import 'package:flutter/material.dart';
 import '../../../firebase/auth_service.dart';
 import '../../../firebase/user_repo.dart';
-
+import 'terms_page.dart';
 import 'package:cc206_west_select/firebase/app_user.dart';
 
 class LogInPage extends StatefulWidget {
@@ -17,6 +18,138 @@ class LogInPage extends StatefulWidget {
 class LogInPageState extends State<LogInPage> {
   String? _errorMessage;
 
+  void _openTermsPage(String fileName, String title) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TermsPage(fileName: fileName, title: title),
+      ),
+    );
+  }
+
+  Future<bool> _showTermsAndPrivacyDialog() async {
+    bool agreedTerms = false;
+    bool agreedPrivacy = false;
+
+    return await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            bool canAgree = agreedTerms && agreedPrivacy;
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: const Text(
+                'Terms & Privacy Policy',
+                style: TextStyle(
+                  fontFamily: "Raleway",
+                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Please read and agree to continue:',
+                    style: TextStyle(
+                      fontFamily: "Raleway",
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Terms & Conditions
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    value: agreedTerms,
+                    onChanged: (value) async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => TermsPage(
+                            fileName: 'tandc.html',
+                            title: 'Terms & Conditions',
+                          ),
+                        ),
+                      );
+                      setState(() {
+                        agreedTerms = true;
+                      });
+                    },
+                    title: const Text(
+                      'I have read the Terms & Conditions',
+                      style: TextStyle(
+                        fontFamily: "Raleway",
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+
+                  // Privacy Policy
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    value: agreedPrivacy,
+                    onChanged: (value) async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => TermsPage(
+                            fileName: 'privacypolicy.html',
+                            title: 'Privacy Policy',
+                          ),
+                        ),
+                      );
+                      setState(() {
+                        agreedPrivacy = true;
+                      });
+                    },
+                    title: const Text(
+                      'I have read the Privacy Policy',
+                      style: TextStyle(
+                        fontFamily: "Raleway",
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(fontFamily: "Raleway"),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: canAgree
+                      ? () => Navigator.of(context).pop(true)
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    'I Agree',
+                    style: TextStyle(fontFamily: "Raleway"),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    ) ?? false;
+  }
+
   // Sign in using Google
   void _signInWithGoogle() async {
     try {
@@ -25,22 +158,31 @@ class LogInPageState extends State<LogInPage> {
       if (user != null) {
         final isFirstTime = await UserRepo().isFirstTimeUser(user.uid);
         if (isFirstTime) {
-          final customUser = AppUser(
-            uid: user.uid,
-            email: user.email ?? '',
-            displayName: user.displayName ?? '',
-            profilePictureUrl: user.photoURL ?? '',
-            orderHistory: [],
-            userListings: [],
-            fcmTokens: [],
-          );
+          final agreed = await _showTermsAndPrivacyDialog();
+          if (agreed) {
+            final customUser = AppUser(
+              uid: user.uid,
+              email: user.email ?? '',
+              displayName: user.displayName ?? '',
+              profilePictureUrl: user.photoURL ?? '',
+              orderHistory: [],
+              userListings: [],
+              fcmTokens: [],
+            );
 
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-                builder: (context) => SetupProfilePage(user: customUser)),
-          );
-        } else {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => SetupProfilePage(user: customUser)),
+            );
+          } else {
+            await AuthService().signOut();
+            setState(() {
+              _errorMessage = 'You must accept the Terms & Privacy Policy to continue.';
+            });
+          }
+        }
+        else {
           // Get this from FirebaseAuth.currentUser.uid
           final appUser = await UserRepo().getUser(user.uid);
 
@@ -130,6 +272,44 @@ class LogInPageState extends State<LogInPage> {
                   ),
                   const SizedBox(height: 250),
                   const Spacer(flex: 3),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: RichText(
+                      textAlign: TextAlign.center,
+                      text: TextSpan(
+                        style: const TextStyle(
+                          fontFamily: "Raleway",
+                          fontSize: 13,
+                          color: Colors.white,
+                        ),
+                        children: [
+                          const TextSpan(text: 'By continuing, you agree to our\n'),
+                          TextSpan(
+                            text: 'Terms & Conditions',
+                            style: const TextStyle(
+                                decoration: TextDecoration.underline,
+                                fontWeight: FontWeight.w500),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () {
+                                _openTermsPage('tandc.html', 'Terms & Conditions');
+                              },
+                          ),
+                          const TextSpan(text: ' and '),
+                          TextSpan(
+                            text: 'Privacy Policy',
+                            style: const TextStyle(
+                                decoration: TextDecoration.underline,
+                                fontWeight: FontWeight.w500),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () {
+                                _openTermsPage('privacypolicy.html', 'Privacy Policy');
+                              },
+                          ),
+                          const TextSpan(text: '.'),
+                        ],
+                      ),
+                    ),
+                  ),
                   // Error message display
                   if (_errorMessage != null)
                     Container(
