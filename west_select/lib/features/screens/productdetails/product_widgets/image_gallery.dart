@@ -28,9 +28,8 @@ class _ImageGalleryState extends State<ImageGallery> {
             itemCount: widget.images.length,
             onPageChanged: (i) => setState(() => _idx = i),
             itemBuilder: (_, i) => Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
+              margin: const EdgeInsets.symmetric(horizontal: 5),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
                 image: DecorationImage(
                   image: NetworkImage(widget.images[i]),
                   fit: BoxFit.cover,
