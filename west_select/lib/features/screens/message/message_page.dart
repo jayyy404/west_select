@@ -212,7 +212,15 @@ class _MessagePageState extends State<MessagePage>
                                     fontWeight: FontWeight.w500),
                               ),
                             Text(
-                              last,
+                              MessagesService.isMessageEncrypted(last)
+                                  ? MessagesService.decryptMessage(
+                                      encryptedText: last,
+                                      conversationId: convos[i].id,
+                                      senderId:
+                                          data['lastMessageSenderId'] ?? _me,
+                                      receiverId: other,
+                                    )
+                                  : last,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -334,6 +342,8 @@ class _MessagePageState extends State<MessagePage>
                           isMe: isMe,
                           text: m['text'],
                           timestamp: m['timestamp'] as Timestamp?,
+                          conversationId: convoId,
+                          otherUserId: _selectedId,
                         );
                       },
                     );
@@ -387,6 +397,8 @@ class _MessagePageState extends State<MessagePage>
       );
 
   void _handleSend(String convoId) async {
+    if (_msgCtrl.text.trim().isEmpty) return;
+
     final productName =
         _openedFromProduct ? widget.productName : _selectedProductName;
     final productPrice =
@@ -394,21 +406,34 @@ class _MessagePageState extends State<MessagePage>
     final productImage =
         _openedFromProduct ? widget.productImage : _selectedProductImage;
 
-    await MessagesService.sendMessage(
-      convoId: convoId,
-      text: _msgCtrl.text.trim(),
-      sellerId: _selectedId,
-      productName: productName,
-      productPrice: productPrice,
-      productImage: productImage,
-    );
-    _msgCtrl.clear();
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      if (_listCtrl.hasClients) {
-        _listCtrl.animateTo(0,
-            duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+    try {
+      await MessagesService.sendMessage(
+        convoId: convoId,
+        text: _msgCtrl.text.trim(),
+        sellerId: _selectedId,
+        productName: productName,
+        productPrice: productPrice,
+        productImage: productImage,
+      );
+      _msgCtrl.clear();
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (_listCtrl.hasClients) {
+          _listCtrl.animateTo(0,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut);
+        }
+      });
+    } catch (e) {
+      print('Error sending message: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send message: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
-    });
+    }
   }
 
   @override
