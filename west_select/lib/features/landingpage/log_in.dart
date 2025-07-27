@@ -1,6 +1,5 @@
 import 'package:cc206_west_select/features/navigation/nav_bar.dart';
 import 'package:cc206_west_select/features/set_profile.dart';
-import 'package:flutter/gestures.dart';
 
 import 'package:flutter/material.dart';
 import '../../../firebase/auth_service.dart';
@@ -17,138 +16,8 @@ class LogInPage extends StatefulWidget {
 
 class LogInPageState extends State<LogInPage> {
   String? _errorMessage;
-
-  void _openTermsPage(String fileName, String title) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => TermsPage(fileName: fileName, title: title),
-      ),
-    );
-  }
-
-  Future<bool> _showTermsAndPrivacyDialog() async {
-    bool agreedTerms = false;
-    bool agreedPrivacy = false;
-
-    return await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            bool canAgree = agreedTerms && agreedPrivacy;
-
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              title: const Text(
-                'Terms & Privacy Policy',
-                style: TextStyle(
-                  fontFamily: "Raleway",
-                  fontWeight: FontWeight.w600,
-                  fontSize: 18,
-                ),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Please read and agree to continue:',
-                    style: TextStyle(
-                      fontFamily: "Raleway",
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Terms & Conditions
-                  CheckboxListTile(
-                    contentPadding: EdgeInsets.zero,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    value: agreedTerms,
-                    onChanged: (value) async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => TermsPage(
-                            fileName: 'tandc.html',
-                            title: 'Terms & Conditions',
-                          ),
-                        ),
-                      );
-                      setState(() {
-                        agreedTerms = true;
-                      });
-                    },
-                    title: const Text(
-                      'I have read the Terms & Conditions',
-                      style: TextStyle(
-                        fontFamily: "Raleway",
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-
-                  // Privacy Policy
-                  CheckboxListTile(
-                    contentPadding: EdgeInsets.zero,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    value: agreedPrivacy,
-                    onChanged: (value) async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => TermsPage(
-                            fileName: 'privacypolicy.html',
-                            title: 'Privacy Policy',
-                          ),
-                        ),
-                      );
-                      setState(() {
-                        agreedPrivacy = true;
-                      });
-                    },
-                    title: const Text(
-                      'I have read the Privacy Policy',
-                      style: TextStyle(
-                        fontFamily: "Raleway",
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text(
-                    'Cancel',
-                    style: TextStyle(fontFamily: "Raleway"),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: canAgree
-                      ? () => Navigator.of(context).pop(true)
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text(
-                    'I Agree',
-                    style: TextStyle(fontFamily: "Raleway"),
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    ) ?? false;
-  }
+  bool agreedTerms = false;
+  bool agreedPrivacy = false;
 
   // Sign in using Google
   void _signInWithGoogle() async {
@@ -158,34 +27,23 @@ class LogInPageState extends State<LogInPage> {
       if (user != null) {
         final isFirstTime = await UserRepo().isFirstTimeUser(user.uid);
         if (isFirstTime) {
-          final agreed = await _showTermsAndPrivacyDialog();
-          if (agreed) {
-            final customUser = AppUser(
-              uid: user.uid,
-              email: user.email ?? '',
-              displayName: user.displayName ?? '',
-              profilePictureUrl: user.photoURL ?? '',
-              orderHistory: [],
-              userListings: [],
-              fcmTokens: [],
-            );
+          final customUser = AppUser(
+            uid: user.uid,
+            email: user.email ?? '',
+            displayName: user.displayName ?? '',
+            profilePictureUrl: user.photoURL ?? '',
+            orderHistory: [],
+            userListings: [],
+            fcmTokens: [],
+          );
 
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => SetupProfilePage(user: customUser)),
-            );
-          } else {
-            await AuthService().signOut();
-            setState(() {
-              _errorMessage = 'You must accept the Terms & Privacy Policy to continue.';
-            });
-          }
-        }
-        else {
-          // Get this from FirebaseAuth.currentUser.uid
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+                builder: (context) => SetupProfilePage(user: customUser)),
+          );
+        } else {
           final appUser = await UserRepo().getUser(user.uid);
-
           if (appUser != null) {
             Navigator.pushReplacement(
               context,
@@ -213,6 +71,7 @@ class LogInPageState extends State<LogInPage> {
 
   @override
   Widget build(BuildContext context) {
+    final canAgree = agreedTerms && agreedPrivacy;
     return Scaffold(
       body: Stack(
         children: [
@@ -272,48 +131,107 @@ class LogInPageState extends State<LogInPage> {
                   ),
                   const SizedBox(height: 250),
                   const Spacer(flex: 3),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16.0),
-                    child: RichText(
-                      textAlign: TextAlign.center,
-                      text: TextSpan(
-                        style: const TextStyle(
-                          fontFamily: "Raleway",
-                          fontSize: 13,
-                          color: Colors.white,
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                    child: Column(
+                      children: [
+                        Theme(
+                          data: Theme.of(context).copyWith(
+                            unselectedWidgetColor: Colors.white, // border color when unchecked
+                            checkboxTheme: CheckboxThemeData(
+                              fillColor: WidgetStateProperty.resolveWith((states) {
+                                if (states.contains(WidgetState.selected)) {
+                                  return Colors.white; // checked: white background
+                                }
+                                return Colors.white.withOpacity(0.4); // unchecked: light bg so box is visible
+                              }),
+                              checkColor: WidgetStateProperty.all(Colors.black), // checkmark color
+                            ),
+                          ),
+                          child: CheckboxListTile(
+                            contentPadding: EdgeInsets.zero,
+                            controlAffinity: ListTileControlAffinity.leading,
+                            value: agreedTerms,
+                            onChanged: (value) async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => TermsPage(
+                                    fileName: 'tandc.html',
+                                    title: 'Terms & Conditions',
+                                  ),
+                                ),
+                              );
+                              setState(() {
+                                agreedTerms = true;
+                              });
+                            },
+                            title: const Text(
+                              'I have read the Terms & Conditions',
+                              style: TextStyle(
+                                fontFamily: "Raleway",
+                                fontSize: 13,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
                         ),
-                        children: [
-                          const TextSpan(text: 'By continuing, you agree to our\n'),
-                          TextSpan(
-                            text: 'Terms & Conditions',
-                            style: const TextStyle(
-                                decoration: TextDecoration.underline,
-                                fontWeight: FontWeight.w500),
-                            recognizer: TapGestureRecognizer()
-                              ..onTap = () {
-                                _openTermsPage('tandc.html', 'Terms & Conditions');
-                              },
+                        const SizedBox(height: 4),
+                        Theme(
+                          data: Theme.of(context).copyWith(
+                            unselectedWidgetColor: Colors.white,
+                            checkboxTheme: CheckboxThemeData(
+                              fillColor: WidgetStateProperty.resolveWith((states) {
+                                if (states.contains(WidgetState.selected)) {
+                                  return Colors.white;
+                                }
+                                return Colors.white.withOpacity(0.4);
+                              }),
+                              checkColor: WidgetStateProperty.all(Colors.black),
+                            ),
                           ),
-                          const TextSpan(text: ' and '),
-                          TextSpan(
-                            text: 'Privacy Policy',
-                            style: const TextStyle(
-                                decoration: TextDecoration.underline,
-                                fontWeight: FontWeight.w500),
-                            recognizer: TapGestureRecognizer()
-                              ..onTap = () {
-                                _openTermsPage('privacypolicy.html', 'Privacy Policy');
-                              },
+                          child: CheckboxListTile(
+                            contentPadding: EdgeInsets.zero,
+                            controlAffinity: ListTileControlAffinity.leading,
+                            value: agreedPrivacy,
+                            onChanged: (value) async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => TermsPage(
+                                    fileName: 'privacypolicy.html',
+                                    title: 'Privacy Policy',
+                                  ),
+                                ),
+                              );
+                              setState(() {
+                                agreedPrivacy = true;
+                              });
+                            },
+                            title: const Text(
+                              'I have read the Privacy Policy',
+                              style: TextStyle(
+                                fontFamily: "Raleway",
+                                fontSize: 13,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
-                          const TextSpan(text: '.'),
-                        ],
-                      ),
+                        ),
+
+                      ],
                     ),
                   ),
-                  // Error message display
+                  const SizedBox(height: 10),
+
+                  // Error message if needed
                   if (_errorMessage != null)
                     Container(
-                      margin: const EdgeInsets.only(bottom: 20),
+                      margin: const EdgeInsets.only(bottom: 10),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: Colors.red.withOpacity(0.9),
@@ -329,12 +247,13 @@ class LogInPageState extends State<LogInPage> {
                         textAlign: TextAlign.center,
                       ),
                     ),
+
                   // Continue with Google Button
                   SizedBox(
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: _signInWithGoogle,
+                      onPressed: canAgree ? _signInWithGoogle : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
                         foregroundColor: Colors.black87,
@@ -342,15 +261,14 @@ class LogInPageState extends State<LogInPage> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(28),
                         ),
+                        disabledBackgroundColor: Colors.white.withOpacity(0.5),
+                        disabledForegroundColor: Colors.black38,
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Image.asset(
-                            'assets/google.png',
-                            width: 24,
-                            height: 24,
-                          ),
+                              'assets/google.png', width: 24, height: 24),
                           const SizedBox(width: 12),
                           const Text(
                             'Continue with Google',
