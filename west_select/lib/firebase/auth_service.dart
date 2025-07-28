@@ -6,6 +6,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cc206_west_select/features/screens/favorite/favorite_model.dart'
     as fav;
 import 'package:cc206_west_select/services/cloudinary_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -99,7 +100,6 @@ class AuthService {
     await user.reauthenticateWithCredential(credential);
   }
 
-
   Future<void> deleteUser() async {
     await reauthenticateWithGoogle();
     final user = FirebaseAuth.instance.currentUser;
@@ -177,5 +177,15 @@ class AuthService {
   bool _isValidEmail(String email) {
     final regex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
     return regex.hasMatch(email);
+  }
+
+  Future<void> markTermsAccepted() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('has_accepted_terms', true);
+  }
+
+  Future<bool> hasAcceptedTermsBefore() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('has_accepted_terms') ?? false;
   }
 }

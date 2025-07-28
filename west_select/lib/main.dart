@@ -1,5 +1,6 @@
 import 'package:cc206_west_select/features/screens/favorite/favorite_model.dart';
 import 'package:cc206_west_select/features/screens/home/home_page.dart';
+import 'package:cc206_west_select/features/screens/message/encryption_helper.dart';
 import 'package:cc206_west_select/firebase/notification_service.dart';
 import 'package:cc206_west_select/services/analytics_service.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -19,7 +20,7 @@ Future<void> main() async {
   } catch (e) {}
 
   await Firebase.initializeApp();
-
+  await EncryptionSetupHelper.initializeEncryption();
   await NotificationService.instance.initialize();
 
   runApp(

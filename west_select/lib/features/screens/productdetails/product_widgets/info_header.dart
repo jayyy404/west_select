@@ -17,13 +17,17 @@ class InfoHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Title on the left
+
           Expanded(
             flex: 2,
-            child: Text(
-              title,
-              style: TextStyle(
-                fontSize: screenHeight * 0.02,
-                fontWeight: FontWeight.bold,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: screenHeight * 0.02,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
