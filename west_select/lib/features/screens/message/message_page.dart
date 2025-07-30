@@ -69,6 +69,7 @@ class _MessagePageState extends State<MessagePage>
   @override
   void dispose() {
     _tab.dispose();
+    _msgCtrl.dispose();
     super.dispose();
   }
 
@@ -397,32 +398,26 @@ class _MessagePageState extends State<MessagePage>
       );
 
   void _handleSend(String convoId) async {
-    if (_msgCtrl.text.trim().isEmpty) return;
+    final text = _msgCtrl.text.trim();
+    if (text.isEmpty) return;
 
-    final productName =
-        _openedFromProduct ? widget.productName : _selectedProductName;
-    final productPrice =
-        _openedFromProduct ? widget.productPrice : _selectedProductPrice;
-    final productImage =
-        _openedFromProduct ? widget.productImage : _selectedProductImage;
+    final productName = _openedFromProduct ? widget.productName : _selectedProductName;
+    final productPrice = _openedFromProduct ? widget.productPrice : _selectedProductPrice;
+    final productImage = _openedFromProduct ? widget.productImage : _selectedProductImage;
+
+    setState(() {
+      _msgCtrl.clear();
+    });
 
     try {
       await MessagesService.sendMessage(
         convoId: convoId,
-        text: _msgCtrl.text.trim(),
-        sellerId: _selectedId,
-        productName: productName,
-        productPrice: productPrice,
-        productImage: productImage,
+        text: text,
+        sellerId: _selectedId ?? '',
+        productName: productName ?? '',
+        productPrice: productPrice ?? 0.0,
+        productImage: productImage ?? '',
       );
-      _msgCtrl.clear();
-      SchedulerBinding.instance.addPostFrameCallback((_) {
-        if (_listCtrl.hasClients) {
-          _listCtrl.animateTo(0,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOut);
-        }
-      });
     } catch (e) {
       print('Error sending message: $e');
       if (mounted) {
@@ -434,7 +429,17 @@ class _MessagePageState extends State<MessagePage>
         );
       }
     }
+
+    // keep scrolling to bottom
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (_listCtrl.hasClients) {
+        _listCtrl.animateTo(0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut);
+      }
+    });
   }
+
 
   @override
   Widget build(BuildContext context) {
