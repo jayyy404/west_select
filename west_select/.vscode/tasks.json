@@ -1,0 +1,16 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"command": "dart",
+			"args": [
+				"c:\\Users\\John Paul\\Desktop\\test\\west_select\\west_select\\lib\\features\\screens\\cart\\shopping_cart.dart"
+			],
+			"label": "Update Checkout Logic",
+			"group": "build",
+			"problemMatcher": [
+				"$dart"
+			]
+		}
+	]
+}

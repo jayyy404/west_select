@@ -32,62 +32,66 @@ class OrderList extends StatelessWidget {
       .snapshots();
 
   @override
-  Widget build(BuildContext context) => StreamBuilder<QuerySnapshot>(
-        stream: _stream,
-        builder: (_, snap) {
-          if (!snap.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snap.data!.docs.isEmpty) {
-            return Center(
-                child: Text(
-                    pending ? 'No pending orders' : 'No completed orders'));
-          }
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
 
-          // merge identical items
-          final merged = <String, Map<String, dynamic>>{};
-          for (final doc in snap.data!.docs) {
-            final docData = doc.data() as Map<String, dynamic>?;
-            final products = docData?['products'] as List<dynamic>? ?? [];
+    return StreamBuilder<QuerySnapshot>(
+      stream: _stream,
+      builder: (_, snap) {
+        if (!snap.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snap.data!.docs.isEmpty) {
+          return Center(
+              child:
+                  Text(pending ? 'No pending orders' : 'No completed orders'));
+        }
 
-            for (final p in products) {
-              if (p is! Map<String, dynamic>) continue;
+        // merge identical items
+        final merged = <String, Map<String, dynamic>>{};
+        for (final doc in snap.data!.docs) {
+          final docData = doc.data() as Map<String, dynamic>?;
+          final products = docData?['products'] as List<dynamic>? ?? [];
 
-              final productId = p['productId']?.toString() ?? '';
-              if (productId.isEmpty) continue;
+          for (final p in products) {
+            if (p is! Map<String, dynamic>) continue;
 
-              final key = productId;
-              if (merged.containsKey(key)) {
-                merged[key]!['quantity'] =
-                    (merged[key]!['quantity'] ?? 0) + (p['quantity'] ?? 1);
-              } else {
-                merged[key] = {
-                  'productId': productId,
-                  'sellerId': p['sellerId']?.toString() ?? '',
-                  'title': p['title']?.toString() ?? 'Unknown Product',
-                  'price': (p['price'] is num)
-                      ? (p['price'] as num).toDouble()
-                      : 0.0,
-                  'quantity': p['quantity'] ?? 1,
-                  'imageUrl': p['imageUrl'],
-                };
-              }
+            final productId = p['productId']?.toString() ?? '';
+            if (productId.isEmpty) continue;
+
+            final key = productId;
+            if (merged.containsKey(key)) {
+              merged[key]!['quantity'] =
+                  (merged[key]!['quantity'] ?? 0) + (p['quantity'] ?? 1);
+            } else {
+              merged[key] = {
+                'productId': productId,
+                'sellerId': p['sellerId']?.toString() ?? '',
+                'title': p['title']?.toString() ?? 'Unknown Product',
+                'price':
+                    (p['price'] is num) ? (p['price'] as num).toDouble() : 0.0,
+                'quantity': p['quantity'] ?? 1,
+                'imageUrl': p['imageUrl'],
+              };
             }
           }
+        }
 
-          // group by seller
-          final Map<String, List<Map<String, dynamic>>> sellerMap = {};
-          for (final p in merged.values) {
-            final sellerId = p['sellerId']?.toString() ?? 'unknown';
-            (sellerMap[sellerId] ??= []).add(p);
-          }
+        // group by seller
+        final Map<String, List<Map<String, dynamic>>> sellerMap = {};
+        for (final p in merged.values) {
+          final sellerId = p['sellerId']?.toString() ?? 'unknown';
+          (sellerMap[sellerId] ??= []).add(p);
+        }
 
-          return ListView(
-              children: sellerMap.entries
-                  .map((e) => _card(context, e.key, e.value))
-                  .toList());
-        },
-      );
+        return ListView(
+            children: sellerMap.entries
+                .map((e) => _card(context, e.key, e.value))
+                .toList());
+      },
+    );
+  }
 
   Widget _card(
       BuildContext ctx, String sellerId, List<Map<String, dynamic>> prods) {
@@ -102,7 +106,7 @@ class OrderList extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(MediaQuery.of(ctx).size.width * 0.03),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -110,8 +114,9 @@ class OrderList extends StatelessWidget {
                   child: FutureBuilder<String>(
                       future: fetchSellerName(sellerId),
                       builder: (_, s) => Text(s.data ?? 'Loading seller…',
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              fontSize: MediaQuery.of(ctx).size.height * 0.02,
+                              fontWeight: FontWeight.bold),
                           overflow: TextOverflow.ellipsis))),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

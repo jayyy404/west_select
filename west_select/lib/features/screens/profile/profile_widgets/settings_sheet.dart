@@ -1,17 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:cc206_west_select/firebase/app_user.dart';
+import 'package:cc206_west_select/features/landingpage/terms_page.dart';
 
 class SettingsSheet extends StatelessWidget {
   const SettingsSheet({
     super.key,
     required this.appUser,
     required this.onEditProfile,
+    required this.onDeleteAccount,
     required this.onLogout,
   });
 
   final AppUser appUser;
   final VoidCallback onEditProfile;
   final VoidCallback onLogout;
+  final VoidCallback onDeleteAccount;
+
+  void _openTermsPage(BuildContext context, String fileName, String title) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => TermsPage(fileName: fileName, title: title),
+      ),
+    );
+  }
 
   Widget _section(String t) => Padding(
       padding: const EdgeInsets.only(bottom: 10, top: 10),
@@ -72,17 +83,25 @@ class SettingsSheet extends StatelessWidget {
                 _item(context,
                     icon: Icons.delete,
                     title: 'Delete account',
-                    textColor: Colors.red),
+                    textColor: Colors.red,
+                    onTap: onDeleteAccount),
                 _item(context,
                     icon: Icons.logout, title: 'Log out', onTap: onLogout),
                 const SizedBox(height: 20),
                 _section('General'),
-                _item(context, icon: Icons.help, title: 'Help Centre'),
+                _item(context, icon: Icons.help, title: 'Help Center'),
                 const SizedBox(height: 20),
                 _section('About'),
                 _item(context,
-                    icon: Icons.description, title: 'User Agreement'),
-                _item(context, icon: Icons.privacy_tip, title: 'Privacy'),
+                    icon: Icons.description,
+                    title: 'Terms and Conditions',
+                    onTap: () => _openTermsPage(
+                        context, 'tandc.html', 'Terms and Conditions')),
+                _item(context,
+                    icon: Icons.privacy_tip,
+                    title: 'Privacy Policy',
+                    onTap: () => _openTermsPage(
+                        context, 'privacypolicy.html', 'Privacy Policy')),
                 _item(context, icon: Icons.gavel, title: 'Legal'),
                 const SizedBox(height: 20),
                 Row(
@@ -91,7 +110,7 @@ class SettingsSheet extends StatelessWidget {
                       Text('Version',
                           style:
                               TextStyle(fontSize: 16, color: Colors.grey[600])),
-                      Text('6.24.0.0',
+                      Text('1.0.0',
                           style:
                               TextStyle(fontSize: 16, color: Colors.grey[600]))
                     ]),

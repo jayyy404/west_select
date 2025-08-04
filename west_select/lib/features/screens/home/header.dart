@@ -25,6 +25,9 @@ class HomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -35,18 +38,21 @@ class HomeHeader extends StatelessWidget {
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(screenWidth * 0.03),
           child: Column(
             children: [
               // Top row with greeting and icons
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Hello, $userName',
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold)),
+                  Text(
+                    'Hello, $userName',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: screenHeight * 0.026, // ~20 on standard screen
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   Row(
                     children: [
                       StreamBuilder<int>(
@@ -78,10 +84,11 @@ class HomeHeader extends StatelessWidget {
                                       child: Center(
                                         child: Text(
                                           n > 99 ? '99+' : '$n',
-                                          style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold),
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: screenHeight * 0.014, // ~10 on standard screen
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -119,8 +126,10 @@ class HomeHeader extends StatelessWidget {
                   },
                   decoration: InputDecoration(
                     hintText: 'What are you looking for?',
-                    hintStyle:
-                        const TextStyle(color: Colors.grey, fontSize: 14),
+                    hintStyle: TextStyle(
+                      color: Colors.grey,
+                      fontSize: screenHeight * 0.018, // ~14 standard
+                    ),
                     prefixIcon: const Icon(Icons.search, color: Colors.grey),
                     suffixIcon: searchController.text.isNotEmpty
                         ? IconButton(
@@ -132,9 +141,11 @@ class HomeHeader extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
+                    contentPadding: EdgeInsets.symmetric(
+                        horizontal: screenWidth * 0.04,
+                        vertical: screenHeight * 0.02),
                   ),
+                  style: TextStyle(fontSize: screenHeight * 0.02),
                 ),
               ),
             ],

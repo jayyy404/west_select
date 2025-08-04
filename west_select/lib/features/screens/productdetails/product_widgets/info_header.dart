@@ -7,33 +7,42 @@ class InfoHeader extends StatelessWidget {
   final double price;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Title on the left
-            Expanded(
-              flex: 2,
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    return Padding(
+      padding: EdgeInsets.all(screenWidth * 0.03),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Title on the left
+
+          Expanded(
+            flex: 2,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 12),
               child: Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 20,
+                style: TextStyle(
+                  fontSize: screenHeight * 0.02,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-            const SizedBox(width: 16),
-            // Price on the right
-            Text(
-              '₱${price.toStringAsFixed(2)}',
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.green,
-              ),
+          ),
+          const SizedBox(width: 16),
+          // Price on the right
+          Text(
+            '₱${price.toStringAsFixed(2)}',
+            style: TextStyle(
+              fontSize: screenHeight * 0.02,
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
             ),
-          ],
-        ),
-      );
+          ),
+        ],
+      ),
+    );
+  }
 }

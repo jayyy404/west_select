@@ -27,8 +27,22 @@ class FavoritePage extends StatelessWidget {
           );
         }
 
+        final screenHeight = MediaQuery.of(context).size.height;
+        final screenWidth = MediaQuery.of(context).size.width;
+
+        int crossAxisCount = 2;
+        double aspectRatio = 0.75; // phone default (taller cards)
+
+        if (screenWidth >= 900) {
+          crossAxisCount = 4;
+          aspectRatio = 0.65; // give tall enough cards on very wide screens
+        } else if (screenWidth >= 600) {
+          crossAxisCount = 3;
+          aspectRatio = 0.7; // tablet / small‑desktop
+        }
+
         return Scaffold(
-          appBar: AppBar(title: const Text("Wishlist")),
+          appBar: AppBar(title: Text("Wishlist",style: TextStyle(fontSize: screenHeight * 0.02),), ),
           body: Consumer<FavoriteModel>(
             builder: (context, model, _) {
               final items = model.favoriteItems;
@@ -38,12 +52,12 @@ class FavoritePage extends StatelessWidget {
               }
 
               return GridView.builder(
-                padding: const EdgeInsets.all(16),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
+                padding: EdgeInsets.all(screenWidth * 0.03),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
                   mainAxisSpacing: 10,
                   crossAxisSpacing: 10,
-                  childAspectRatio: 0.75, // Adjusted for better proportions
+                  childAspectRatio: aspectRatio, // Adjusted for better proportions
                 ),
                 itemCount: items.length,
                 itemBuilder: (context, index) {
@@ -66,7 +80,7 @@ class FavoritePage extends StatelessWidget {
                             // Image section with flexible height
                             Expanded(
                               flex: 3,
-                              child: Container(
+                              child: SizedBox(
                                 width: double.infinity,
                                 child: imageUrls.isNotEmpty
                                     ? Image.network(
@@ -90,7 +104,7 @@ class FavoritePage extends StatelessWidget {
                             Expanded(
                               flex: 2,
                               child: Padding(
-                                padding: const EdgeInsets.all(8.0),
+                                padding: EdgeInsets.all(screenWidth * 0.03),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisSize: MainAxisSize.min,
@@ -100,9 +114,9 @@ class FavoritePage extends StatelessWidget {
                                         Expanded(
                                           child: Text(
                                             product["title"] ?? "",
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontWeight: FontWeight.bold,
-                                              fontSize: 12,
+                                              fontSize: screenHeight * 0.02,
                                             ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
@@ -132,8 +146,8 @@ class FavoritePage extends StatelessWidget {
                                     const SizedBox(height: 4),
                                     Text(
                                       "PHP ${product["price"] ?? ""}",
-                                      style: const TextStyle(
-                                          fontSize: 12,
+                                      style: TextStyle(
+                                          fontSize: screenHeight * 0.014,
                                           color: Colors.red,
                                           fontWeight: FontWeight.bold),
                                       maxLines: 1,
@@ -141,11 +155,10 @@ class FavoritePage extends StatelessWidget {
                                     ),
                                     const SizedBox(height: 1),
                                     Flexible(
-                                      child: Text(
-                                        product["seller"] ?? "",
-                                        style: const TextStyle(
+                                      child: Text("Seller: ${product["seller"] ?? ""}",
+                                        style: TextStyle(
                                           color: Colors.black54,
-                                          fontSize: 11,
+                                          fontSize: screenHeight * 0.012,
                                           fontWeight: FontWeight.w500,
                                         ),
                                         maxLines: 1,

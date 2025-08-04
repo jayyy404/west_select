@@ -69,6 +69,7 @@ class _MessagePageState extends State<MessagePage>
   @override
   void dispose() {
     _tab.dispose();
+    _msgCtrl.dispose();
     super.dispose();
   }
 
@@ -212,7 +213,15 @@ class _MessagePageState extends State<MessagePage>
                                     fontWeight: FontWeight.w500),
                               ),
                             Text(
-                              last,
+                              MessagesService.isMessageEncrypted(last)
+                                  ? MessagesService.decryptMessage(
+                                      encryptedText: last,
+                                      conversationId: convos[i].id,
+                                      senderId:
+                                          data['lastMessageSenderId'] ?? _me,
+                                      receiverId: other,
+                                    )
+                                  : last,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -334,6 +343,8 @@ class _MessagePageState extends State<MessagePage>
                           isMe: isMe,
                           text: m['text'],
                           timestamp: m['timestamp'] as Timestamp?,
+                          conversationId: convoId,
+                          otherUserId: _selectedId,
                         );
                       },
                     );
@@ -387,29 +398,48 @@ class _MessagePageState extends State<MessagePage>
       );
 
   void _handleSend(String convoId) async {
-    final productName =
-        _openedFromProduct ? widget.productName : _selectedProductName;
-    final productPrice =
-        _openedFromProduct ? widget.productPrice : _selectedProductPrice;
-    final productImage =
-        _openedFromProduct ? widget.productImage : _selectedProductImage;
+    final text = _msgCtrl.text.trim();
+    if (text.isEmpty) return;
 
-    await MessagesService.sendMessage(
-      convoId: convoId,
-      text: _msgCtrl.text.trim(),
-      sellerId: _selectedId,
-      productName: productName,
-      productPrice: productPrice,
-      productImage: productImage,
-    );
-    _msgCtrl.clear();
+    final productName = _openedFromProduct ? widget.productName : _selectedProductName;
+    final productPrice = _openedFromProduct ? widget.productPrice : _selectedProductPrice;
+    final productImage = _openedFromProduct ? widget.productImage : _selectedProductImage;
+
+    setState(() {
+      _msgCtrl.clear();
+    });
+
+    try {
+      await MessagesService.sendMessage(
+        convoId: convoId,
+        text: text,
+        sellerId: _selectedId ?? '',
+        productName: productName ?? '',
+        productPrice: productPrice ?? 0.0,
+        productImage: productImage ?? '',
+      );
+    } catch (e) {
+      print('Error sending message: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send message: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+
+    // keep scrolling to bottom
     SchedulerBinding.instance.addPostFrameCallback((_) {
       if (_listCtrl.hasClients) {
         _listCtrl.animateTo(0,
-            duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut);
       }
     });
   }
+
 
   @override
   Widget build(BuildContext context) {

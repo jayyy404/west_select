@@ -72,7 +72,7 @@ class UserProfilePageState extends State<UserProfilePage> {
         ],
       ),
       body: Padding(
-        padding: EdgeInsets.symmetric(horizontal: paddingHorizontal),
+        padding: EdgeInsets.all(screenWidth * 0.03),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [

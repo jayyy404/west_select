@@ -5,6 +5,9 @@ class EditProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF9F4EF), // Light background color
       appBar: AppBar(
@@ -23,7 +26,7 @@ class EditProfilePage extends StatelessWidget {
         ),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(screenWidth * 0.03),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -51,10 +54,10 @@ class EditProfilePage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 30),
-            const Text(
+            Text(
               'Name',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: screenHeight * 0.02,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -65,10 +68,10 @@ class EditProfilePage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'Introduction',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: screenHeight * 0.02,
                 fontWeight: FontWeight.bold,
               ),
             ),

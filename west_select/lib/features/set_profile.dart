@@ -58,6 +58,9 @@ class _SetupProfilePageState extends State<SetupProfilePage> {
                     if (value.length < 3) {
                       return 'Display name must be at least 3 characters';
                     }
+                    if (value.length > 16){
+                      return 'Display name must be less than 20 characters';
+                    }
                     return null;
                   },
                 ),

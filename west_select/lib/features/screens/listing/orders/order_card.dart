@@ -27,11 +27,15 @@ class OrderCard extends StatelessWidget {
   final VoidCallback? onComplete;
 
   @override
-  Widget build(BuildContext context) => Card(
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    return Card(
         margin: const EdgeInsets.only(bottom: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(screenWidth * 0.03),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -103,10 +107,25 @@ class OrderCard extends StatelessWidget {
               ),
               _buildSizeSummary(),
               const SizedBox(height: 8),
-              Text(
-                'Total Price: ₱${products.fold<num>(0, (s, p) => s + (p['price'] * p['quantity']))}',
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              Row(
+                children: [
+                  const Text(
+                    'Total Price: ',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  Text(
+                    '₱${products.fold<num>(0, (s, p) => s + (p['price'] * p['quantity']))}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red,
+                    ),
+                  ),
+                ],
               ),
               if (onComplete != null) ...[
                 const SizedBox(height: 16),
@@ -116,7 +135,7 @@ class OrderCard extends StatelessWidget {
                       child: OutlinedButton(
                         onPressed: () =>
                             _sendMessage(context, buyerId, buyerName),
-                        child: const Text('Send a message'),
+                        child: const Text('Message'),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -134,8 +153,8 @@ class OrderCard extends StatelessWidget {
               ],
             ],
           ),
-        ),
-      );
+        ));
+  }
 
   Widget _productRow(Map<String, dynamic> p) => Padding(
         padding: const EdgeInsets.only(bottom: 8),

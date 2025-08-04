@@ -7,6 +7,8 @@ import 'package:cc206_west_select/firebase/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cc206_west_select/features/auth_gate.dart';
+import 'package:flutter/services.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key, required this.appUser, this.readonly});
@@ -36,8 +38,64 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _signOut() async {
     await AuthService().signOut();
     if (mounted) {
-      Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (_) => LogInPage()));
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LogInPage()),
+        (route) => false,
+      );
+    }
+  }
+
+  void _confirmAndDeleteUser() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Delete Account"),
+        content: const Text(
+          "Are you sure you want to permanently delete your account?\nThis action cannot be undone.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) return;
+    if (confirmed == true) {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
+
+      try {
+        await _deleteUser(); // your existing logic
+      } catch (e) {
+        Navigator.of(context).pop(); // close loader
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to delete account: $e")),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteUser() async {
+    await AuthService().deleteUser();
+    await AuthService().signOut();
+    if (mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const AuthGate()),
+        (route) => false,
+      );
     }
   }
 
@@ -66,6 +124,8 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _editProfile(AppUser a) async {
+    final TextEditingController nameController =
+        TextEditingController(text: a.displayName ?? '');
     final TextEditingController descController =
         TextEditingController(text: a.description ?? '');
 
@@ -73,13 +133,40 @@ class _ProfilePageState extends State<ProfilePage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Edit Profile Description'),
-          content: TextField(
-            controller: descController,
-            maxLines: 3,
-            decoration: const InputDecoration(
-              hintText: 'Write something about yourself...',
-              border: OutlineInputBorder(),
+          title: const Text('Edit Profile'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Edit Profile',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: nameController,
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(16),
+                  ],
+                  decoration: const InputDecoration(
+                    labelText: 'Name',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    hintText: 'Write something about yourself...',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
             ),
           ),
           actions: [
@@ -89,19 +176,25 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             ElevatedButton(
               onPressed: () async {
+                final newName = nameController.text.trim();
                 final newDesc = descController.text.trim();
-                if (newDesc.isEmpty) {
+
+                if (newName.isEmpty || newDesc.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content: Text('Description cannot be empty')),
+                        content: Text('Name and description cannot be empty')),
                   );
                   return;
                 }
+
                 try {
                   await FirebaseFirestore.instance
                       .collection('users')
                       .doc(a.uid)
-                      .update({'description': newDesc});
+                      .update({
+                    'displayName': newName,
+                    'description': newDesc,
+                  });
 
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -301,64 +394,88 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: _userStream,
-        builder: (_, snap) {
-          if (!snap.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final user = AppUser.fromFirestore(snap.data!.data()!);
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
 
-          return Scaffold(
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: _userStream,
+      builder: (_, snap) {
+        if (!snap.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final doc = snap.data!;
+        if (!doc.exists || doc.data() == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => const LogInPage()),
+              (route) => false,
+            );
+          });
+          return const SizedBox(); // Prevent build error while navigating
+        }
+        final user = AppUser.fromFirestore(doc.data()!);
+        return Scaffold(
+          backgroundColor: Colors.white,
+          appBar: AppBar(
             backgroundColor: Colors.white,
-            appBar: AppBar(
-                backgroundColor: Colors.white,
-                elevation: 0,
-                actions: isReadOnly
-                    ? null
-                    : [
-                        IconButton(
-                            icon: const Icon(Icons.settings,
-                                color: Color(0xFF1976D2)),
-                            onPressed: () => showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (_) => SettingsSheet(
-                                      appUser: user,
-                                      onEditProfile: () => _editProfile(user),
-                                      onLogout: _signOut,
-                                    )))
-                      ]),
-            body: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ProfileHeader(appUser: user, isReadOnly: isReadOnly),
-                    const SizedBox(height: 20),
-                    if (!isReadOnly) ...[
-                      FutureBuilder<List<int>>(
-                        future: Future.wait([
-                          _getPendingOrdersCount(),
-                          _getReviewsCount(),
-                        ]),
-                        builder: (context, snapshot) {
-                          final pendingCount = snapshot.data?[0] ?? 0;
-                          final reviewsCount = snapshot.data?[1] ?? 0;
-
-                          return ShoppingSections(
-                            userId: user.uid,
-                            pendingCount: pendingCount,
-                            reviewsCount: reviewsCount,
-                          );
-                        },
+            elevation: 0,
+            actions: isReadOnly
+                ? null
+                : [
+                    IconButton(
+                      icon:
+                          const Icon(Icons.settings, color: Color(0xFF1976D2)),
+                      onPressed: () => showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => SettingsSheet(
+                          appUser: user,
+                          onEditProfile: () => _editProfile(user),
+                          onDeleteAccount: () => _confirmAndDeleteUser(),
+                          onLogout: _signOut,
+                        ),
                       ),
-                    ]
-                  ]),
+                    )
+                  ],
+          ),
+          body: SingleChildScrollView(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 16,
+              bottom: MediaQuery.of(context).viewInsets.bottom,
             ),
-          );
-        },
-      );
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ProfileHeader(appUser: user, isReadOnly: isReadOnly),
+                const SizedBox(height: 20),
+                if (!isReadOnly)
+                  FutureBuilder<List<int>>(
+                    future: Future.wait([
+                      _getPendingOrdersCount(),
+                      _getReviewsCount(),
+                    ]),
+                    builder: (context, snapshot) {
+                      final pendingCount = snapshot.data?[0] ?? 0;
+                      final reviewsCount = snapshot.data?[1] ?? 0;
+
+                      return ShoppingSections(
+                        userId: user.uid,
+                        pendingCount: pendingCount,
+                        reviewsCount: reviewsCount,
+                      );
+                    },
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
