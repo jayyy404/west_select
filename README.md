@@ -49,7 +49,7 @@ WEST SELECT is a Flutter-based mobile application designed for the West Visayas 
 - **Edit your profile** to update your display name, description, or profile picture.
 - **Sellers** can manage their shop and inventory from the app.
 
-## Screenshots
+## Landing Page
 <p align="center">
   <img src="screenshot.png" alt="App Screenshot">
 </p>
