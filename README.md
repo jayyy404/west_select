@@ -18,7 +18,6 @@ WEST SELECT is a Flutter-based mobile application designed for the West Visayas 
 - **Cloud Firestore**: Real-time database
 - **Firebase Storage**: Image and file storage
 - **Dart**: Programming language
-- **Provider/State Management**: (if used)
 
 ## Getting Started
 ### Prerequisites
